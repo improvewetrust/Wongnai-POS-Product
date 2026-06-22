@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wongnai POS Advisor — ระบบแนะนำ POS สำหรับร้านอาหาร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #ff5533;
+      --brand-dark: #e04420;
+      --brand-light: rgba(255,85,51,0.12);
+      --ok: #34d399;
+      --ok-light: rgba(52,211,153,0.1);
+      --warn: #fbbf24;
+      --warn-light: rgba(251,191,36,0.1);
+      --surface: rgba(12,15,35,0.8);
+      --bg: #080b1a;
+      --border: rgba(255,255,255,0.07);
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --radius: 20px;
+      --shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 60% at 10% 30%, rgba(255,85,51,0.065) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 50% at 90% 10%, rgba(168,85,247,0.065) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(56,189,248,0.05) 0%, transparent 55%);
+      background-attachment: fixed;
+      color: var(--text); min-height: 100vh;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    header, #progress-wrap, main, #loading-overlay { position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header {
+      background: rgba(5,7,20,0.97);
+      border-bottom: 1px solid rgba(255,85,51,0.18);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+      color: #fff; padding: 12px 24px;
+      display: flex; align-items: center; gap: 14px;
+      backdrop-filter: blur(30px);
+    }
+    header .logo {
+      font-size: 20px; width: 38px; height: 38px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(255,85,51,0.3), rgba(255,85,51,0.08));
+      border: 1px solid rgba(255,85,51,0.4);
+      border-radius: 10px;
+      box-shadow: 0 0 18px rgba(255,85,51,0.22);
+    }
+    header h1 { font-size: 16px; font-weight: 700; letter-spacing: .02em; }
+    header p { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 1px; }
+
+    /* ── Step Track ── */
+    #progress-wrap {
+      background: rgba(5,7,20,0.94);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 10px 24px;
+      backdrop-filter: blur(20px);
+    }
+    .step-track { display: flex; align-items: center; max-width: 720px; margin: 0 auto; }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+      border: 1.5px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.22);
+      background: transparent;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .step-dot.done { border-color: rgba(255,85,51,0.4); background: rgba(255,85,51,0.1); color: transparent; }
+    .step-dot.done span { display: none; }
+    .step-dot.done::after { content: '✓'; font-size: 11px; color: rgba(255,85,51,0.75); }
+    .step-dot.active {
+      border-color: var(--brand); background: var(--brand); color: #fff;
+      box-shadow: 0 0 0 4px rgba(255,85,51,0.16), 0 0 18px rgba(255,85,51,0.55);
+      transform: scale(1.12);
+    }
+    .step-dot.active span { display: block; }
+    .step-line { flex: 1; height: 1.5px; background: rgba(255,255,255,0.07); transition: background 0.4s; }
+    .step-line.done { background: rgba(255,85,51,0.32); }
+
+    /* ── Main ── */
+    main { max-width: 720px; margin: 0 auto; padding: 18px 16px 70px; }
+
+    /* ── Cards ── */
+    .card {
+      background: rgba(10,12,28,0.85);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.07) inset, 0 20px 60px rgba(0,0,0,.55);
+      backdrop-filter: blur(24px);
+      padding: 26px; margin-bottom: 16px;
+      animation: fadeUp .3s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px) scale(.985); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .step-badge {
+      display: inline-flex; align-items: center;
+      background: rgba(255,85,51,0.1); border: 1px solid rgba(255,85,51,0.26);
+      color: #ff7a5c; font-size: 10px; font-weight: 700;
+      padding: 3px 11px; border-radius: 99px;
+      margin-bottom: 12px; letter-spacing: .1em; text-transform: uppercase;
+    }
+    .question-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; line-height: 1.3; color: #f8fafc; letter-spacing: -.015em; }
+    .question-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+    /* ── Option Grid ── */
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; margin-bottom: 18px; }
+    .option {
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 16px 14px;
+      cursor: pointer; background: rgba(255,255,255,0.02);
+      transition: all .22s cubic-bezier(0.34,1.2,0.64,1);
+      user-select: none; position: relative; overflow: hidden;
+    }
+    .option::before {
+      content: ''; position: absolute; inset: 0; opacity: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,85,51,0.14) 0%, transparent 70%);
+      transition: opacity .2s;
+    }
+    .option:hover { border-color: rgba(255,85,51,0.45); transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.45), 0 0 26px rgba(255,85,51,0.12); }
+    .option:hover::before { opacity: 1; }
+    .option.selected {
+      border-color: rgba(255,85,51,0.65);
+      background: rgba(255,85,51,0.08);
+      box-shadow: 0 0 0 1px rgba(255,85,51,0.28) inset, 0 0 30px rgba(255,85,51,0.15);
+    }
+    .option.selected::before { opacity: 1; }
+    .option.selected::after {
+      content: '✓'; position: absolute; top: 10px; right: 11px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--brand); color: #fff; font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 10px rgba(255,85,51,0.5);
+      animation: popIn .2s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    .option.multi-select.selected::after { content: '✓'; }
+    .option .opt-icon { font-size: 24px; margin-bottom: 8px; display: block; }
+    .option .opt-label { font-size: 13px; font-weight: 700; color: #e2e8f0; line-height: 1.3; }
+    .option .opt-desc { font-size: 11.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+
+    /* ── Branch input ── */
+    .num-row {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 18px;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px; padding: 14px 22px;
+    }
+    .num-btn {
+      width: 42px; height: 42px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+      font-size: 22px; cursor: pointer; color: var(--text); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .num-btn:hover { border-color: rgba(255,85,51,0.55); color: var(--brand); box-shadow: 0 0 16px rgba(255,85,51,0.22); transform: scale(1.1); }
+    #branch-display { font-size: 34px; font-weight: 800; min-width: 52px; text-align: center; color: #ff7a5c; text-shadow: 0 0 24px rgba(255,85,51,0.55); letter-spacing: -.02em; }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+    .btn { padding: 12px 28px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: 'Sarabun', sans-serif; transition: all .2s; letter-spacing: .02em; }
+    .btn:active { transform: scale(.96); }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff5533, #ff7040); color: #fff;
+      box-shadow: 0 4px 20px rgba(255,85,51,0.42), 0 1px 0 rgba(255,255,255,0.18) inset;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #ff6644, #ff8050); box-shadow: 0 8px 32px rgba(255,85,51,0.6); transform: translateY(-2px); }
+    .btn-secondary { background: rgba(255,255,255,0.045); color: var(--muted); border: 1px solid rgba(255,255,255,0.09); }
+    .btn-secondary:hover { border-color: rgba(255,85,51,0.38); color: #ff7a5c; background: rgba(255,85,51,0.055); }
+
+    /* ── Result ── */
+    #result-section { display: none; }
+    .result-hero {
+      border-radius: var(--radius); padding: 32px 28px; margin-bottom: 18px;
+      position: relative; overflow: hidden;
+    }
+    .result-hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 80% 60% at 85% 5%, rgba(255,255,255,0.1) 0%, transparent 60%);
+    }
+    .result-hero::after {
+      content: ''; position: absolute; bottom: -40px; right: -40px;
+      width: 180px; height: 180px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.05); pointer-events: none;
+    }
+    .result-hero.android {
+      background: linear-gradient(145deg, #040d1e 0%, #071c3a 55%, #040d1e 100%);
+      border: 1px solid rgba(56,189,248,0.22);
+      box-shadow: 0 24px 70px rgba(0,0,0,.75), 0 0 60px rgba(56,189,248,0.08);
+    }
+    .result-hero.ios {
+      background: linear-gradient(145deg, #0c0420 0%, #190b44 55%, #0c0420 100%);
+      border: 1px solid rgba(168,85,247,0.28);
+      box-shadow: 0 24px 70px rgba(0,0,0,.75), 0 0 60px rgba(168,85,247,0.1);
+    }
+    .result-hero h2 { font-size: 26px; font-weight: 800; margin-bottom: 6px; color: #fff; letter-spacing: -.02em; }
+    .result-hero .hero-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+    .result-hero .reason-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+    .result-hero .reason-chip {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 99px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,0.72);
+    }
+
+    .result-section-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .14em; color: rgba(255,255,255,0.22);
+      margin: 28px 0 10px; display: flex; align-items: center; gap: 10px;
+    }
+    .result-section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+
+    .rec-item {
+      display: flex; align-items: flex-start; gap: 16px;
+      background: rgba(10,12,28,0.75); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px; padding: 18px; margin-bottom: 10px;
+      backdrop-filter: blur(16px); transition: transform .18s, border-color .18s, box-shadow .18s;
+    }
+    .rec-item:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.11); box-shadow: 0 18px 50px rgba(0,0,0,.55); }
+    .rec-item .rec-icon { font-size: 30px; flex-shrink: 0; margin-top: 2px; }
+    .rec-item .rec-body { flex: 1; min-width: 0; }
+    .rec-item .rec-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 5px; color: #f1f5f9; }
+    .rec-item .rec-body p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+    .rec-item .rec-price { margin-left: auto; text-align: right; white-space: nowrap; flex-shrink: 0; padding-left: 14px; }
+    .rec-item .rec-price .price-main { font-size: 17px; font-weight: 800; color: #ff7a5c; letter-spacing: -.01em; }
+    .rec-item .rec-price .price-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .addon-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .addon-chip {
+      background: rgba(52,211,153,0.05); border: 1px solid rgba(52,211,153,0.17);
+      border-radius: 14px; padding: 13px 16px; font-size: 13px; flex: 1; min-width: 195px;
+      transition: border-color .2s;
+    }
+    .addon-chip:hover { border-color: rgba(52,211,153,0.35); }
+    .addon-chip .chip-name { font-weight: 700; color: #34d399; margin-bottom: 4px; }
+    .addon-chip .chip-price { color: var(--muted); font-size: 12px; }
+
+    .pay-chip {
+      background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.17);
+      border-radius: 14px; padding: 13px 16px; font-size: 13px; flex: 1; min-width: 195px;
+      transition: border-color .2s;
+    }
+    .pay-chip:hover { border-color: rgba(168,85,247,0.35); }
+    .pay-chip .chip-name { font-weight: 700; color: #c084fc; }
+
+    .alert-box {
+      background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 14px; padding: 16px 18px; font-size: 13px; color: #fcd34d;
+      display: flex; gap: 12px; align-items: flex-start; line-height: 1.6;
+    }
+
+    .cost-summary {
+      background: rgba(255,85,51,0.05); border: 1px solid rgba(255,85,51,0.15);
+      border-radius: var(--radius); padding: 22px; margin-bottom: 20px;
+    }
+    .cost-summary h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: #f1f5f9; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .cost-row:last-child { border-bottom: none; padding-top: 14px; }
+    .cost-row .cost-label { color: var(--muted); }
+    .cost-row .cost-val { font-weight: 600; color: #e2e8f0; }
+    .cost-row:last-child .cost-label { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+    .cost-row:last-child .cost-val { font-size: 18px; font-weight: 800; color: #ff7a5c; }
+
+    .restart-btn {
+      display: block; text-align: center; margin: 28px auto 0;
+      background: rgba(255,85,51,0.07); border: 1px solid rgba(255,85,51,0.28);
+      color: #ff7a5c; border-radius: 12px; padding: 12px 36px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      font-family: 'Sarabun', sans-serif; transition: all .2s; letter-spacing: .03em;
+    }
+    .restart-btn:hover { background: rgba(255,85,51,0.14); box-shadow: 0 0 30px rgba(255,85,51,0.2); border-color: rgba(255,85,51,0.6); transform: translateY(-1px); }
+
+    .hidden { display: none !important; }
+
+    /* ── Loading ── */
+    #loading-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+    }
+    #loading-overlay.hidden { display: none; }
+    .spinner { width: 32px; height: 32px; border: 2px solid rgba(255,85,51,0.15); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { margin-top: 14px; font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+    /* ── Hero banner ── */
+    .bg-decor { display: none; }
+    .hero-banner {
+      width: 100%; border-radius: 18px; margin-bottom: 16px;
+      background: rgba(10,12,28,0.75); border: 1px solid rgba(255,255,255,0.06);
+      display: flex; gap: 6px; padding: 12px; backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,0.06) inset;
+    }
+    .hero-banner img {
+      flex: 1; min-width: 0; height: 72px; object-fit: contain; display: block; border-radius: 8px;
+      opacity: 0.75; filter: brightness(1.05) saturate(0.85);
+      transition: opacity .22s, transform .22s, filter .22s;
+    }
+    .hero-banner img:hover { opacity: 1; transform: scale(1.06) translateY(-3px); filter: brightness(1.15) saturate(1); }
+
+    @media (max-width: 480px) {
+      .option-grid { grid-template-columns: 1fr 1fr; }
+      .rec-item { flex-wrap: wrap; }
+      .rec-item .rec-price { margin-left: 0; padding-left: 0; }
+    }
+  </style>
+</head>
+<script src="pos-rules.js"></script>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">กำลังโหลดข้อมูล...</div>
+</div>
+
+<header>
+  <div class="logo">🍜</div>
+  <div>
+    <h1>Wongnai POS Advisor</h1>
+    <p>ระบบแนะนำ POS ที่เหมาะกับร้านอาหารของคุณ</p>
+  </div>
+</header>
+
+<div id="progress-wrap">
+  <div class="step-track" id="step-track">
+    <div class="step-dot active" id="sdot-1"><span>1</span></div>
+    <div class="step-line" id="sline-1"></div>
+    <div class="step-dot" id="sdot-2"><span>2</span></div>
+    <div class="step-line" id="sline-2"></div>
+    <div class="step-dot" id="sdot-3"><span>3</span></div>
+    <div class="step-line" id="sline-3"></div>
+    <div class="step-dot" id="sdot-4"><span>4</span></div>
+    <div class="step-line" id="sline-4"></div>
+    <div class="step-dot" id="sdot-5"><span>5</span></div>
+  </div>
+</div>
+
+<div class="bg-decor">
+  <img class="d1" src="images.png/products.png" alt="">
+  <img class="d2" src="images.png/ipad-cafe.png" alt="">
+</div>
+
+<main>
+
+  <div class="hero-banner" id="hero-banner">
+    <img src="images.png/fsr.png" alt="">
+    <img src="images.png/ipad-cafe.png" alt="">
+    <img src="images.png/products.png" alt="">
+    <img src="images.png/printer.png" alt="">
+    <img src="images.png/img3109.png" alt="">
+  </div>
+
+  <!-- ══ STEP 1: สถานะร้าน ══ -->
+  <div class="card" id="step-1">
+    <span class="step-badge">ขั้นตอนที่ 1 จาก 5</span>
+    <div class="question-title">ร้านของคุณอยู่ในขั้นไหน?</div>
+    <div class="question-sub">คำตอบนี้จะกำหนดชุดคำถามถัดไปให้เหมาะกับสถานการณ์จริงของคุณ</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('newstore','yes',this)">
+        <div class="opt-icon">🚀</div>
+        <div class="opt-label">กำลังจะเปิดร้าน</div>
+        <div class="opt-desc">ยังไม่ได้เปิด หรือเปิดมาไม่นาน พร้อมเริ่มต้นด้วยระบบที่ดี</div>
+      </div>
+      <div class="option" onclick="selectOne('newstore','no',this)">
+        <div class="opt-icon">🏪</div>
+        <div class="opt-label">ร้านเปิดอยู่แล้ว</div>
+        <div class="opt-desc">ต้องการอัปเกรด หรือเปลี่ยนระบบ POS ที่มีอยู่</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(2)">ถัดไป →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: Service Type ══ -->
+  <div class="card hidden" id="step-2">
+    <span class="step-badge">ขั้นตอนที่ 2 จาก 5</span>
+    <div class="question-title">รูปแบบการให้บริการของร้าน?</div>
+    <div class="question-sub">เลือกประเภทที่ตรงกับร้านของคุณมากที่สุด</div>
+    <div class="option-grid">
+      <div class="option" onclick="selectOne('service','QSR',this)">
+        <div class="opt-icon">⚡</div>
+        <div class="opt-label">Quick Service (QSR)</div>
+        <div class="opt-desc">จ่ายก่อนกิน เช่น คาเฟ่ ฟู้ดคอร์ท เครื่องดื่ม</div>
+      </div>
+      <div class="option" onclick="selectOne('service','FSR',this)">
+        <div class="opt-icon">🪑</div>
+        <div class="opt-label">Full Service (FSR)</div>
+        <div class="opt-desc">กินก่อนจ่าย มีโต๊ะนั่งทาน</div>
+      </div>
+      <div class="option" onclick="selectOne('service','BUF',this)">
+        <div class="opt-icon">🍱</div>
+        <div class="opt-label">Buffet Service (BSR)</div>
+        <div class="opt-desc">บุฟเฟต์ จับเวลาหรือไม่จำกัดเวลา</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(1)">← ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="goStep(3)">ถัดไป →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3A: ฟีเจอร์ที่ต้องการ (ร้านใหม่) ══ -->
+  <div class="card hidden" id="step-3-new">
+    <span class="step-badge">ขั้นตอนที่ 3 จาก 5</span>
+    <div class="question-title">ต้องการให้ระบบทำอะไรได้บ้าง? (เลือกได้หลายข้อ)</div>
+    <div class="question-sub">เลือกทุกฟีเจอร์ที่อยากให้ร้านใหม่ของคุณมี</div>
+    <div class="option-grid">
+      <div class="option multi-select" onclick="togglePain('long_queue',this)">
+        <div class="opt-icon">📱</div>
+        <div class="opt-label">สแกน QR สั่งอาหารเอง</div>
+        <div class="opt-desc">ลูกค้าสแกนแล้วสั่งผ่านมือถือ ไม่ต้องรอพนักงาน</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('need_mobility',this)">
+        <div class="opt-icon">🚶</div>
+        <div class="opt-label">พนักงานรับออเดอร์ที่โต๊ะ</div>
+        <div class="opt-desc">ถือมือถือหรือแท็บเล็ตเดินรับออเดอร์</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('no_repeat',this)">
+        <div class="opt-icon">🎁</div>
+        <div class="opt-label">สะสมแต้ม / ดึงลูกค้าประจำ</div>
+        <div class="opt-desc">ระบบ CRM ส่ง Coupon ให้ลูกค้ากลับมาซื้อซ้ำ</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('credit_card',this)">
+        <div class="opt-icon">💳</div>
+        <div class="opt-label">รับบัตรเครดิต / เดบิต</div>
+        <div class="opt-desc">ลูกค้าต่างชาติ หรือไม่ต้องการใช้เงินสด</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('booking',this)">
+        <div class="opt-icon">📅</div>
+        <div class="opt-label">รับจองโต๊ะออนไลน์</div>
+        <div class="opt-desc">ลูกค้าจองล่วงหน้าผ่านเว็บหรือแอป</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('stock_issue',this)">
+        <div class="opt-icon">📦</div>
+        <div class="opt-label">จัดการสต็อกวัตถุดิบ</div>
+        <div class="opt-desc">ติดตามของคงเหลือ แจ้งเตือนก่อนหมด</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('fake_slip',this)">
+        <div class="opt-icon">📲</div>
+        <div class="opt-label">เช็กสลิปโอนเงินอัตโนมัติ</div>
+        <div class="opt-desc">ป้องกันสลิปปลอม ยืนยันชำระแบบเรียลไทม์</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('report_wrong',this)">
+        <div class="opt-icon">📊</div>
+        <div class="opt-label">ดูรายงานยอดขายออนไลน์</div>
+        <div class="opt-desc">เช็กยอด กำไร-ขาดทุน ได้ทุกที่ทุกเวลา</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="goStep(4)">ถัดไป →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3B: ปัญหาที่พบ (ร้านเปิดอยู่แล้ว) ══ -->
+  <div class="card hidden" id="step-3-old">
+    <span class="step-badge">ขั้นตอนที่ 3 จาก 5</span>
+    <div class="question-title">ปัญหาที่เจออยู่คืออะไร? (เลือกได้หลายข้อ)</div>
+    <div class="question-sub">เลือกทุกปัญหาที่กำลังเผชิญอยู่ตอนนี้</div>
+    <div class="option-grid">
+      <div class="option multi-select" onclick="togglePainMulti(['order_error','staff_overload'],this)">
+        <div class="opt-icon">⏳</div>
+        <div class="opt-label">รับออเดอร์ช้า / พลาดบ่อย</div>
+        <div class="opt-desc">จดมือพลาด ออเดอร์ผิด หรือพนักงานรับไม่ทัน</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('no_repeat',this)">
+        <div class="opt-icon">👥</div>
+        <div class="opt-label">ลูกค้าไม่กลับมาซื้อซ้ำ</div>
+        <div class="opt-desc">ขาดระบบดึงลูกค้าประจำ ไม่มี Loyalty Program</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('fake_slip',this)">
+        <div class="opt-icon">📲</div>
+        <div class="opt-label">โดนสลิปโอนเงินปลอม</div>
+        <div class="opt-desc">ถูกหลอกด้วยสลิปแก้ไข ยืนยันได้ช้า</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('credit_card',this)">
+        <div class="opt-icon">💳</div>
+        <div class="opt-label">รับบัตรเครดิต/เดบิตไม่ได้</div>
+        <div class="opt-desc">เสียลูกค้าต่างชาติ หรือลูกค้าไม่มีเงินสด</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('long_queue',this)">
+        <div class="opt-icon">🏃</div>
+        <div class="opt-label">คิวยาว ลูกค้ารอนาน</div>
+        <div class="opt-desc">ช่วงพีคลูกค้ารอเยอะ บางคนเดินออก</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('stock_issue',this)">
+        <div class="opt-icon">📦</div>
+        <div class="opt-label">สต็อกหมดกะทันหัน / ของหาย</div>
+        <div class="opt-desc">ไม่รู้วัตถุดิบคงเหลือ ไม่มีระบบนับสต็อก</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('report_wrong',this)">
+        <div class="opt-icon">📊</div>
+        <div class="opt-label">ยอดเงินไม่ตรง / รายงานเชื่อไม่ได้</div>
+        <div class="opt-desc">สรุปรายวันไม่แม่น เงินในลิ้นชักไม่ตรง</div>
+      </div>
+      <div class="option multi-select" onclick="togglePain('booking',this)">
+        <div class="opt-icon">📅</div>
+        <div class="opt-label">ไม่มีระบบจองโต๊ะ</div>
+        <div class="opt-desc">จัดการการจองด้วยมือ พลาดบ่อย</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="goStep(4)">ถัดไป →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: ขนาดร้าน ══ -->
+  <div class="card hidden" id="step-4">
+    <span class="step-badge">ขั้นตอนที่ 4 จาก 5</span>
+    <div class="question-title">บอกเราเพิ่มเติมเกี่ยวกับร้านของคุณ</div>
+    <div class="question-sub">ช่วยให้แนะนำระบบที่เหมาะสมที่สุดได้</div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px">จำนวนโต๊ะ / ที่นั่ง</div>
+    <div class="option-grid">
+      <div class="option" onclick="selectOneWithZones('none',this)">
+        <div class="opt-icon">🏪</div>
+        <div class="opt-label">ไม่มีโต๊ะ</div>
+        <div class="opt-desc">เคาน์เตอร์ / ซื้อกลับบ้าน</div>
+      </div>
+      <div class="option" onclick="selectOneWithZones('few',this)">
+        <div class="opt-icon">🪑</div>
+        <div class="opt-label">น้อย (1–10 โต๊ะ)</div>
+        <div class="opt-desc">ร้านขนาดเล็ก</div>
+      </div>
+      <div class="option" onclick="selectOneWithZones('many',this)">
+        <div class="opt-icon">🏨</div>
+        <div class="opt-label">มาก (มากกว่า 10 โต๊ะ)</div>
+        <div class="opt-desc">ร้านขนาดกลาง-ใหญ่</div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">จำนวนเมนู</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('menu_count','few',this)">
+        <div class="opt-icon">📋</div>
+        <div class="opt-label">น้อยกว่า 25 เมนู</div>
+        <div class="opt-desc">เมนูน้อย จัดการง่าย</div>
+      </div>
+      <div class="option" onclick="selectOne('menu_count','many',this)">
+        <div class="opt-icon">📚</div>
+        <div class="opt-label">25 เมนูขึ้นไป</div>
+        <div class="opt-desc">เมนูหลากหลาย ต้องจัดหมวดหมู่</div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">พนักงาน (ต่อกะ)</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('staff','few',this)">
+        <div class="opt-icon">👤</div>
+        <div class="opt-label">น้อยกว่า 5 คน</div>
+        <div class="opt-desc">ร้านเล็ก เจ้าของดูแลเอง</div>
+      </div>
+      <div class="option" onclick="selectOne('staff','many',this)">
+        <div class="opt-icon">👥</div>
+        <div class="opt-label">5 คนขึ้นไป</div>
+        <div class="opt-desc">ต้องจัดการสิทธิ์พนักงาน</div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">บิลต่อวัน</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('daily_bills','low',this)">
+        <div class="opt-icon">🧾</div>
+        <div class="opt-label">ไม่เกิน 100 บิล/วัน</div>
+        <div class="opt-desc">ร้านขนาดเล็ก-กลาง</div>
+      </div>
+      <div class="option" onclick="selectOne('daily_bills','high',this)">
+        <div class="opt-icon">📑</div>
+        <div class="opt-label">มากกว่า 100 บิล/วัน</div>
+        <div class="opt-desc">ร้านคึกคัก ต้องการระบบแข็งแกร่ง</div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-secondary" onclick="goStep(3)">← ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="goStep(5)">ถัดไป →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 5: งบ + ราคาเมนู + สาขา ══ -->
+  <div class="card hidden" id="step-5">
+    <span class="step-badge">ขั้นตอนที่ 5 จาก 5</span>
+    <div class="question-title">งบประมาณและแผนขยายสาขา</div>
+    <div class="question-sub">สามข้อสุดท้ายก่อนดูผลลัพธ์</div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px">งบประมาณลงทุน POS ปีแรก</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('budget','low',this)">
+        <div class="opt-icon">💰</div>
+        <div class="opt-label">ต่ำกว่า 25,000 บาท</div>
+        <div class="opt-desc">เน้นคุ้มค่า เริ่มต้นง่าย</div>
+      </div>
+      <div class="option" onclick="selectOne('budget','high',this)">
+        <div class="opt-icon">📈</div>
+        <div class="opt-label">25,000 บาทขึ้นไป</div>
+        <div class="opt-desc">ลงทุนระบบขั้นสูง ฟีเจอร์ครบ</div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">ราคาเมนูเฉลี่ย</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" onclick="selectOne('avg_price','low',this)">
+        <div class="opt-icon">🍢</div>
+        <div class="opt-label">ต่ำกว่า 100 บาท</div>
+        <div class="opt-desc">Street food, เครื่องดื่ม, อาหารจานด่วน</div>
+      </div>
+      <div class="option" onclick="selectOne('avg_price','high',this)">
+        <div class="opt-icon">🍽️</div>
+        <div class="opt-label">100 บาทขึ้นไป</div>
+        <div class="opt-desc">ร้านอาหาร, Cafe, Fine dining</div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">แผนสาขา</div>
+    <div class="option-grid" style="grid-template-columns:1fr 1fr">
+      <div class="option" id="plan-no" onclick="selectPlan(false)">
+        <div class="opt-icon">🏠</div>
+        <div class="opt-label">สาขาเดียว</div>
+        <div class="opt-desc">โฟกัสที่สาขาปัจจุบัน</div>
+      </div>
+      <div class="option" id="plan-yes" onclick="selectPlan(true)">
+        <div class="opt-icon">🚀</div>
+        <div class="opt-label">มีแผนขยายสาขา</div>
+        <div class="opt-desc">ต้องการระบบรองรับหลายสาขา</div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-secondary" onclick="goStep(4)">← ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="generateResult()">ดูผลลัพธ์ →</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULT ══ -->
+  <div id="result-section">
+    <div class="card" id="result-hero-card"></div>
+    <div id="result-hardware"></div>
+    <div id="result-package"></div>
+    <div id="result-addons"></div>
+    <div id="result-payment"></div>
+    <div id="result-newstore"></div>
+    <div id="result-cost"></div>
+    <button class="restart-btn" onclick="restart()">🔄 เริ่มใหม่อีกครั้ง</button>
+  </div>
+</main>
+
+<script>
+/* ════ GOOGLE SHEET CONFIG ════
+   วิธีใช้:
+   1. สร้าง Google Sheet ตาม template (ดูไฟล์ sheet-template.csv)
+   2. Share → Anyone with the link → Viewer
+   3. Copy Sheet ID จาก URL:
+      docs.google.com/spreadsheets/d/ >>SHEET_ID<< /edit
+   4. วาง ID ตรง SHEET_CONFIG_ID ด้านล่าง แล้ว upload index.html ขึ้น GitHub ครั้งเดียว
+   5. จากนั้นแก้ราคา/ชื่อใน Sheet ได้เลย เว็บอัพเดทอัตโนมัติ
+   ══════════════════════════════════════════════════════════ */
+
+const SHEET_CONFIG_ID = ''; // ← วาง Google Sheet ID ตรงนี้
+
+async function loadSheetConfig() {
+  if (!SHEET_CONFIG_ID) return;
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_CONFIG_ID}/gviz/tq?tqx=out:json`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+    if (!match) throw new Error('invalid response');
+    const json = JSON.parse(match[1]);
+    const cfg = {};
+    for (const row of json.table.rows) {
+      const k = row.c?.[0]?.v;
+      const v = row.c?.[1]?.v;
+      if (k && v !== null && v !== undefined) cfg[String(k).trim()] = v;
+    }
+    applySheetOverrides(cfg);
+    console.log(`✅ โหลดจาก Google Sheet สำเร็จ (${Object.keys(cfg).length} รายการ)`);
+  } catch (e) {
+    console.warn('⚠️ โหลด Sheet ไม่ได้ ใช้ค่าเริ่มต้น:', e.message);
+  }
+}
+
+function applySheetOverrides(cfg) {
+  const R = POS_RULES;
+  const n = k => cfg[k] !== undefined ? Number(cfg[k]) : undefined;
+  const s = k => cfg[k] !== undefined ? String(cfg[k]) : undefined;
+
+  // Hardware iOS
+  if (s('hw_ios_name'))  R.hardware.ios.name = s('hw_ios_name');
+  if (n('hw_ios_price')) R.hardware.ios.price_once = n('hw_ios_price');
+
+  // Hardware Android (index: flex=0, dual=1, lite=2, single=3)
+  [['hw_android_flex',0],['hw_android_dual',1],['hw_android_lite',2],['hw_android_single',3]]
+    .forEach(([pre, i]) => {
+      const hw = R.hardware.android[i];
+      if (!hw) return;
+      if (s(`${pre}_name`))  hw.name = s(`${pre}_name`);
+      if (n(`${pre}_price`)) hw.price_once = n(`${pre}_price`);
+    });
+
+  // Packages [key_prefix, service, platform, index]
+  [
+    ['pkg_qsr_and_prem',  'QSR','android',0], ['pkg_qsr_and_basic', 'QSR','android',1],
+    ['pkg_qsr_ios_max',   'QSR','ios',    0], ['pkg_qsr_ios_std',   'QSR','ios',    1],
+    ['pkg_fsr_and_prem',  'FSR','android',0], ['pkg_fsr_and_basic', 'FSR','android',1],
+    ['pkg_fsr_ios_max',   'FSR','ios',    0], ['pkg_fsr_ios_std',   'FSR','ios',    1],
+    ['pkg_buf_and_basic', 'BUF','android',0],
+    ['pkg_buf_ios_max',   'BUF','ios',    0], ['pkg_buf_ios_std',   'BUF','ios',    1],
+  ].forEach(([pre, svc, plat, idx]) => {
+    const pkg = R.packages[svc]?.[plat]?.[idx]?.package;
+    if (!pkg) return;
+    if (s(`${pre}_name`))    pkg.name    = s(`${pre}_name`);
+    if (n(`${pre}_monthly`)) pkg.monthly = n(`${pre}_monthly`);
+    if (n(`${pre}_yearly`))  pkg.yearly  = n(`${pre}_yearly`);
+  });
+}
+
+/* ════ STATE ════ */
+const state = {
+  newstore: null,
+  branch_count: 1, plan_expand: false,
+  service: null, tables: null, zones: null,
+  budget: null,
+  avg_price: null, menu_count: null, staff: null, daily_bills: null,
+  pain: new Set(),
+};
+
+const TOTAL_STEPS = 5;
+let currentStep = 1;
+
+/* ════ NAVIGATION ════ */
+function _stepId(n) {
+  if (n === 3) return state.newstore === 'yes' ? 'step-3-new' : 'step-3-old';
+  return `step-${n}`;
+}
+
+function goStep(n) {
+  document.getElementById(_stepId(currentStep))?.classList.add('hidden');
+  currentStep = n;
+  document.getElementById(_stepId(n))?.classList.remove('hidden');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const dot = document.getElementById(`sdot-${i}`);
+    const line = document.getElementById(`sline-${i}`);
+    if (!dot) continue;
+    dot.classList.remove('active', 'done');
+    if (i < currentStep) dot.classList.add('done');
+    else if (i === currentStep) dot.classList.add('active');
+    if (line) { line.classList.remove('done'); if (i < currentStep) line.classList.add('done'); }
+  }
+}
+
+/* ════ INPUT HELPERS ════ */
+function selectPlan(v) {
+  state.plan_expand = v;
+  state.branch_count = v ? 2 : 1;
+  document.getElementById('plan-no').classList.toggle('selected', !v);
+  document.getElementById('plan-yes').classList.toggle('selected', v);
+}
+
+function selectOne(key, val, el) {
+  state[key] = val;
+  el.closest('.option-grid').querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectOneWithZones(val, el) {
+  selectOne('tables', val, el);
+  state.zones = val === 'many' ? 'many' : 'few';
+}
+
+function togglePain(key, el) {
+  if (state.pain.has(key)) { state.pain.delete(key); el.classList.remove('selected'); }
+  else { state.pain.add(key); el.classList.add('selected'); }
+}
+
+function togglePainMulti(keys, el) {
+  const isSelected = el.classList.contains('selected');
+  keys.forEach(k => isSelected ? state.pain.delete(k) : state.pain.add(k));
+  el.classList.toggle('selected', !isSelected);
+}
+
+/* ════ RECOMMENDATION ENGINE (อ่านเงื่อนไขจาก pos-rules.js) ════ */
+function buildRecommendation() {
+  const s = state;
+  const R = POS_RULES;
+
+  const rec = {
+    platform: null, platform_reasons: [],
+    hardware: null, package: null, features: [],
+    addons: [], payments: [], newstore_tips: [],
+    cost: { hardware: 0, sw_yearly: 0, addons_yearly: 0, payment_deposit: 0 },
+  };
+
+  /* ── 1. Platform ── */
+  const forced = R.platform.forceAndroid.find(r => r.check(s));
+  const iosHits = R.platform.iOSSignals.filter(r => r.check(s));
+
+  rec.platform = (forced || iosHits.length === 0) ? 'android' : 'ios';
+  if (forced)                  rec.platform_reasons = [forced.reason];
+  else if (rec.platform === 'ios') rec.platform_reasons = iosHits.map(r => r.reason);
+  else                         rec.platform_reasons = ['ร้านขนาดเล็ก งบจำกัด Android เพียงพอ'];
+
+  // แปะ platform ลงใน state เพื่อให้ addon rules ใช้ได้
+  s._platform = rec.platform;
+
+  /* ── 2. Hardware ── */
+  if (rec.platform === 'ios') {
+    const hw = R.hardware.ios;
+    rec.hardware = hw;
+    rec.cost.hardware = hw.price_once + (hw.extras || []).reduce((sum, e) => sum + e.price, 0);
+  } else {
+    const hw = R.hardware.android.find(r => r.check(s));
+    rec.hardware = hw;
+    rec.cost.hardware = hw.price_once;
+  }
+
+  /* ── 3. Package ── */
+  const pkgList = (R.packages[s.service] || {})[rec.platform] || [];
+  const matched = pkgList.find(r => r.check(s));
+  if (matched) {
+    rec.package  = matched.package;
+    rec.features = [...matched.features];
+  }
+  rec.cost.sw_yearly = rec.package ? rec.package.yearly : 0;
+
+  /* ── 4. Add-ons ── */
+  const featText = t => rec.features.some(f => f.text.includes(t));
+  R.addons.forEach(addon => {
+    if (addon.check(s, featText)) {
+      rec.addons.push({ name: addon.name, icon: addon.icon, yearly: addon.yearly, desc: addon.desc });
+    }
+  });
+  rec.cost.addons_yearly = rec.addons.filter(a => a.yearly > 0).reduce((sum, a) => sum + a.yearly, 0);
+
+  /* ── 5. Payment ── */
+  rec.payments.push(R.payments.pos_pay);
+  const P = R.payments;
+  if (P.edc.check(s)) {
+    rec.payments.push(P.edc);
+    rec.cost.payment_deposit += P.edc.deposit;
+  } else if (P.mini_edc.check(s)) {
+    rec.payments.push(P.mini_edc);
+    rec.cost.payment_deposit += P.mini_edc.deposit;
+  } else if (P.mini_edc_soft.check(s)) {
+    rec.payments.push(P.mini_edc_soft);
+  }
+
+  /* ── 6. New Store Tips ── */
+  if (s.newstore === 'yes') rec.newstore_tips = R.newstore_tips;
+
+  return rec;
+}
+
+/* ════ RENDER ════ */
+function fmt(n) { return n.toLocaleString('th-TH'); }
+
+function generateResult() {
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    document.getElementById(`step-${i}`)?.classList.add('hidden');
+  }
+  document.getElementById('step-3-new').classList.add('hidden');
+  document.getElementById('step-3-old').classList.add('hidden');
+  document.getElementById('hero-banner').classList.add('hidden');
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const d = document.getElementById(`sdot-${i}`);
+    const l = document.getElementById(`sline-${i}`);
+    if (d) { d.classList.remove('active'); d.classList.add('done'); }
+    if (l) l.classList.add('done');
+  }
+  const r = buildRecommendation();
+  renderResult(r);
+  document.getElementById('result-section').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderResult(r) {
+  const serviceLabel = { QSR: 'Quick Service', FSR: 'Full Service', BUF: 'Buffet Service' }[state.service] || '';
+  const platformLabel = r.platform === 'ios' ? 'Wongnai POS (IPAD)' : 'Wongnai POS (Android)';
+  const reasonChips = r.platform_reasons.map(t => `<span class="reason-chip">${t}</span>`).join('');
+
+  document.getElementById('result-hero-card').innerHTML = `
+    <div class="result-hero ${r.platform}">
+      <h2>${r.platform === 'ios' ? '🍎' : '🤖'} ${platformLabel}</h2>
+      <div class="hero-sub">เหมาะสำหรับ ${serviceLabel} • ${state.branch_count > 1 || state.plan_expand ? 'หลายสาขา' : '1 สาขา'}</div>
+      <div class="reason-chips">${reasonChips}</div>
+    </div>
+  `;
+
+  // Hardware
+  const hw = r.hardware;
+  const extraHtml = hw.extras ? `<p style="margin-top:6px;font-size:12px;color:var(--muted)">อุปกรณ์เสริม: ${hw.extras.map(e=>`${e.name} (${fmt(e.price)}฿)`).join(' · ')}</p>` : '';
+  document.getElementById('result-hardware').innerHTML = `
+    <div class="result-section-title">🖥️ Hardware ที่แนะนำ</div>
+    <div class="rec-item">
+      <div class="rec-icon">${hw.icon}</div>
+      <div class="rec-body"><h3>${hw.name}</h3><p>${hw.desc}</p>${extraHtml}</div>
+      <div class="rec-price"><div class="price-main">${fmt(hw.price_once)} ฿</div><div class="price-sub">ซื้อขาด</div></div>
+    </div>
+  `;
+
+  // Package
+  const pkg = r.package;
+  const featHtml = r.features.map(f => `<li style="margin-bottom:4px">${f.icon} ${f.text}</li>`).join('');
+  document.getElementById('result-package').innerHTML = `
+    <div class="result-section-title">📦 แพ็กเกจซอฟต์แวร์</div>
+    <div class="rec-item">
+      <div class="rec-icon">${pkg.icon}</div>
+      <div class="rec-body">
+        <h3>${pkg.name} <span style="font-size:12px;color:var(--brand);background:var(--brand-light);padding:2px 8px;border-radius:99px">${pkg.tier}</span></h3>
+        <ul style="margin-top:8px;padding-left:4px;list-style:none;font-size:13px;color:var(--muted)">${featHtml}</ul>
+      </div>
+      <div class="rec-price"><div class="price-main">${fmt(pkg.monthly)} ฿/เดือน</div><div class="price-sub">หรือ ${fmt(pkg.yearly)} ฿/ปี</div></div>
+    </div>
+  `;
+
+  // Add-ons
+  if (r.addons.length > 0) {
+    const chips = r.addons.map(a => `
+      <div class="addon-chip">
+        <div class="chip-name">${a.icon} ${a.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4">${a.desc}</div>
+        ${a.yearly > 0 ? `<div class="chip-price">฿ ${fmt(a.yearly)} /ปี</div>` : ''}
+      </div>`).join('');
+    document.getElementById('result-addons').innerHTML = `
+      <div class="result-section-title">➕ Add-on แนะนำ</div>
+      <div class="addon-grid">${chips}</div>
+    `;
+  }
+
+  // Payment
+  const payHtml = r.payments.map(p => `
+    <div class="rec-item">
+      <div class="rec-icon">${p.icon}</div>
+      <div class="rec-body">
+        <h3>${p.type} <span style="font-size:11px;background:${p.tagColor}22;color:${p.tagColor};border:1px solid ${p.tagColor}44;padding:2px 8px;border-radius:99px">${p.tag}</span></h3>
+        <p>${p.desc}</p>
+        <p style="margin-top:4px;font-size:12px;color:var(--muted)">${p.note}</p>
+      </div>
+      ${p.deposit > 0 ? `<div class="rec-price"><div class="price-main">${fmt(p.deposit)} ฿</div><div class="price-sub">ค่าประกันครั้งแรก</div></div>` : ''}
+    </div>`).join('');
+  document.getElementById('result-payment').innerHTML = `
+    <div class="result-section-title">💳 ระบบรับชำระเงิน</div>${payHtml}
+  `;
+
+  // New Store
+  if (r.newstore_tips.length > 0) {
+    const tipsHtml = r.newstore_tips.map(t => `<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px">${t}</div>`).join('');
+    document.getElementById('result-newstore').innerHTML = `
+      <div class="result-section-title">🎉 โปรพิเศษสำหรับร้านใหม่</div>
+      <div class="alert-box"><div style="font-size:20px">⭐</div><div>${tipsHtml}</div></div>
+    `;
+  }
+
+  // Cost Summary
+  const totalYear1 = r.cost.hardware + r.cost.sw_yearly + r.cost.addons_yearly + r.cost.payment_deposit;
+  const monthlyOngoing = r.package ? r.package.monthly : 0;
+  const addonsMonthly = r.addons.filter(a => a.yearly > 0).reduce((s, a) => s + Math.round(a.yearly / 12), 0);
+
+  const swRow = r.cost.sw_yearly > 0 ? `<div class="cost-row"><span class="cost-label">Software (รายปี)</span><span class="cost-val">${fmt(r.cost.sw_yearly)} ฿</span></div>` : '';
+  const addonRow = r.cost.addons_yearly > 0 ? `<div class="cost-row"><span class="cost-label">Add-on (รายปี)</span><span class="cost-val">${fmt(r.cost.addons_yearly)} ฿</span></div>` : '';
+  const payRow = r.cost.payment_deposit > 0 ? `<div class="cost-row"><span class="cost-label">ค่าประกัน EDC (ครั้งเดียว)</span><span class="cost-val">${fmt(r.cost.payment_deposit)} ฿</span></div>` : '';
+
+  document.getElementById('result-cost').innerHTML = `
+    <div class="result-section-title">💵 สรุปค่าใช้จ่ายโดยประมาณ</div>
+    <div class="cost-summary">
+      <h3>ประมาณการค่าใช้จ่ายปีแรก</h3>
+      <div class="cost-row"><span class="cost-label">Hardware (ซื้อขาดครั้งเดียว)</span><span class="cost-val">${fmt(r.cost.hardware)} ฿</span></div>
+      ${swRow}${addonRow}${payRow}
+      <div class="cost-row"><span class="cost-label" style="color:var(--text);font-weight:700">รวมปีแรก (ประมาณ)</span><span class="cost-val" style="color:var(--brand)">${fmt(totalYear1)} ฿</span></div>
+      <div class="cost-row" style="border-top:none;padding-top:0"><span class="cost-label" style="font-size:12px">ค่ารายเดือนปีถัดไป</span><span class="cost-val" style="font-size:13px">${fmt(monthlyOngoing + addonsMonthly)} ฿/เดือน</span></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:-12px">* ราคาอาจเปลี่ยนแปลงตามโปรโมชั่น กรุณาติดต่อทีม Sales เพื่อยืนยันราคาล่าสุด</div>
+  `;
+}
+
+/* ════ RESTART ════ */
+function restart() {
+  Object.assign(state, { newstore:null, branch_count:1, plan_expand:false,
+    service:null, tables:null, zones:null,
+    budget:null, avg_price:null, menu_count:null, staff:null, daily_bills:null,
+    pain: new Set() });
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('hero-banner').classList.remove('hidden');
+  document.getElementById('step-3-new').classList.add('hidden');
+  document.getElementById('step-3-old').classList.add('hidden');
+  currentStep = 1;
+  document.getElementById('step-1').classList.remove('hidden');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+(async () => {
+  await loadSheetConfig();
+  document.getElementById('loading-overlay').classList.add('hidden');
+  updateProgress();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+รหัส (อย่าแก้คอลัมน์นี้),ค่า (แก้ได้เฉพาะคอลัมน์นี้)
+=== Hardware ===,===
+hw_ios_price,13900
+hw_ios_name,iPad Gen 11 (Silver) 128GB + Stand
+hw_android_flex_price,10900
+hw_android_flex_name,Wongnai POS Flex
+hw_android_dual_price,14900
+hw_android_dual_name,Wongnai POS Dual Screen
+hw_android_lite_price,5900
+hw_android_lite_name,Wongnai POS Lite
+hw_android_single_price,14900
+hw_android_single_name,Wongnai POS Single Screen
+=== Package QSR (จ่ายก่อนกิน) ===,===
+pkg_qsr_and_prem_name,QSR Premium (Android)
+pkg_qsr_and_prem_monthly,950
+pkg_qsr_and_prem_yearly,11400
+pkg_qsr_and_basic_name,QSR Basic (Android)
+pkg_qsr_and_basic_monthly,390
+pkg_qsr_and_basic_yearly,4680
+pkg_qsr_ios_max_name,QSR Max (Wongnai POS IPAD)
+pkg_qsr_ios_max_monthly,1790
+pkg_qsr_ios_max_yearly,21480
+pkg_qsr_ios_std_name,QSR Standard (Wongnai POS IPAD)
+pkg_qsr_ios_std_monthly,1090
+pkg_qsr_ios_std_yearly,13080
+=== Package FSR (มีโต๊ะนั่งทาน) ===,===
+pkg_fsr_and_prem_name,FSR Premium (Android)
+pkg_fsr_and_prem_monthly,1490
+pkg_fsr_and_prem_yearly,17880
+pkg_fsr_and_basic_name,FSR Basic (Android)
+pkg_fsr_and_basic_monthly,690
+pkg_fsr_and_basic_yearly,8280
+pkg_fsr_ios_max_name,FSR Max (Wongnai POS IPAD)
+pkg_fsr_ios_max_monthly,2690
+pkg_fsr_ios_max_yearly,32280
+pkg_fsr_ios_std_name,FSR Standard (Wongnai POS IPAD)
+pkg_fsr_ios_std_monthly,1790
+pkg_fsr_ios_std_yearly,21480
+=== Package Buffet ===,===
+pkg_buf_and_basic_name,QSR Premium (Android)
+pkg_buf_and_basic_monthly,950
+pkg_buf_and_basic_yearly,11400
+pkg_buf_ios_max_name,BSR Max (Wongnai POS IPAD)
+pkg_buf_ios_max_monthly,2990
+pkg_buf_ios_max_yearly,35880
+pkg_buf_ios_std_name,BSR Standard (Wongnai POS IPAD)
+pkg_buf_ios_std_monthly,2090
+pkg_buf_ios_std_yearly,25080

@@ -6,27 +6,28 @@
   <title>Wongnai POS Advisor — ระบบแนะนำ POS สำหรับร้านอาหาร</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --brand: #f25533;
-      --brand-light: rgba(242,85,51,0.09);
-      --ok: #34d399;
-      --warn: #fbbf24;
-      --surface: #17171f;
-      --surface-2: #1e1e28;
-      --bg: #0f0f14;
-      --border: rgba(255,255,255,0.075);
-      --border-h: rgba(255,255,255,0.14);
-      --text: #ececf1;
-      --text-2: #7e7e93;
-      --radius: 12px;
-      /* legacy aliases kept for JS-generated HTML */
-      --muted: #7e7e93;
-      --ok-light: rgba(52,211,153,0.08);
-      --warn-light: rgba(251,191,36,0.08);
+      --brand-light: rgba(242,85,51,0.10);
+      --ok: #00b87a;
+      --ok-light: rgba(0,184,122,0.10);
+      --warn: #f59e0b;
+      --warn-light: rgba(245,158,11,0.10);
+      --surface: #ffffff;
+      --surface-2: #f4f6fb;
+      --bg: #eef1f7;
+      --border: rgba(0,0,0,0.08);
+      --border-h: rgba(0,0,0,0.16);
+      --text: #1a1a2e;
+      --text-2: #6b7280;
+      --radius: 14px;
+      --muted: #6b7280;
       --brand-dark: #d94420;
+      --shadow: 0 2px 16px rgba(0,0,0,0.07);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -40,56 +41,100 @@
 
     /* ── Header ── */
     header {
-      background: var(--bg);
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
-      color: #fff; padding: 13px 24px;
+      padding: 12px 24px;
       display: flex; align-items: center; gap: 13px;
       position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
     }
-    header .logo {
-      font-size: 17px; width: 34px; height: 34px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(242,85,51,0.1);
-      border: 1px solid rgba(242,85,51,0.22);
-      border-radius: 9px;
+    .logo-icon { flex-shrink: 0; }
+    .logo-title {
+      font-size: 16px; font-weight: 800;
+      color: var(--text); letter-spacing: -.02em;
+      display: flex; align-items: center; gap: 7px;
     }
-    header h1 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-    header p { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+    .pos-badge {
+      background: var(--brand); color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 6px;
+      letter-spacing: .04em;
+    }
+    .logo-sub { font-size: 11px; color: var(--text-2); margin-top: 1px; }
 
     /* ── Step Track ── */
     #progress-wrap {
-      background: var(--bg);
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 11px 24px;
+      padding: 12px 24px;
     }
     .step-track { display: flex; align-items: center; max-width: 640px; margin: 0 auto; }
     .step-dot {
-      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 700;
-      border: 1px solid var(--border);
+      font-size: 14px; font-weight: 700;
+      border: 2px solid var(--border);
       color: var(--text-2);
-      background: var(--surface);
+      background: var(--surface-2);
       transition: all .2s ease;
     }
-    .step-dot.done { border-color: rgba(242,85,51,0.28); background: rgba(242,85,51,0.07); color: transparent; }
+    .step-dot.done { border-color: var(--ok); background: var(--ok); color: transparent; }
     .step-dot.done span { display: none; }
-    .step-dot.done::after { content: '✓'; font-size: 16px; color: var(--brand); }
-    .step-dot.active { border-color: var(--brand); background: var(--brand); color: #fff; box-shadow: 0 0 0 5px rgba(242,85,51,0.14); }
+    .step-dot.done::after { content: '✓'; font-size: 15px; color: #fff; }
+    .step-dot.active { border-color: var(--brand); background: var(--brand); color: #fff; box-shadow: 0 0 0 5px rgba(242,85,51,0.18); }
     .step-dot.active span { display: block; }
-    .step-line { flex: 1; height: 2px; background: var(--border); transition: background .3s; margin: 0 4px; }
-    .step-line.done { background: rgba(242,85,51,0.22); }
+    .step-line { flex: 1; height: 3px; background: var(--border); transition: background .3s; margin: 0 4px; border-radius: 2px; }
+    .step-line.done { background: var(--ok); }
 
     /* ── Main ── */
     main { max-width: 780px; margin: 0 auto; padding: 24px 20px 100px; }
+
+    /* ── Hero Banner ── */
+    .hero-banner {
+      background: linear-gradient(135deg, #00b87a 0%, #00a0c8 100%);
+      border-radius: 20px;
+      padding: 32px 32px 0 32px;
+      margin-bottom: 20px;
+      display: flex; align-items: flex-end; gap: 20px;
+      position: relative; overflow: hidden;
+      min-height: 185px;
+    }
+    .hero-deco-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .hero-left { flex: 1; padding-bottom: 28px; position: relative; z-index: 2; }
+    .hero-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff; font-size: 11px; font-weight: 700;
+      padding: 4px 13px; border-radius: 20px;
+      margin-bottom: 12px; letter-spacing: .5px;
+    }
+    .hero-title {
+      color: #fff; font-size: 26px; font-weight: 800;
+      line-height: 1.22; margin-bottom: 8px; letter-spacing: -.02em;
+    }
+    .hero-desc { color: rgba(255,255,255,0.84); font-size: 13.5px; line-height: 1.6; }
+    .hero-right {
+      display: flex; align-items: flex-end; gap: 8px;
+      position: relative; z-index: 2; flex-shrink: 0;
+    }
+    .hero-img {
+      height: 120px; width: auto; object-fit: contain; display: block;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.22));
+      transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .hero-img:hover { transform: scale(1.2) translateY(-10px); }
 
     /* ── Cards ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px;
-      margin-bottom: 14px;
+      border-radius: 18px; padding: 32px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
       animation: fadeUp .18s ease both;
     }
     @keyframes fadeUp {
@@ -99,27 +144,40 @@
 
     .step-badge {
       display: inline-flex; align-items: center;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-2); font-size: 12px; font-weight: 600;
+      background: var(--brand-light);
+      border: 1px solid rgba(242,85,51,0.22);
+      color: var(--brand); font-size: 11.5px; font-weight: 700;
       padding: 5px 14px; border-radius: 99px;
-      margin-bottom: 18px; letter-spacing: .08em; text-transform: uppercase;
+      margin-bottom: 16px; letter-spacing: .06em; text-transform: uppercase;
     }
-    .question-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; line-height: 1.25; color: var(--text); letter-spacing: -.02em; }
-    .question-sub { font-size: 15px; color: var(--text-2); margin-bottom: 24px; line-height: 1.5; }
+    .question-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; line-height: 1.25; color: var(--text); letter-spacing: -.02em; }
+    .question-sub { font-size: 14.5px; color: var(--text-2); margin-bottom: 22px; line-height: 1.55; }
 
-    /* ── Option Grid — Linear horizontal style ── */
-    .option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 10px; margin-bottom: 24px; }
+    /* Section sub-labels */
+    .section-label {
+      font-weight: 700; font-size: 13.5px; color: var(--text);
+      margin-bottom: 10px; margin-top: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::before {
+      content: ''; display: block;
+      width: 4px; height: 16px;
+      background: var(--brand); border-radius: 2px;
+    }
+
+    /* ── Option Grid ── */
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; margin-bottom: 22px; }
     .option {
-      border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px;
-      cursor: pointer; background: transparent;
-      display: flex; align-items: flex-start; gap: 16px;
-      transition: border-color .12s, background .12s;
+      border: 2px solid var(--border); border-radius: 14px; padding: 16px;
+      cursor: pointer; background: var(--surface);
+      display: flex; align-items: flex-start; gap: 14px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
       user-select: none; position: relative;
     }
-    .option:hover { border-color: var(--border-h); background: rgba(255,255,255,0.022); }
-    .option.selected { border-color: rgba(242,85,51,0.42); background: rgba(242,85,51,0.07); }
+    .option:hover { border-color: var(--ok); background: rgba(0,184,122,0.04); box-shadow: 0 2px 10px rgba(0,184,122,0.12); }
+    .option.selected { border-color: var(--brand); background: var(--brand-light); box-shadow: 0 2px 12px rgba(242,85,51,0.16); }
     .option.selected::after {
-      content: '✓'; position: absolute; top: 12px; right: 12px;
+      content: '✓'; position: absolute; top: 10px; right: 10px;
       width: 22px; height: 22px; border-radius: 50%;
       background: var(--brand); color: #fff; font-size: 11px; font-weight: 900;
       display: flex; align-items: center; justify-content: center;
@@ -127,138 +185,154 @@
     }
     @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
     .option.multi-select.selected::after { content: '✓'; }
+
     .option .opt-icon {
-      font-size: 26px; flex-shrink: 0;
-      width: 56px; height: 56px; border-radius: 12px;
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 22px; flex-shrink: 0;
+      width: 50px; height: 50px; border-radius: 13px;
       display: flex; align-items: center; justify-content: center;
     }
-    .option .opt-label { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
-    .option .opt-desc { font-size: 13px; color: var(--text-2); margin-top: 4px; line-height: 1.4; }
+    .ic-green  { background: #e6fdf4; }
+    .ic-blue   { background: #e8f4ff; }
+    .ic-orange { background: #fff3ee; }
+    .ic-purple { background: #f3eeff; }
+    .ic-yellow { background: #fffbea; }
+    .ic-teal   { background: #e6f9fb; }
+    .ic-pink   { background: #fdf2f8; }
+    .ic-red    { background: #fff1f0; }
+
+    .opt-body { flex: 1; min-width: 0; }
+    .option .opt-label { font-size: 14.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .option .opt-desc { font-size: 12.5px; color: var(--text-2); margin-top: 4px; line-height: 1.45; }
 
     /* ── Buttons ── */
     .btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
-    .btn { padding: 16px 40px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; border: none; font-family: 'Sarabun', sans-serif; transition: opacity .12s, transform .1s; letter-spacing: .01em; }
+    .btn {
+      padding: 14px 36px; border-radius: 12px;
+      font-size: 15.5px; font-weight: 700;
+      cursor: pointer; border: none;
+      font-family: 'Sarabun', sans-serif;
+      transition: opacity .12s, transform .1s, box-shadow .12s;
+      letter-spacing: .01em;
+    }
     .btn:active { transform: scale(.97); }
-    .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 2px 8px rgba(242,85,51,0.32); }
-    .btn-primary:hover { opacity: .87; }
-    .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border); }
-    .btn-secondary:hover { border-color: var(--border-h); color: var(--text); background: rgba(255,255,255,0.07); }
+    .btn-primary {
+      background: linear-gradient(135deg, #f25533, #ff7a5c);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(242,85,51,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(242,85,51,0.45); opacity: .93; }
+    .btn-secondary {
+      background: var(--surface-2); color: var(--text-2);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--border-h); color: var(--text); background: #fff; }
 
     /* ── Result ── */
     #result-section { display: none; }
-    .result-hero { border-radius: var(--radius); padding: 26px; margin-bottom: 14px; }
-    .result-hero.android { background: var(--surface); border: 1px solid rgba(56,189,248,0.16); }
-    .result-hero.ios { background: var(--surface); border: 1px solid rgba(168,85,247,0.18); }
-    .result-hero h2 { font-size: 32px; font-weight: 800; margin-bottom: 6px; color: var(--text); letter-spacing: -.02em; }
-    .result-hero .hero-sub { font-size: 16px; color: var(--text-2); }
-    .result-hero .reason-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
-    .result-hero .reason-chip { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 99px; padding: 3px 10px; font-size: 11px; color: rgba(255,255,255,0.55); }
+    .result-hero { border-radius: 18px; padding: 26px 28px 22px; margin-bottom: 14px; }
+    .result-hero.android { background: linear-gradient(135deg, #0f766e, #0891b2); }
+    .result-hero.ios { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+    .result-hero h2 { font-size: 28px; font-weight: 800; margin-bottom: 6px; color: #fff; letter-spacing: -.02em; }
+    .result-hero .hero-sub { font-size: 15px; color: rgba(255,255,255,0.78); }
+    .result-hero .reason-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .result-hero .reason-chip {
+      background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 99px; padding: 4px 12px; font-size: 12px; color: rgba(255,255,255,0.9);
+    }
 
     .result-section-title {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: .13em; color: var(--text-2);
-      margin: 22px 0 8px; display: flex; align-items: center; gap: 8px;
+      margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
     }
     .result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     .rec-item {
-      display: flex; align-items: flex-start; gap: 20px;
+      display: flex; align-items: flex-start; gap: 18px;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 22px; margin-bottom: 10px;
-      transition: border-color .12s;
+      border-radius: 14px; padding: 20px; margin-bottom: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+      transition: border-color .12s, box-shadow .12s;
     }
-    .rec-item:hover { border-color: var(--border-h); }
-    .rec-item .rec-icon { font-size: 42px; flex-shrink: 0; }
+    .rec-item:hover { border-color: rgba(0,0,0,0.13); box-shadow: 0 3px 12px rgba(0,0,0,0.09); }
+    .rec-item .rec-icon { font-size: 38px; flex-shrink: 0; }
     .rec-item .rec-body { flex: 1; min-width: 0; }
-    .rec-item .rec-body h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
-    .rec-item .rec-body p { font-size: 14px; color: var(--text-2); line-height: 1.55; }
+    .rec-item .rec-body h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .rec-item .rec-body p { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
     .rec-item .rec-price { margin-left: auto; text-align: right; white-space: nowrap; flex-shrink: 0; padding-left: 16px; }
-    .rec-item .rec-price .price-main { font-size: 22px; font-weight: 800; color: var(--brand); }
-    .rec-item .rec-price .price-sub { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+    .rec-item .rec-price .price-main { font-size: 20px; font-weight: 800; color: var(--brand); }
+    .rec-item .rec-price .price-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; }
 
-    .addon-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .addon-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .addon-chip {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px 20px; font-size: 15px; flex: 1; min-width: 210px;
-      transition: border-color .12s;
+      border-radius: 14px; padding: 16px 18px; font-size: 14px; flex: 1; min-width: 200px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05); transition: border-color .12s;
     }
-    .addon-chip:hover { border-color: var(--border-h); }
-    .addon-chip .chip-name { font-weight: 700; color: var(--ok); margin-bottom: 5px; font-size: 16px; }
-    .addon-chip .chip-price { color: var(--text-2); font-size: 14px; }
+    .addon-chip:hover { border-color: rgba(0,0,0,0.14); }
+    .addon-chip .chip-name { font-weight: 700; color: var(--ok); margin-bottom: 5px; font-size: 15px; }
+    .addon-chip .chip-price { color: var(--text-2); font-size: 13px; }
 
     .pay-chip {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px 20px; font-size: 15px; flex: 1; min-width: 210px;
-      transition: border-color .12s;
+      border-radius: 14px; padding: 16px 18px; font-size: 14px; flex: 1; min-width: 200px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05); transition: border-color .12s;
     }
-    .pay-chip:hover { border-color: var(--border-h); }
-    .pay-chip .chip-name { font-weight: 700; color: #c084fc; font-size: 16px; }
+    .pay-chip:hover { border-color: rgba(0,0,0,0.14); }
+    .pay-chip .chip-name { font-weight: 700; color: #7c3aed; font-size: 15px; }
 
     .alert-box {
-      background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.16);
-      border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #fcd34d;
-      display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+      background: rgba(245,158,11,0.09); border: 1px solid rgba(245,158,11,0.28);
+      border-radius: 14px; padding: 16px 18px; font-size: 13px; color: #92400e;
+      display: flex; gap: 12px; align-items: flex-start; line-height: 1.65;
     }
 
     .cost-summary {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+      border-radius: 16px; padding: 22px; margin-bottom: 16px;
+      box-shadow: var(--shadow);
     }
-    .cost-summary h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; color: var(--text); }
-    .cost-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .cost-summary h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; font-size: 14.5px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .cost-row:last-child { border-bottom: none; padding-top: 16px; }
     .cost-row .cost-label { color: var(--text-2); }
     .cost-row .cost-val { font-weight: 600; color: var(--text); }
-    .cost-row:last-child .cost-label { font-size: 16px; font-weight: 700; color: var(--text); }
-    .cost-row:last-child .cost-val { font-size: 22px; font-weight: 800; color: var(--brand); }
+    .cost-row:last-child .cost-label { font-size: 15px; font-weight: 700; color: var(--text); }
+    .cost-row:last-child .cost-val { font-size: 20px; font-weight: 800; color: var(--brand); }
 
     .restart-btn {
       display: block; text-align: center; margin: 28px auto 0;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-2); border-radius: 12px; padding: 16px 48px;
-      font-size: 16px; font-weight: 600; cursor: pointer;
-      font-family: 'Sarabun', sans-serif; transition: border-color .12s, color .12s;
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--text-2); border-radius: 14px; padding: 14px 44px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      font-family: 'Sarabun', sans-serif;
+      transition: border-color .12s, color .12s, box-shadow .12s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
-    .restart-btn:hover { border-color: var(--border-h); color: var(--text); }
+    .restart-btn:hover { border-color: var(--border-h); color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
 
     .hidden { display: none !important; }
 
     /* ── Loading ── */
     #loading-overlay {
-      position: fixed; inset: 0; background: var(--bg);
+      position: fixed; inset: 0; background: #fff;
       display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
     }
     #loading-overlay.hidden { display: none; }
-    .spinner { width: 28px; height: 28px; border: 1.5px solid rgba(242,85,51,0.12); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+    .spinner { width: 28px; height: 28px; border: 2px solid rgba(242,85,51,0.15); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { margin-top: 12px; font-size: 11px; color: var(--text-2); letter-spacing: .1em; text-transform: uppercase; }
+    .loading-text { margin-top: 12px; font-size: 13px; color: var(--text-2); letter-spacing: .06em; }
 
-    /* ── Hero banner ── */
     .bg-decor { display: none; }
-    .hero-banner {
-      width: 100%; border-radius: 10px; margin-bottom: 14px;
-      background: var(--surface); border: 1px solid var(--border);
-      display: flex; gap: 4px; padding: 10px;
-      overflow: visible;
-    }
-    .hero-banner img {
-      flex: 1; min-width: 0; height: 120px; object-fit: contain; display: block; border-radius: 9px;
-      background: rgba(255,255,255,0.025);
-      opacity: 0.65;
-      transition: opacity .2s, transform .28s cubic-bezier(0.34,1.56,0.64,1), box-shadow .2s;
-      position: relative; z-index: 0;
-    }
-    .hero-banner img:hover {
-      opacity: 1; transform: scale(1.55) translateY(-8px);
-      box-shadow: 0 14px 40px rgba(0,0,0,.65);
-      z-index: 10;
-    }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
+      .hero-banner { flex-direction: column; padding: 24px 20px 0; min-height: auto; }
+      .hero-right { width: 100%; justify-content: center; padding-bottom: 0; }
       .option-grid { grid-template-columns: 1fr 1fr; }
       .rec-item { flex-wrap: wrap; }
       .rec-item .rec-price { margin-left: 0; padding-left: 0; }
+      .hero-title { font-size: 22px; }
+      .card { padding: 22px; }
     }
   </style>
 </head>
@@ -270,11 +344,18 @@
   <div class="loading-text">กำลังโหลดข้อมูล...</div>
 </div>
 
+<!-- ── Header with Wongnai POS Logo ── -->
 <header>
-  <div class="logo">🍜</div>
+  <div class="logo-icon">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="11" fill="#f25533"/>
+      <!-- Wongnai W mark -->
+      <path d="M8 12L13 28L20 17L27 28L32 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
   <div>
-    <h1>Wongnai POS Advisor</h1>
-    <p>ระบบแนะนำ POS ที่เหมาะกับร้านอาหารของคุณ</p>
+    <div class="logo-title">Wongnai <span class="pos-badge">POS</span></div>
+    <div class="logo-sub">ระบบแนะนำ POS ที่เหมาะกับร้านอาหารของคุณ</div>
   </div>
 </header>
 
@@ -299,12 +380,35 @@
 
 <main>
 
+  <!-- ── Hero Banner ── -->
   <div class="hero-banner" id="hero-banner">
-    <img src="images.png/fsr.png" alt="">
-    <img src="images.png/ipad-cafe.png" alt="">
-    <img src="images.png/products.png" alt="">
-    <img src="images.png/wp80.png" alt="">
-    <img src="images.png/img3109.png" alt="">
+    <svg class="hero-deco-svg" viewBox="0 0 780 190" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="38" r="22" fill="rgba(255,255,255,0.10)"/>
+      <circle cx="715" cy="22" r="36" fill="rgba(255,255,255,0.07)"/>
+      <circle cx="680" cy="162" r="52" fill="rgba(0,0,0,0.05)"/>
+      <polyline points="118,72 130,55 142,72 154,55" stroke="rgba(255,255,255,0.45)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <polyline points="568,42 580,25 592,42 604,25" stroke="rgba(255,255,255,0.38)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <polygon points="192,148 210,118 228,148" fill="rgba(255,220,0,0.55)"/>
+      <polygon points="638,82 652,60 666,82" fill="rgba(255,220,0,0.48)"/>
+      <line x1="468" y1="148" x2="468" y2="172" stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="456" y1="160" x2="480" y2="160" stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="328" cy="25" r="5" fill="rgba(255,230,0,0.65)"/>
+      <circle cx="348" cy="50" r="3.5" fill="rgba(255,230,0,0.5)"/>
+      <circle cx="742" cy="128" r="6" fill="rgba(255,255,255,0.2)"/>
+      <circle cx="28" cy="148" r="12" fill="rgba(255,255,255,0.08)"/>
+    </svg>
+
+    <div class="hero-left">
+      <div class="hero-tag">✦ &nbsp;Wongnai POS Advisor</div>
+      <div class="hero-title">เลือกระบบ POS ที่ใช่<br>สำหรับร้านของคุณ</div>
+      <div class="hero-desc">ตอบ 5 คำถาม รับคำแนะนำส่วนตัว<br>พร้อมราคาและฟีเจอร์ที่เหมาะกับคุณจริงๆ</div>
+    </div>
+
+    <div class="hero-right">
+      <img src="images.png/wp80.png" class="hero-img" alt="WP80 Printer" style="height:108px">
+      <img src="images.png/products.png" class="hero-img" alt="Products" style="height:130px">
+      <img src="images.png/ipad-cafe.png" class="hero-img" alt="iPad" style="height:112px">
+    </div>
   </div>
 
   <!-- ══ STEP 1: สถานะร้าน ══ -->
@@ -314,14 +418,18 @@
     <div class="question-sub">คำตอบนี้จะกำหนดชุดคำถามถัดไปให้เหมาะกับสถานการณ์จริงของคุณ</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('newstore','yes',this)">
-        <div class="opt-icon">🚀</div>
-        <div class="opt-label">กำลังจะเปิดร้าน</div>
-        <div class="opt-desc">ยังไม่ได้เปิด หรือเปิดมาไม่นาน พร้อมเริ่มต้นด้วยระบบที่ดี</div>
+        <div class="opt-icon ic-green">🚀</div>
+        <div class="opt-body">
+          <div class="opt-label">กำลังจะเปิดร้าน</div>
+          <div class="opt-desc">ยังไม่ได้เปิด หรือเปิดมาไม่นาน พร้อมเริ่มต้นด้วยระบบที่ดี</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('newstore','no',this)">
-        <div class="opt-icon">🏪</div>
-        <div class="opt-label">ร้านเปิดอยู่แล้ว</div>
-        <div class="opt-desc">ต้องการอัปเกรด หรือเปลี่ยนระบบ POS ที่มีอยู่</div>
+        <div class="opt-icon ic-blue">🏪</div>
+        <div class="opt-body">
+          <div class="opt-label">ร้านเปิดอยู่แล้ว</div>
+          <div class="opt-desc">ต้องการอัปเกรด หรือเปลี่ยนระบบ POS ที่มีอยู่</div>
+        </div>
       </div>
     </div>
     <div class="btn-row">
@@ -336,19 +444,25 @@
     <div class="question-sub">เลือกประเภทที่ตรงกับร้านของคุณมากที่สุด</div>
     <div class="option-grid">
       <div class="option" onclick="selectOne('service','QSR',this)">
-        <div class="opt-icon">⚡</div>
-        <div class="opt-label">Quick Service (QSR)</div>
-        <div class="opt-desc">จ่ายก่อนกิน เช่น คาเฟ่ ฟู้ดคอร์ท เครื่องดื่ม</div>
+        <div class="opt-icon ic-yellow">⚡</div>
+        <div class="opt-body">
+          <div class="opt-label">Quick Service (QSR)</div>
+          <div class="opt-desc">จ่ายก่อนกิน เช่น คาเฟ่ ฟู้ดคอร์ท เครื่องดื่ม</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('service','FSR',this)">
-        <div class="opt-icon">🪑</div>
-        <div class="opt-label">Full Service (FSR)</div>
-        <div class="opt-desc">กินก่อนจ่าย มีโต๊ะนั่งทาน</div>
+        <div class="opt-icon ic-orange">🪑</div>
+        <div class="opt-body">
+          <div class="opt-label">Full Service (FSR)</div>
+          <div class="opt-desc">กินก่อนจ่าย มีโต๊ะนั่งทาน</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('service','BUF',this)">
-        <div class="opt-icon">🍱</div>
-        <div class="opt-label">Buffet Service (BSR)</div>
-        <div class="opt-desc">บุฟเฟต์ จับเวลาหรือไม่จำกัดเวลา</div>
+        <div class="opt-icon ic-green">🍱</div>
+        <div class="opt-body">
+          <div class="opt-label">Buffet Service (BSR)</div>
+          <div class="opt-desc">บุฟเฟต์ จับเวลาหรือไม่จำกัดเวลา</div>
+        </div>
       </div>
     </div>
     <div class="btn-row">
@@ -364,44 +478,60 @@
     <div class="question-sub">เลือกทุกฟีเจอร์ที่อยากให้ร้านใหม่ของคุณมี</div>
     <div class="option-grid">
       <div class="option multi-select" onclick="togglePain('long_queue',this)">
-        <div class="opt-icon">📱</div>
-        <div class="opt-label">สแกน QR สั่งอาหารเอง</div>
-        <div class="opt-desc">ลูกค้าสแกนแล้วสั่งผ่านมือถือ ไม่ต้องรอพนักงาน</div>
+        <div class="opt-icon ic-blue">📱</div>
+        <div class="opt-body">
+          <div class="opt-label">สแกน QR สั่งอาหารเอง</div>
+          <div class="opt-desc">ลูกค้าสแกนแล้วสั่งผ่านมือถือ ไม่ต้องรอพนักงาน</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('need_mobility',this)">
-        <div class="opt-icon">🚶</div>
-        <div class="opt-label">พนักงานรับออเดอร์ที่โต๊ะ</div>
-        <div class="opt-desc">ถือมือถือหรือแท็บเล็ตเดินรับออเดอร์</div>
+        <div class="opt-icon ic-green">🚶</div>
+        <div class="opt-body">
+          <div class="opt-label">พนักงานรับออเดอร์ที่โต๊ะ</div>
+          <div class="opt-desc">ถือมือถือหรือแท็บเล็ตเดินรับออเดอร์</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('no_repeat',this)">
-        <div class="opt-icon">🎁</div>
-        <div class="opt-label">สะสมแต้ม / ดึงลูกค้าประจำ</div>
-        <div class="opt-desc">ระบบ CRM ส่ง Coupon ให้ลูกค้ากลับมาซื้อซ้ำ</div>
+        <div class="opt-icon ic-purple">🎁</div>
+        <div class="opt-body">
+          <div class="opt-label">สะสมแต้ม / ดึงลูกค้าประจำ</div>
+          <div class="opt-desc">ระบบ CRM ส่ง Coupon ให้ลูกค้ากลับมาซื้อซ้ำ</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('credit_card',this)">
-        <div class="opt-icon">💳</div>
-        <div class="opt-label">รับบัตรเครดิต / เดบิต</div>
-        <div class="opt-desc">ลูกค้าต่างชาติ หรือไม่ต้องการใช้เงินสด</div>
+        <div class="opt-icon ic-orange">💳</div>
+        <div class="opt-body">
+          <div class="opt-label">รับบัตรเครดิต / เดบิต</div>
+          <div class="opt-desc">ลูกค้าต่างชาติ หรือไม่ต้องการใช้เงินสด</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('booking',this)">
-        <div class="opt-icon">📅</div>
-        <div class="opt-label">รับจองโต๊ะออนไลน์</div>
-        <div class="opt-desc">ลูกค้าจองล่วงหน้าผ่านเว็บหรือแอป</div>
+        <div class="opt-icon ic-teal">📅</div>
+        <div class="opt-body">
+          <div class="opt-label">รับจองโต๊ะออนไลน์</div>
+          <div class="opt-desc">ลูกค้าจองล่วงหน้าผ่านเว็บหรือแอป</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('stock_issue',this)">
-        <div class="opt-icon">📦</div>
-        <div class="opt-label">จัดการสต็อกวัตถุดิบ</div>
-        <div class="opt-desc">ติดตามของคงเหลือ แจ้งเตือนก่อนหมด</div>
+        <div class="opt-icon ic-yellow">📦</div>
+        <div class="opt-body">
+          <div class="opt-label">จัดการสต็อกวัตถุดิบ</div>
+          <div class="opt-desc">ติดตามของคงเหลือ แจ้งเตือนก่อนหมด</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('fake_slip',this)">
-        <div class="opt-icon">📲</div>
-        <div class="opt-label">เช็กสลิปโอนเงินอัตโนมัติ</div>
-        <div class="opt-desc">ป้องกันสลิปปลอม ยืนยันชำระแบบเรียลไทม์</div>
+        <div class="opt-icon ic-red">📲</div>
+        <div class="opt-body">
+          <div class="opt-label">เช็กสลิปโอนเงินอัตโนมัติ</div>
+          <div class="opt-desc">ป้องกันสลิปปลอม ยืนยันชำระแบบเรียลไทม์</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('report_wrong',this)">
-        <div class="opt-icon">📊</div>
-        <div class="opt-label">ดูรายงานยอดขายออนไลน์</div>
-        <div class="opt-desc">เช็กยอด กำไร-ขาดทุน ได้ทุกที่ทุกเวลา</div>
+        <div class="opt-icon ic-blue">📊</div>
+        <div class="opt-body">
+          <div class="opt-label">ดูรายงานยอดขายออนไลน์</div>
+          <div class="opt-desc">เช็กยอด กำไร-ขาดทุน ได้ทุกที่ทุกเวลา</div>
+        </div>
       </div>
     </div>
     <div class="btn-row">
@@ -417,44 +547,60 @@
     <div class="question-sub">เลือกทุกปัญหาที่กำลังเผชิญอยู่ตอนนี้</div>
     <div class="option-grid">
       <div class="option multi-select" onclick="togglePainMulti(['order_error','staff_overload'],this)">
-        <div class="opt-icon">⏳</div>
-        <div class="opt-label">รับออเดอร์ช้า / พลาดบ่อย</div>
-        <div class="opt-desc">จดมือพลาด ออเดอร์ผิด หรือพนักงานรับไม่ทัน</div>
+        <div class="opt-icon ic-red">⏳</div>
+        <div class="opt-body">
+          <div class="opt-label">รับออเดอร์ช้า / พลาดบ่อย</div>
+          <div class="opt-desc">จดมือพลาด ออเดอร์ผิด หรือพนักงานรับไม่ทัน</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('no_repeat',this)">
-        <div class="opt-icon">👥</div>
-        <div class="opt-label">ลูกค้าไม่กลับมาซื้อซ้ำ</div>
-        <div class="opt-desc">ขาดระบบดึงลูกค้าประจำ ไม่มี Loyalty Program</div>
+        <div class="opt-icon ic-purple">👥</div>
+        <div class="opt-body">
+          <div class="opt-label">ลูกค้าไม่กลับมาซื้อซ้ำ</div>
+          <div class="opt-desc">ขาดระบบดึงลูกค้าประจำ ไม่มี Loyalty Program</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('fake_slip',this)">
-        <div class="opt-icon">📲</div>
-        <div class="opt-label">โดนสลิปโอนเงินปลอม</div>
-        <div class="opt-desc">ถูกหลอกด้วยสลิปแก้ไข ยืนยันได้ช้า</div>
+        <div class="opt-icon ic-orange">📲</div>
+        <div class="opt-body">
+          <div class="opt-label">โดนสลิปโอนเงินปลอม</div>
+          <div class="opt-desc">ถูกหลอกด้วยสลิปแก้ไข ยืนยันได้ช้า</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('credit_card',this)">
-        <div class="opt-icon">💳</div>
-        <div class="opt-label">รับบัตรเครดิต/เดบิตไม่ได้</div>
-        <div class="opt-desc">เสียลูกค้าต่างชาติ หรือลูกค้าไม่มีเงินสด</div>
+        <div class="opt-icon ic-blue">💳</div>
+        <div class="opt-body">
+          <div class="opt-label">รับบัตรเครดิต/เดบิตไม่ได้</div>
+          <div class="opt-desc">เสียลูกค้าต่างชาติ หรือลูกค้าไม่มีเงินสด</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('long_queue',this)">
-        <div class="opt-icon">🏃</div>
-        <div class="opt-label">คิวยาว ลูกค้ารอนาน</div>
-        <div class="opt-desc">ช่วงพีคลูกค้ารอเยอะ บางคนเดินออก</div>
+        <div class="opt-icon ic-yellow">🏃</div>
+        <div class="opt-body">
+          <div class="opt-label">คิวยาว ลูกค้ารอนาน</div>
+          <div class="opt-desc">ช่วงพีคลูกค้ารอเยอะ บางคนเดินออก</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('stock_issue',this)">
-        <div class="opt-icon">📦</div>
-        <div class="opt-label">สต็อกหมดกะทันหัน / ของหาย</div>
-        <div class="opt-desc">ไม่รู้วัตถุดิบคงเหลือ ไม่มีระบบนับสต็อก</div>
+        <div class="opt-icon ic-green">📦</div>
+        <div class="opt-body">
+          <div class="opt-label">สต็อกหมดกะทันหัน / ของหาย</div>
+          <div class="opt-desc">ไม่รู้วัตถุดิบคงเหลือ ไม่มีระบบนับสต็อก</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('report_wrong',this)">
-        <div class="opt-icon">📊</div>
-        <div class="opt-label">ยอดเงินไม่ตรง / รายงานเชื่อไม่ได้</div>
-        <div class="opt-desc">สรุปรายวันไม่แม่น เงินในลิ้นชักไม่ตรง</div>
+        <div class="opt-icon ic-teal">📊</div>
+        <div class="opt-body">
+          <div class="opt-label">ยอดเงินไม่ตรง / รายงานเชื่อไม่ได้</div>
+          <div class="opt-desc">สรุปรายวันไม่แม่น เงินในลิ้นชักไม่ตรง</div>
+        </div>
       </div>
       <div class="option multi-select" onclick="togglePain('booking',this)">
-        <div class="opt-icon">📅</div>
-        <div class="opt-label">ไม่มีระบบจองโต๊ะ</div>
-        <div class="opt-desc">จัดการการจองด้วยมือ พลาดบ่อย</div>
+        <div class="opt-icon ic-teal">📅</div>
+        <div class="opt-body">
+          <div class="opt-label">ไม่มีระบบจองโต๊ะ</div>
+          <div class="opt-desc">จัดการการจองด้วยมือ พลาดบ่อย</div>
+        </div>
       </div>
     </div>
     <div class="btn-row">
@@ -469,64 +615,82 @@
     <div class="question-title">บอกเราเพิ่มเติมเกี่ยวกับร้านของคุณ</div>
     <div class="question-sub">ช่วยให้แนะนำระบบที่เหมาะสมที่สุดได้</div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px">จำนวนโต๊ะ / ที่นั่ง</div>
+    <div class="section-label" style="margin-top:0">จำนวนโต๊ะ / ที่นั่ง</div>
     <div class="option-grid">
       <div class="option" onclick="selectOneWithZones('none',this)">
-        <div class="opt-icon">🏪</div>
-        <div class="opt-label">ไม่มีโต๊ะ</div>
-        <div class="opt-desc">เคาน์เตอร์ / ซื้อกลับบ้าน</div>
+        <div class="opt-icon ic-blue">🏪</div>
+        <div class="opt-body">
+          <div class="opt-label">ไม่มีโต๊ะ</div>
+          <div class="opt-desc">เคาน์เตอร์ / ซื้อกลับบ้าน</div>
+        </div>
       </div>
       <div class="option" onclick="selectOneWithZones('few',this)">
-        <div class="opt-icon">🪑</div>
-        <div class="opt-label">น้อย (1–10 โต๊ะ)</div>
-        <div class="opt-desc">ร้านขนาดเล็ก</div>
+        <div class="opt-icon ic-green">🪑</div>
+        <div class="opt-body">
+          <div class="opt-label">น้อย (1–10 โต๊ะ)</div>
+          <div class="opt-desc">ร้านขนาดเล็ก</div>
+        </div>
       </div>
       <div class="option" onclick="selectOneWithZones('many',this)">
-        <div class="opt-icon">🏨</div>
-        <div class="opt-label">มาก (มากกว่า 10 โต๊ะ)</div>
-        <div class="opt-desc">ร้านขนาดกลาง-ใหญ่</div>
+        <div class="opt-icon ic-orange">🏨</div>
+        <div class="opt-body">
+          <div class="opt-label">มาก (มากกว่า 10 โต๊ะ)</div>
+          <div class="opt-desc">ร้านขนาดกลาง-ใหญ่</div>
+        </div>
       </div>
     </div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">จำนวนเมนู</div>
+    <div class="section-label">จำนวนเมนู</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('menu_count','few',this)">
-        <div class="opt-icon">📋</div>
-        <div class="opt-label">น้อยกว่า 25 เมนู</div>
-        <div class="opt-desc">เมนูน้อย จัดการง่าย</div>
+        <div class="opt-icon ic-yellow">📋</div>
+        <div class="opt-body">
+          <div class="opt-label">น้อยกว่า 25 เมนู</div>
+          <div class="opt-desc">เมนูน้อย จัดการง่าย</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('menu_count','many',this)">
-        <div class="opt-icon">📚</div>
-        <div class="opt-label">25 เมนูขึ้นไป</div>
-        <div class="opt-desc">เมนูหลากหลาย ต้องจัดหมวดหมู่</div>
+        <div class="opt-icon ic-blue">📚</div>
+        <div class="opt-body">
+          <div class="opt-label">25 เมนูขึ้นไป</div>
+          <div class="opt-desc">เมนูหลากหลาย ต้องจัดหมวดหมู่</div>
+        </div>
       </div>
     </div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">พนักงาน (ต่อกะ)</div>
+    <div class="section-label">พนักงาน (ต่อกะ)</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('staff','few',this)">
-        <div class="opt-icon">👤</div>
-        <div class="opt-label">น้อยกว่า 5 คน</div>
-        <div class="opt-desc">ร้านเล็ก เจ้าของดูแลเอง</div>
+        <div class="opt-icon ic-green">👤</div>
+        <div class="opt-body">
+          <div class="opt-label">น้อยกว่า 5 คน</div>
+          <div class="opt-desc">ร้านเล็ก เจ้าของดูแลเอง</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('staff','many',this)">
-        <div class="opt-icon">👥</div>
-        <div class="opt-label">5 คนขึ้นไป</div>
-        <div class="opt-desc">ต้องจัดการสิทธิ์พนักงาน</div>
+        <div class="opt-icon ic-orange">👥</div>
+        <div class="opt-body">
+          <div class="opt-label">5 คนขึ้นไป</div>
+          <div class="opt-desc">ต้องจัดการสิทธิ์พนักงาน</div>
+        </div>
       </div>
     </div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">บิลต่อวัน</div>
+    <div class="section-label">บิลต่อวัน</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('daily_bills','low',this)">
-        <div class="opt-icon">🧾</div>
-        <div class="opt-label">ไม่เกิน 100 บิล/วัน</div>
-        <div class="opt-desc">ร้านขนาดเล็ก-กลาง</div>
+        <div class="opt-icon ic-teal">🧾</div>
+        <div class="opt-body">
+          <div class="opt-label">ไม่เกิน 100 บิล/วัน</div>
+          <div class="opt-desc">ร้านขนาดเล็ก-กลาง</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('daily_bills','high',this)">
-        <div class="opt-icon">📑</div>
-        <div class="opt-label">มากกว่า 100 บิล/วัน</div>
-        <div class="opt-desc">ร้านคึกคัก ต้องการระบบแข็งแกร่ง</div>
+        <div class="opt-icon ic-purple">📑</div>
+        <div class="opt-body">
+          <div class="opt-label">มากกว่า 100 บิล/วัน</div>
+          <div class="opt-desc">ร้านคึกคัก ต้องการระบบแข็งแกร่ง</div>
+        </div>
       </div>
     </div>
 
@@ -542,45 +706,57 @@
     <div class="question-title">งบประมาณและแผนขยายสาขา</div>
     <div class="question-sub">สามข้อสุดท้ายก่อนดูผลลัพธ์</div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px">งบประมาณลงทุน POS ปีแรก</div>
+    <div class="section-label" style="margin-top:0">งบประมาณลงทุน POS ปีแรก</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('budget','low',this)">
-        <div class="opt-icon">💰</div>
-        <div class="opt-label">ต่ำกว่า 25,000 บาท</div>
-        <div class="opt-desc">เน้นคุ้มค่า เริ่มต้นง่าย</div>
+        <div class="opt-icon ic-yellow">💰</div>
+        <div class="opt-body">
+          <div class="opt-label">ต่ำกว่า 25,000 บาท</div>
+          <div class="opt-desc">เน้นคุ้มค่า เริ่มต้นง่าย</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('budget','high',this)">
-        <div class="opt-icon">📈</div>
-        <div class="opt-label">25,000 บาทขึ้นไป</div>
-        <div class="opt-desc">ลงทุนระบบขั้นสูง ฟีเจอร์ครบ</div>
+        <div class="opt-icon ic-green">📈</div>
+        <div class="opt-body">
+          <div class="opt-label">25,000 บาทขึ้นไป</div>
+          <div class="opt-desc">ลงทุนระบบขั้นสูง ฟีเจอร์ครบ</div>
+        </div>
       </div>
     </div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">ราคาเมนูเฉลี่ย</div>
+    <div class="section-label">ราคาเมนูเฉลี่ย</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" onclick="selectOne('avg_price','low',this)">
-        <div class="opt-icon">🍢</div>
-        <div class="opt-label">ต่ำกว่า 100 บาท</div>
-        <div class="opt-desc">Street food, เครื่องดื่ม, อาหารจานด่วน</div>
+        <div class="opt-icon ic-orange">🍢</div>
+        <div class="opt-body">
+          <div class="opt-label">ต่ำกว่า 100 บาท</div>
+          <div class="opt-desc">Street food, เครื่องดื่ม, อาหารจานด่วน</div>
+        </div>
       </div>
       <div class="option" onclick="selectOne('avg_price','high',this)">
-        <div class="opt-icon">🍽️</div>
-        <div class="opt-label">100 บาทขึ้นไป</div>
-        <div class="opt-desc">ร้านอาหาร, Cafe, Fine dining</div>
+        <div class="opt-icon ic-blue">🍽️</div>
+        <div class="opt-body">
+          <div class="opt-label">100 บาทขึ้นไป</div>
+          <div class="opt-desc">ร้านอาหาร, Cafe, Fine dining</div>
+        </div>
       </div>
     </div>
 
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px;margin-top:4px">แผนสาขา</div>
+    <div class="section-label">แผนสาขา</div>
     <div class="option-grid" style="grid-template-columns:1fr 1fr">
       <div class="option" id="plan-no" onclick="selectPlan(false)">
-        <div class="opt-icon">🏠</div>
-        <div class="opt-label">สาขาเดียว</div>
-        <div class="opt-desc">โฟกัสที่สาขาปัจจุบัน</div>
+        <div class="opt-icon ic-teal">🏠</div>
+        <div class="opt-body">
+          <div class="opt-label">สาขาเดียว</div>
+          <div class="opt-desc">โฟกัสที่สาขาปัจจุบัน</div>
+        </div>
       </div>
       <div class="option" id="plan-yes" onclick="selectPlan(true)">
-        <div class="opt-icon">🚀</div>
-        <div class="opt-label">มีแผนขยายสาขา</div>
-        <div class="opt-desc">ต้องการระบบรองรับหลายสาขา</div>
+        <div class="opt-icon ic-green">🚀</div>
+        <div class="opt-body">
+          <div class="opt-label">มีแผนขยายสาขา</div>
+          <div class="opt-desc">ต้องการระบบรองรับหลายสาขา</div>
+        </div>
       </div>
     </div>
 
@@ -643,11 +819,9 @@ function applySheetOverrides(cfg) {
   const n = k => cfg[k] !== undefined ? Number(cfg[k]) : undefined;
   const s = k => cfg[k] !== undefined ? String(cfg[k]) : undefined;
 
-  // Hardware iOS
   if (s('hw_ios_name'))  R.hardware.ios.name = s('hw_ios_name');
   if (n('hw_ios_price')) R.hardware.ios.price_once = n('hw_ios_price');
 
-  // Hardware Android (index: flex=0, dual=1, lite=2, single=3)
   [['hw_android_flex',0],['hw_android_dual',1],['hw_android_lite',2],['hw_android_single',3]]
     .forEach(([pre, i]) => {
       const hw = R.hardware.android[i];
@@ -656,7 +830,6 @@ function applySheetOverrides(cfg) {
       if (n(`${pre}_price`)) hw.price_once = n(`${pre}_price`);
     });
 
-  // Packages [key_prefix, service, platform, index]
   [
     ['pkg_qsr_and_prem',  'QSR','android',0], ['pkg_qsr_and_basic', 'QSR','android',1],
     ['pkg_qsr_ios_max',   'QSR','ios',    0], ['pkg_qsr_ios_std',   'QSR','ios',    1],
@@ -742,7 +915,7 @@ function togglePainMulti(keys, el) {
   el.classList.toggle('selected', !isSelected);
 }
 
-/* ════ RECOMMENDATION ENGINE (อ่านเงื่อนไขจาก pos-rules.js) ════ */
+/* ════ RECOMMENDATION ENGINE ════ */
 function buildRecommendation() {
   const s = state;
   const R = POS_RULES;
@@ -754,19 +927,16 @@ function buildRecommendation() {
     cost: { hardware: 0, sw_yearly: 0, addons_yearly: 0, payment_deposit: 0 },
   };
 
-  /* ── 1. Platform ── */
   const forced = R.platform.forceAndroid.find(r => r.check(s));
   const iosHits = R.platform.iOSSignals.filter(r => r.check(s));
 
   rec.platform = (forced || iosHits.length === 0) ? 'android' : 'ios';
-  if (forced)                  rec.platform_reasons = [forced.reason];
+  if (forced)                   rec.platform_reasons = [forced.reason];
   else if (rec.platform === 'ios') rec.platform_reasons = iosHits.map(r => r.reason);
-  else                         rec.platform_reasons = ['ร้านขนาดเล็ก งบจำกัด Android เพียงพอ'];
+  else                          rec.platform_reasons = ['ร้านขนาดเล็ก งบจำกัด Android เพียงพอ'];
 
-  // แปะ platform ลงใน state เพื่อให้ addon rules ใช้ได้
   s._platform = rec.platform;
 
-  /* ── 2. Hardware ── */
   if (rec.platform === 'ios') {
     const hw = R.hardware.ios;
     rec.hardware = hw;
@@ -777,7 +947,6 @@ function buildRecommendation() {
     rec.cost.hardware = hw.price_once;
   }
 
-  /* ── 3. Package ── */
   const pkgList = (R.packages[s.service] || {})[rec.platform] || [];
   const matched = pkgList.find(r => r.check(s));
   if (matched) {
@@ -786,7 +955,6 @@ function buildRecommendation() {
   }
   rec.cost.sw_yearly = rec.package ? rec.package.yearly : 0;
 
-  /* ── 4. Add-ons ── */
   const featText = t => rec.features.some(f => f.text.includes(t));
   R.addons.forEach(addon => {
     if (addon.check(s, featText)) {
@@ -795,7 +963,6 @@ function buildRecommendation() {
   });
   rec.cost.addons_yearly = rec.addons.filter(a => a.yearly > 0).reduce((sum, a) => sum + a.yearly, 0);
 
-  /* ── 5. Payment ── */
   rec.payments.push(R.payments.pos_pay);
   const P = R.payments;
   if (P.edc.check(s)) {
@@ -808,7 +975,6 @@ function buildRecommendation() {
     rec.payments.push(P.mini_edc_soft);
   }
 
-  /* ── 6. New Store Tips ── */
   if (s.newstore === 'yes') rec.newstore_tips = R.newstore_tips;
 
   return rec;
@@ -849,7 +1015,6 @@ function renderResult(r) {
     </div>
   `;
 
-  // Hardware
   const hw = r.hardware;
   const extraHtml = hw.extras ? `<p style="margin-top:6px;font-size:12px;color:var(--muted)">อุปกรณ์เสริม: ${hw.extras.map(e=>`${e.name} (${fmt(e.price)}฿)`).join(' · ')}</p>` : '';
   document.getElementById('result-hardware').innerHTML = `
@@ -861,7 +1026,6 @@ function renderResult(r) {
     </div>
   `;
 
-  // Package
   const pkg = r.package;
   const featHtml = r.features.map(f => `<li style="margin-bottom:4px">${f.icon} ${f.text}</li>`).join('');
   document.getElementById('result-package').innerHTML = `
@@ -876,7 +1040,6 @@ function renderResult(r) {
     </div>
   `;
 
-  // Add-ons
   if (r.addons.length > 0) {
     const chips = r.addons.map(a => `
       <div class="addon-chip">
@@ -890,7 +1053,6 @@ function renderResult(r) {
     `;
   }
 
-  // Payment
   const payHtml = r.payments.map(p => `
     <div class="rec-item">
       <div class="rec-icon">${p.icon}</div>
@@ -905,16 +1067,14 @@ function renderResult(r) {
     <div class="result-section-title">💳 ระบบรับชำระเงิน</div>${payHtml}
   `;
 
-  // New Store
   if (r.newstore_tips.length > 0) {
-    const tipsHtml = r.newstore_tips.map(t => `<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px">${t}</div>`).join('');
+    const tipsHtml = r.newstore_tips.map(t => `<div style="padding:6px 0;border-bottom:1px solid rgba(245,158,11,0.15);font-size:13px">${t}</div>`).join('');
     document.getElementById('result-newstore').innerHTML = `
       <div class="result-section-title">🎉 โปรพิเศษสำหรับร้านใหม่</div>
       <div class="alert-box"><div style="font-size:20px">⭐</div><div>${tipsHtml}</div></div>
     `;
   }
 
-  // Cost Summary
   const totalYear1 = r.cost.hardware + r.cost.sw_yearly + r.cost.addons_yearly + r.cost.payment_deposit;
   const monthlyOngoing = r.package ? r.package.monthly : 0;
   const addonsMonthly = r.addons.filter(a => a.yearly > 0).reduce((s, a) => s + Math.round(a.yearly / 12), 0);

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MDS Sales Guide — คู่มือขั้นตอนการขาย Wongnai POS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: { colors: {
+    wongnai: { green: '#6AAB27', dark: '#2D5016', light: '#F5FAF0', msg: '#E8F0E1' },
+    accent: { blue: '#3B7FD4', orange: '#E8890C', purple: '#7C5CD4' }
+  } } }
+}
+</script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F5FAF0; scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; }
+  .fade-in { animation: fade .4s ease; }
+  @keyframes fade { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform:none;} }
+  .step-line::before { content:''; position:absolute; left:19px; top:40px; bottom:-8px; width:2px; background:#D5E5C4; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #6AAB27; border-radius: 4px; }
+</style>
+</head>
+<body class="text-gray-800">
+<div id="root"></div>
+
+<script>
+/* ─────────────── DATA ─────────────── */
+
+// หัวข้อสินค้า/แพ็กเกจ (จาก MDS Knowledge Base)
+const PRODUCTS = [
+  {
+    id: 'sub', icon: '📱', color: 'blue', name: 'POS Subscription',
+    tagline: 'เช่าใช้รายวัน — เหมาะกับร้านที่อยากเริ่มต้นด้วยงบต่ำ',
+    points: [
+      'ร้านต้องมีสิทธิ์ในการ<b>เช่าใช้รายวัน</b>เท่านั้น',
+      'รองรับเฉพาะ <b>Android</b> เครื่อง Single &amp; Dual เท่านั้น',
+      'มีค่าสมัคร <b>1,000 บาท</b> เป็นค่าประกัน',
+      'จ่ายค่าบริการ<b>เป็นรายวัน</b>ผ่าน <b>LINE MAN Wallet</b>'
+    ]
+  },
+  {
+    id: 'linepay', icon: '💳', color: 'purple', name: 'POS + LINE PAY',
+    tagline: 'ซื้อขาด — เหมาะกับร้านที่พร้อมลงทุนระยะยาว',
+    points: [
+      'ซื้อขาด <b>Hardware + Software</b> แบบรายปี หรือ รายวัน',
+      'หากร้านยัง<b>ไม่มี GP (LINE MAN)</b> แนะนำให้สมัครไปพร้อมกัน',
+      'เหมาะกับร้านที่ต้องการเป็นเจ้าของเครื่องเอง'
+    ]
+  },
+  {
+    id: 'gp', icon: '🛵', color: 'green', name: 'GP — LINE MAN',
+    tagline: 'ค่าคอมมิชชั่นเดลิเวอรี — ขายพ่วงกับ POS ได้ราคาพิเศษ',
+    points: [
+      'ขายพร้อม POS ลด GP ได้เหลือ <b>27%</b> (ยังไม่รวม VAT 7%)',
+      'ได้รับ <b>Free Trial 0%</b> นาน <b>30 วัน</b> นับจากวันเริ่ม Active สัญญา'
+    ]
+  },
+  {
+    id: 'travel', icon: '🧾', color: 'orange', name: 'Travel — การเบิก/เอกสารภาคสนาม',
+    tagline: 'ขั้นตอนที่เซลล์ต้องทำทุกครั้งที่ออกพื้นที่',
+    points: [
+      'ทำเบิก<b>ค่าเดินทางรายวัน</b> ทุกวันที่ออกทำงานในพื้นที่',
+      'ถ่ายภาพทุกจุดด้วย App <b>TimeStamp</b>',
+      'สร้าง <b>Opp. Check In - Out</b> ทุกร้าน',
+      'หากมีการติดตั้ง ต้องมี<b>รูปเครื่องที่ติดตั้ง</b> + <b>รูป Checklist ที่ร้านเซ็น</b>'
+    ]
+  }
+];
+
+// ขั้นตอนการขาย 3 เฟส
+const PHASES = [
+  {
+    id: 'before', icon: '🔍', color: 'blue', title: 'ก่อนการขาย', en: 'Pre-Sale',
+    subtitle: 'เตรียมตัวและทำความเข้าใจลูกค้าก่อนเข้าพบ',
+    steps: [
+      { t: 'วางแผน & จองคิวพื้นที่', d: 'เลือกโซนร้านเป้าหมาย วางเส้นทางเข้าพบ และเตรียมเบิกค่าเดินทางรายวัน' },
+      { t: 'สร้าง Opportunity + Check-In', d: 'เปิด Opp. ในระบบและ Check-In ทุกร้านที่เข้าพบ (บังคับ)' },
+      { t: 'เข้าใจโปรไฟล์ร้าน', d: 'ร้านเปิดใหม่หรือเก่า? ใช้ระบบอะไรอยู่? มี GP LINE MAN แล้วหรือยัง? เพื่อเลือกแพ็กเกจให้ตรง' },
+      { t: 'เตรียมสื่อ & อุปกรณ์เดโม', d: 'เครื่องเดโม, ใบเสนอราคา, App TimeStamp พร้อมถ่ายภาพหลักฐาน' }
+    ]
+  },
+  {
+    id: 'during', icon: '🤝', color: 'green', title: 'ระหว่างการขาย', en: 'During-Sale',
+    subtitle: 'นำเสนอ ตอบข้อโต้แย้ง และปิดการขาย',
+    steps: [
+      { t: 'เปิดการสนทนา & หา Pain Point', d: 'ถามปัญหาระบบเดิม เช่น คิดเงินช้า สต๊อกหาย จัดการเดลิเวอรียาก' },
+      { t: 'เลือกแพ็กเกจให้ตรงปัญหา', d: 'งบน้อย→Subscription (เช่ารายวัน) / พร้อมลงทุน→POS+LINE PAY / อยากคุมค่า GP→ขายพ่วง GP' },
+      { t: 'นำเสนอเงื่อนไข & ราคาให้ชัด', d: 'ค่าสมัคร 1,000฿ (ประกัน), GP เหลือ 27% เมื่อซื้อพร้อม POS, Free Trial 30 วัน' },
+      { t: 'ตอบข้อโต้แย้ง (Objection)', d: 'เช่น "แพงไหม" → เทียบกับต้นทุนที่เสียไปกับระบบเดิม + เน้น Free Trial 0% 30 วัน' },
+      { t: 'ปิดการขาย & ทำสัญญา', d: 'ยืนยันแพ็กเกจ เก็บค่าประกัน ผูก LINE MAN Wallet สำหรับจ่ายรายวัน' }
+    ]
+  },
+  {
+    id: 'after', icon: '✅', color: 'orange', title: 'หลังการขาย', en: 'Post-Sale',
+    subtitle: 'ติดตั้ง เก็บหลักฐาน และดูแลต่อเนื่อง',
+    steps: [
+      { t: 'ติดตั้งเครื่อง & อบรมการใช้งาน', d: 'ติดตั้ง POS สอนพนักงานร้านใช้งานเบื้องต้น' },
+      { t: 'เก็บหลักฐานการติดตั้ง', d: 'ถ่าย "รูปเครื่องที่ติดตั้ง" + "รูป Checklist ที่ร้านเซ็น" ด้วย App TimeStamp' },
+      { t: 'Check-Out & ปิด Opportunity', d: 'Check-Out ในระบบทุกร้าน และอัปเดตสถานะ Opp. ให้ครบ' },
+      { t: 'ติดตามหลังเริ่มใช้งาน', d: 'ตรวจว่า Free Trial GP 30 วันเริ่มนับ, ร้านจ่ายรายวันได้ปกติ, แก้ปัญหาที่พบ' }
+    ]
+  }
+];
+
+// Quiz
+const QUIZ = [
+  { q: 'POS Subscription จ่ายค่าบริการอย่างไร?', a: ['รายเดือนผ่านบัตรเครดิต','รายวันผ่าน LINE MAN Wallet','จ่ายครั้งเดียวตอนสมัคร','โอนผ่านธนาคารรายปี'], correct: 1 },
+  { q: 'ค่าสมัคร POS Subscription 1,000 บาท คือค่าอะไร?', a: ['ค่าเครื่อง','ค่าอบรม','ค่าประกัน','ค่า GP'], correct: 2 },
+  { q: 'เมื่อขาย GP LINE MAN พร้อม POS ลด GP เหลือเท่าไร (ยังไม่รวม VAT)?', a: ['30%','27%','25%','20%'], correct: 1 },
+  { q: 'Free Trial GP 0% นานกี่วัน และนับจากเมื่อไร?', a: ['30 วัน นับจากวันสมัคร','15 วัน นับจากติดตั้ง','30 วัน นับจากวัน Active สัญญา','60 วัน นับจากซื้อ POS'], correct: 2 },
+  { q: 'หลังติดตั้งเครื่อง เซลล์ต้องเก็บหลักฐานอะไรบ้าง?', a: ['รูปหน้าร้านอย่างเดียว','รูปเครื่องที่ติดตั้ง + Checklist ที่ร้านเซ็น','ใบเสร็จเท่านั้น','ไม่ต้องเก็บ'], correct: 1 },
+  { q: 'POS Subscription รองรับเครื่องแบบใด?', a: ['iOS ทุกรุ่น','Android Single & Dual เท่านั้น','Windows Tablet','ทุกระบบปฏิบัติการ'], correct: 1 }
+];
+
+const COLORS = {
+  blue:   { bg:'bg-accent-blue',   text:'text-accent-blue',   ring:'border-accent-blue',   soft:'bg-blue-50' },
+  green:  { bg:'bg-wongnai-green', text:'text-wongnai-green', ring:'border-wongnai-green', soft:'bg-wongnai-light' },
+  orange: { bg:'bg-accent-orange', text:'text-accent-orange', ring:'border-accent-orange', soft:'bg-orange-50' },
+  purple: { bg:'bg-accent-purple', text:'text-accent-purple', ring:'border-accent-purple', soft:'bg-purple-50' }
+};
+
+/* ─────────────── RENDER ─────────────── */
+const root = document.getElementById('root');
+
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+
+function render(){
+  root.innerHTML = `
+  <!-- Header -->
+  <header class="bg-wongnai-dark text-white sticky top-0 z-20 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="w-9 h-9 bg-wongnai-green rounded-lg flex items-center justify-center font-black">W</div>
+      <div class="flex-1">
+        <h1 class="font-bold text-base leading-tight">MDS Sales Guide</h1>
+        <p class="text-xs text-green-300">คู่มือขั้นตอนการขาย Wongnai POS · สำหรับทีม MDS</p>
+      </div>
+      <nav class="hidden sm:flex gap-1 text-xs">
+        <a href="#phases" class="px-3 py-1.5 rounded-lg hover:bg-white/10">ขั้นตอน</a>
+        <a href="#products" class="px-3 py-1.5 rounded-lg hover:bg-white/10">แพ็กเกจ</a>
+        <a href="#quiz" class="px-3 py-1.5 rounded-lg hover:bg-white/10">แบบทดสอบ</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="max-w-5xl mx-auto px-4 pt-8 pb-4 text-center fade-in">
+    <span class="inline-block bg-wongnai-msg text-wongnai-dark text-xs font-semibold px-3 py-1 rounded-full mb-3">📚 L&amp;D Master · Knowledge Base for Sales</span>
+    <h2 class="text-2xl md:text-3xl font-black text-wongnai-dark mb-2">ตรวจสอบขั้นตอนการขายให้ครบทุกจังหวะ</h2>
+    <p class="text-gray-500 max-w-xl mx-auto text-sm">เรียนรู้กระบวนการขายของทีม MDS ตั้งแต่ <b>ก่อนขาย → ระหว่างขาย → หลังการขาย</b> พร้อมรายละเอียดแพ็กเกจและแบบทดสอบท้ายบท</p>
+  </section>
+
+  <!-- Phase overview cards -->
+  <section id="phases" class="max-w-5xl mx-auto px-4 py-6">
+    <div class="grid gap-4 md:grid-cols-3" id="phaseCards"></div>
+  </section>
+
+  <!-- Phase detail (timeline) -->
+  <section class="max-w-3xl mx-auto px-4 pb-8" id="phaseDetail"></section>
+
+  <!-- Products -->
+  <section id="products" class="max-w-5xl mx-auto px-4 py-6">
+    <h3 class="text-xl font-black text-wongnai-dark mb-1">แพ็กเกจ &amp; หัวข้อสำคัญ</h3>
+    <p class="text-sm text-gray-500 mb-5">กดการ์ดเพื่อดูเงื่อนไขของแต่ละหัวข้อ</p>
+    <div class="grid gap-4 sm:grid-cols-2" id="productCards"></div>
+  </section>
+
+  <!-- Quiz -->
+  <section id="quiz" class="max-w-3xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-2xl border border-green-100 shadow-sm p-6" id="quizBox"></div>
+  </section>
+
+  <footer class="text-center text-xs text-gray-400 py-8">
+    MDS Sales Guide · จัดทำเพื่อการเรียนรู้ภายในทีม · อ้างอิงจาก [L&amp;D Master] MDS Knowledge Base
+  </footer>
+  `;
+
+  renderPhaseCards();
+  renderPhaseDetail(PHASES[0].id);
+  renderProducts();
+  renderQuiz();
+}
+
+let activePhase = 'before';
+
+function renderPhaseCards(){
+  const wrap = document.getElementById('phaseCards');
+  wrap.innerHTML = '';
+  PHASES.forEach((p, i) => {
+    const c = COLORS[p.color];
+    const card = el(`
+      <button data-p="${p.id}" class="text-left p-5 rounded-2xl border-2 transition-all hover:shadow-md ${activePhase===p.id ? c.ring+' '+c.soft : 'border-gray-200 bg-white'}">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-9 h-9 ${c.bg} text-white rounded-xl flex items-center justify-center text-lg">${p.icon}</span>
+          <span class="text-xs font-bold ${c.text}">STEP ${i+1} · ${p.en}</span>
+        </div>
+        <h4 class="font-black text-lg text-gray-800">${p.title}</h4>
+        <p class="text-xs text-gray-500 mt-1">${p.subtitle}</p>
+      </button>`);
+    card.onclick = () => { activePhase = p.id; renderPhaseCards(); renderPhaseDetail(p.id);
+      document.getElementById('phaseDetail').scrollIntoView({behavior:'smooth', block:'start'}); };
+    wrap.appendChild(card);
+  });
+}
+
+function renderPhaseDetail(id){
+  const p = PHASES.find(x=>x.id===id); const c = COLORS[p.color];
+  const box = document.getElementById('phaseDetail');
+  box.innerHTML = `
+    <div class="fade-in bg-white rounded-2xl border border-green-100 shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <span class="w-11 h-11 ${c.bg} text-white rounded-xl flex items-center justify-center text-2xl">${p.icon}</span>
+        <div><h3 class="font-black text-xl text-gray-800">${p.title}</h3>
+        <p class="text-xs text-gray-500">${p.subtitle}</p></div>
+      </div>
+      <div class="space-y-1">
+        ${p.steps.map((s,i)=>`
+          <div class="relative flex gap-4 pb-5 ${i<p.steps.length-1?'step-line':''}">
+            <span class="flex-shrink-0 w-10 h-10 rounded-full ${c.soft} ${c.text} border-2 ${c.ring} flex items-center justify-center font-bold z-10">${i+1}</span>
+            <div class="pt-1">
+              <h5 class="font-bold text-gray-800">${s.t}</h5>
+              <p class="text-sm text-gray-500 mt-0.5">${s.d}</p>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderProducts(){
+  const wrap = document.getElementById('productCards');
+  wrap.innerHTML='';
+  PRODUCTS.forEach(pr=>{
+    const c = COLORS[pr.color];
+    const card = el(`
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <button class="w-full text-left p-5 flex items-start gap-3" data-open="0">
+          <span class="w-11 h-11 ${c.bg} text-white rounded-xl flex items-center justify-center text-xl flex-shrink-0">${pr.icon}</span>
+          <div class="flex-1">
+            <h4 class="font-black text-gray-800">${pr.name}</h4>
+            <p class="text-xs text-gray-500 mt-0.5">${pr.tagline}</p>
+          </div>
+          <span class="chev text-gray-400 transition-transform">▾</span>
+        </button>
+        <div class="detail hidden px-5 pb-5">
+          <ul class="space-y-2 border-t border-gray-100 pt-4">
+            ${pr.points.map(pt=>`<li class="flex gap-2 text-sm text-gray-700"><span class="${c.text} font-bold">•</span><span>${pt}</span></li>`).join('')}
+          </ul>
+        </div>
+      </div>`);
+    const btn = card.querySelector('button');
+    const det = card.querySelector('.detail');
+    const chev = card.querySelector('.chev');
+    btn.onclick = ()=>{ det.classList.toggle('hidden'); chev.style.transform = det.classList.contains('hidden')?'':'rotate(180deg)'; };
+    wrap.appendChild(card);
+  });
+}
+
+/* ── Quiz ── */
+let quizIdx = 0, quizScore = 0, quizAnswered = false;
+function renderQuiz(){
+  const box = document.getElementById('quizBox');
+  if(quizIdx >= QUIZ.length){
+    const pct = Math.round(quizScore/QUIZ.length*100);
+    box.innerHTML = `
+      <div class="text-center fade-in">
+        <div class="text-5xl mb-2">${pct>=80?'🏆':pct>=50?'👍':'📖'}</div>
+        <h3 class="text-xl font-black text-wongnai-dark">ทำแบบทดสอบเสร็จแล้ว!</h3>
+        <p class="text-gray-500 mt-1">คุณตอบถูก <b class="text-wongnai-green text-lg">${quizScore}/${QUIZ.length}</b> ข้อ (${pct}%)</p>
+        <button id="qRetry" class="mt-5 bg-wongnai-green text-white font-bold px-6 py-2.5 rounded-xl hover:bg-green-600">🔄 ทำใหม่</button>
+      </div>`;
+    document.getElementById('qRetry').onclick = ()=>{ quizIdx=0; quizScore=0; quizAnswered=false; renderQuiz(); };
+    return;
+  }
+  const item = QUIZ[quizIdx];
+  box.innerHTML = `
+    <div class="fade-in">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold text-wongnai-green">แบบทดสอบ · ข้อ ${quizIdx+1}/${QUIZ.length}</span>
+        <span class="text-xs text-gray-400">คะแนน ${quizScore}</span>
+      </div>
+      <div class="w-full h-1.5 bg-gray-100 rounded-full mb-4"><div class="h-full bg-wongnai-green rounded-full transition-all" style="width:${(quizIdx)/QUIZ.length*100}%"></div></div>
+      <h3 class="font-bold text-lg text-gray-800 mb-4">${item.q}</h3>
+      <div class="space-y-2" id="qOpts"></div>
+      <button id="qNext" class="hidden mt-5 w-full bg-wongnai-green text-white font-bold py-2.5 rounded-xl hover:bg-green-600">${quizIdx===QUIZ.length-1?'ดูผลคะแนน':'ข้อถัดไป →'}</button>
+    </div>`;
+  const opts = document.getElementById('qOpts');
+  quizAnswered = false;
+  item.a.forEach((opt,i)=>{
+    const b = el(`<button class="w-full text-left px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-wongnai-green text-sm transition-all">${opt}</button>`);
+    b.onclick = ()=>{
+      if(quizAnswered) return; quizAnswered=true;
+      const correct = item.correct;
+      if(i===correct) quizScore++;
+      Array.from(opts.children).forEach((child,j)=>{
+        child.classList.remove('hover:border-wongnai-green');
+        if(j===correct){ child.classList.add('border-wongnai-green','bg-wongnai-light','font-semibold'); child.innerHTML='✅ '+child.innerHTML; }
+        else if(j===i){ child.classList.add('border-red-300','bg-red-50'); child.innerHTML='❌ '+child.innerHTML; }
+        else child.classList.add('opacity-50');
+        child.disabled=true;
+      });
+      document.getElementById('qNext').classList.remove('hidden');
+    };
+    opts.appendChild(b);
+  });
+  document.getElementById('qNext').onclick = ()=>{ quizIdx++; renderQuiz(); };
+}
+
+render();
+</script>
+</body>
+</html>

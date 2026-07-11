@@ -3,332 +3,244 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MDS Sales Guide — คู่มือขั้นตอนการขาย Wongnai POS</title>
+<title>MDS Sales Guide — คู่มือขั้นตอนการขาย Wongnai POS (End To End)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {
-  theme: { extend: { colors: {
-    wongnai: { green: '#6AAB27', dark: '#2D5016', light: '#F5FAF0', msg: '#E8F0E1' },
-    accent: { blue: '#3B7FD4', orange: '#E8890C', purple: '#7C5CD4', pink: '#D4478A', teal: '#0EA5A5' }
-  } } }
-}
+tailwind.config={theme:{extend:{colors:{
+ wongnai:{green:'#6AAB27',dark:'#2D5016',light:'#F5FAF0',msg:'#E8F0E1'},
+ accent:{blue:'#3B7FD4',orange:'#E8890C',purple:'#7C5CD4',pink:'#D4478A',teal:'#0EA5A5'}}}}}
 </script>
 <style>
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F5FAF0; }
-  html { scroll-behavior: smooth; }
-  .fade-in { animation: fade .35s ease; }
-  @keyframes fade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #6AAB27; border-radius: 4px; }
-  .chk:checked + span { text-decoration: line-through; color:#9ca3af; }
-  .phase-line::before { content:''; position:absolute; left:15px; top:34px; bottom:-4px; width:2px; background:#E2ECD6; }
+ body{font-family:'Segoe UI',system-ui,sans-serif;background:#F5FAF0}
+ html{scroll-behavior:smooth}
+ .fade-in{animation:fade .3s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+ ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#6AAB27;border-radius:4px}
+ .chk:checked+span{text-decoration:line-through;color:#9ca3af}
+ .wl{white-space:pre-line}
 </style>
 </head>
 <body class="text-gray-800">
 <div id="root"></div>
-
 <script>
-/* ═══════════════ DATA ═══════════════
-   อ้างอิง: [L&D Master] MDS Knowledge Base (Google Sheet)
-   + Flow DEPA จาก DEPA × Wongnai POS Sales Hub
-*/
+const DATA={"topics": [{"id": "pos", "icon": "🖥️", "color": "green", "name": "POS", "sub": "ซื้อขาด Hardware + Software", "mode": "steps", "notes": [{"text": "*** Side Quest ไม่มี ไม่ต้อง Check \n*** ทุกร้านต้องมี Product LINE PAY ขั้นต่ำสุดคือ POSPAY\n*** EDC หากมีการต่อรอง % ดูขั้นตอนเพิ่มได้ที่นี่", "link": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g339344d7a06_0_149"}, {"text": "- หากลูกค้ามีการสมัคร Lineman (GP) แล้ว สามารถข้ามขั้นตอนได้เลย", "link": null}], "steps": [{"step": "0.0", "quest": "Main Quest", "system": "Google Sheet", "cat": "ตรวจข้อมูล", "detail": "นำชื่อร้านตรวจสอบว่าเป็น SMB or TC", "detailLink": null, "manual": "POS Non SMB Search", "manualLink": "https://script.google.com/a/macros/ext-lmwn.com/s/AKfycbzsX1fAClwvwvJIybj_e4U1EfmHlwPbCXphOs8gCZKjnKJX3FkxNNvxHD-o1yi-uBax7g/exec", "contact": false, "lineTemplate": "", "remark": "หากเป็น TC ต้องนำส่งทีม TC/KA ในการปิดการขาย\nส่งผ่าน Link นี้", "remarkLink": "https://script.google.com/a/macros/lmwn.com/s/AKfycbz7odJG1LGKtLTIg0bzqIJntjdQDRfMj7-1o4jPxKgFBxTy5ymtNlRBzDo6ZUgcGKxT/exec"}, {"step": "1.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "นำเสนอ+ปิดการขายเรียบร้อยแล้ว ขอข้อมูลเบื้องต้นจากลูกค้า\n- สรุปผลิตภัณฑ์และการบริการให้ลูกค้าเข้าใจ", "detailLink": null, "manual": "ตรวจ Stock ก่อนขาย", "manualLink": "https://script.google.com/a/macros/lmwn.com/s/AKfycbxWPSl9l2jXVyiYv-amLXnWcF7zOpJv0Yy2gpYjeUxTPRzhm-JPvokPCDKqpYxSkowX/exec", "contact": true, "lineTemplate": "Template Chat", "remark": "", "remarkLink": null}, {"step": "2.0", "quest": "Main Quest", "system": "Wongnai", "cat": "ขอข้อมูล, ตรวจข้อมูล", "detail": "ตรวจเช็คร้านว่ามี Wongnai Link หรือยัง หากมีแล้ว Recheck กับร้าน (หากไม่มีสร้างใหม่)", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/17BKXFOR72q8nxwyPZ4jwOszUzCVzTVJzzxyQDkNGe1w/edit?slide=id.g35e473c7597_0_1093", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "3.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "ขอเอกสารจากลูกค้าเพื่อเปิดใบเสนอราคา", "detailLink": null, "manual": "Click", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Create Opp.", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "5.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ใส่และตรวจสอบรายละเอียดใน Opp\n- Account name\n- Contact\n- Yomi + Yomi Reason", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "[Master POS] Item Code Update 2026", "remarkLink": "https://docs.google.com/spreadsheets/d/1SV0TmyJuW17awHkHWwF5Nfq-oYE7UnXmArK2w4X02Zw/edit?gid=1637802151"}, {"step": "6.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Add สินค้า POS ที่ลูกค้าต้องการ และใส่รายละเอียดสินค้า ที่ต้องลดราคา\n- อย่าลืมใส่รหัสส่งสินค้าทุกครั้ง = DHL", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "หากต้องการให้ส่วนลดดู Policy ได้จากที่นี่ \n- กรอกในช่อง Discount เลือก Amount และใส่เลข\n- กรอกส่วนลดตามจำนวนที่แสดงในช่อง \"ส่วนลด\n(กรอกใน SF)\" ของสินค้านั้น ๆ\n- หากเกินส่วนลดที่ AE ลดได้ ต้องใส่เหตุผล และ รออนุมัติ", "remarkLink": "https://docs.google.com/spreadsheets/d/1SV0TmyJuW17awHkHWwF5Nfq-oYE7UnXmArK2w4X02Zw/edit?gid=1936847436"}, {"step": "7.0", "quest": "Side Quest", "system": "Google Form", "cat": "ทำเอกสาร", "detail": "A1 กรณีลูกค้าสมัคร Software รายวัน กรอกใบสมัคร โดย \"ร้านต้องสมัคร GP\" แล้วเพื่อให้ตัดเงินรายวันได้", "detailLink": null, "manual": "ฟอร์ม", "manualLink": "https://docs.google.com/forms/d/e/1FAIpQLSc-kpCue5xdXkJKeZt3TmaDbMQCsxv-dom8N7LDP5kgRv4cSw/viewform", "contact": false, "lineTemplate": "", "remark": "ถ้ายังไม่ได้สมัครให้ไปสมัคร GP ก่อน\nหรือถ้าซื้อ Software รายปีพร้อมสมัคร GP และรับส่วนลด GP 27% + 0% Free Trial ใน Tab GP", "remarkLink": null}, {"step": "8.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Next Stage  จาก Stage New/Touch  > Document", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_81", "contact": false, "lineTemplate": "", "remark": "กรณีสินค้ามีการใส่ส่วนลด หรือ ต่อรอง ต่าง ๆ จะไปที่ Stage Commercial Approval ก่อน", "remarkLink": null}, {"step": "9.0", "quest": "Main Quest", "system": "SF", "cat": "ทำเอกสาร", "detail": "ออก Quatation (ใบเสนอราคา)\n1. ใส่ Invoice Address \n2. ใส่ Delivery Address\n3. Sync QT/SO Info \n4. ใส่ Project Name\n5.  กดปุ่ม Create QT\n6. Preview Document เพื่อ Download QT", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_100", "contact": false, "lineTemplate": "", "remark": "Sync QT/SO = กรณีมี RID ให้เลือก SMB \n                     = กรณีไม่มี RID ให้เลือก Corperate\n\nหากค้นหาไม่เจอ ให้กดสร้างใหม่", "remarkLink": null}, {"step": "10.0", "quest": "Main Quest", "system": "Line", "cat": "ส่งเอกสาร", "detail": "ส่งเอกสารให้ลูกค้าตรวจสอบเอกสาร + เซน และ ชำระเงิน\n- Quatation\n- (ถ้ามี) ใบสมัคร Software รายวัน", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "*** กรณี Onsite และเจอลูกค้า ข้ามขั้นตอนการส่ง Chat ได้ และ สามารถใช้ EDC ให้ลูกค้ารูดเต็มได้", "remarkLink": null}, {"step": "11.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "นำเอกสารทั้งหมดมาแนบตามหัวข้อใน SF เพื่อ Validate SO\n- Quatation พร้อมลายเซน\n- Slip การโอน หรือ Capture 2c2p\n- (ถ้ามี) ใบสมัคร Software รายวัน พร้อมลายเซน\n- (ถ้ามี) พื้นที่หนาแน่น หากร้านไม่ซื้อ Package Router+Donger\n- (ถ้ามี) หลักฐานจากลูกค้า กรณีไม่สมัคร POS PAY", "detailLink": "https://docs.google.com/document/d/1xGOxyxipmf8W-XKb_7tj5Fr-ykL9YIqHhykMarzMorQ/edit?tab=t.0", "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_196", "contact": false, "lineTemplate": "", "remark": "ในกรณีมีเอกสารอื่น ๆ ที่ไม่มีช่องให้แนบ ให้แนบในอื่น ๆ โดยทำการร่วมไฟล์แล้วex. ที่รวมไฟล์\nhttps://www.ilovepdf.com/th/merge_pdf\nhttps://products.aspose.app/words/th/merger/jpg", "remarkLink": "https://www.ilovepdf.com/th/merge_pdf"}, {"step": "12.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Delivery Address เลือก Expected Delivery Date วันที่ส่งของ หากทราบวันเปิดร้านให้คำนวณ ล่วงหน้า 7 วัน", "detailLink": null, "manual": "ภาพถ่ายหน้าจอ 2569-05-28 เวลา 08.44.05.png", "manualLink": "https://drive.google.com/file/d/1G9U0hg_77So6ltQ-QiCaCV5yaqLglSqs/view?usp=sharing", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "13.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ก่อนออก SO ให้ Add Branch โดยใส่ข้อมูลให้ครบ\nNext Stage  จาก Document > Ops Approval เพื่อรอตรวจ", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3eb0ceda4f1_0_1", "contact": false, "lineTemplate": "", "remark": "หากยังไม่มี RID ต้องไปเพิ่ม RID ก่อน\n**** อย่าลืมถามว่า จะให้เข้าไปอบรมเและติดตั้งเมื่อไหร่", "remarkLink": null}, {"step": "14.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "ระบบจะเปลี่ยนเป็น Close แจ้งลูกค้าจะมีการจัดส่งไม่เกิน 7 วัน\nและนัดวันติดตั้งให้เรียบร้อย เมื่อลูกค้าได้รับสินค้า", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "BKK-GBKK ไม่เกิน 2-3 วัน\nLocal ไม่เกิน 5-7 วัน", "remarkLink": null}, {"step": "15.0", "quest": "Side Quest", "system": "Google Doc", "cat": "ทำเอกสาร, แจ้งเจ้าที่", "detail": "B1 กรณีเป็นร้านนอกเขต AE ต้องดำเนินการตาม \"Open Area\"\n- เปิด Lead Ownlead - Connection\n- สร้างใบส่งงาน\n- ติดต่อเจ้าของพื้นที่ให้เข้าไปติดตั้งและสอนการใข้งาน", "detailLink": null, "manual": "Open Area", "manualLink": "https://docs.google.com/presentation/d/1Hcpg5JYSiEsunH09bOUDfEkRo2hSkZHSk_csR-K8bRk/edit?slide=id.g22d1d6e0c8b_1_75", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "16.0", "quest": "Main Quest", "system": "Line", "cat": "ติดตั้ง, แจ้งลูกค้า, ทำเอกสาร, คีย์ข้อมูล", "detail": "เข้าติดตั้งและสอนการใช้ และ ย้ำเงื่อนไขการดูแลหลังการขาย\n- เปิด Opp Check in\n- ติดตั้งและสอนการใช้งาน\n- ส่ง Checklist ติดตั้งให้ลูกค้าเซน เมื่อแล้วเสร็จ\n- ถ่ายรูป Timestamp การติดตั้งสำเร็จ\nนำมาบันทึกเพื่อเบิกค่าเดินทาง", "detailLink": null, "manual": "การติดตั้ง", "manualLink": "https://docs.google.com/presentation/d/1kAPrD7-mkHan5pm8sTBJ19KQtnhXQkez01RNhTRkZf8/edit?slide=id.g369f0e93a57_0_2080", "contact": true, "lineTemplate": "", "remark": "- AE คอยดูแลให้ใช้งานได้ 30 วัน\n- มีทีม Support ดูแลลูกค้า 24 ชม. ทุกวัน ติดต่อ ศูนย์ช่วยเหลือ หรือ 02-821-5788", "remarkLink": null}], "resources": [{"label": "ตรวจสอบขั้นตอนการขาย\n- ก่อนขาย\n- ระหว่างขาย\n- หลังการขาย", "text": "[L&D Master] MDS Knowledge Base - For Sales", "link": "https://docs.google.com/spreadsheets/d/180-vNUDBFBj1ogEvFh6dPJ6wn_ledtN2TfRBvMQruk0/edit?gid=927625185"}, {"label": "ตรวจสอบส่งของ", "text": "วิธีตรวจสอบหมายเลข Tracking", "link": "https://docs.google.com/presentation/d/1OtZJIEPSnb_LkToK7djBil95ohJSFBMfFOzxdCLDRGs/edit?slide=id.p"}]}, {"id": "linepay", "icon": "💳", "color": "purple", "name": "LINE PAY", "sub": "รับชำระเงิน (EDC / POSPAY)", "mode": "steps", "notes": [{"text": "- หากลูกค้ามีการสมัคร Lineman (GP) แล้ว สามารถข้ามขั้นตอนได้เลย", "link": null}], "steps": [{"step": "1.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "นำเสนอ+ปิดการขายเรียบร้อยแล้ว ขอข้อมูลเบื้องต้นจากลูกค้า\n- สรุปผลิตภัณฑ์และการบริการให้ลูกค้าเข้าใจ", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "", "remarkLink": null}, {"step": "2.0", "quest": "Main Quest", "system": "Wongnai", "cat": "ขอข้อมูล, ตรวจข้อมูล", "detail": "ตรวจเช็คร้านว่ามี Wongnai Link หรือยัง หากมีแล้ว Recheck กับร้าน (หากไม่มีสร้างใหม่)", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/17BKXFOR72q8nxwyPZ4jwOszUzCVzTVJzzxyQDkNGe1w/edit?slide=id.g35e473c7597_0_1093", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "3.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "ขอเอกสารจากลูกค้าเพื่อนำมากรอกใบสมัคร LINE PAY", "detailLink": null, "manual": "Click", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Create Opp.", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "5.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ใส่และตรวจสอบรายละเอียดใน Opp\n- Account name\n- Contact\n- Yomi + Yomi Reason", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "6.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Add สินค้า LINE PAY ที่ลูกค้าต้องการสมัคร และ ใส่รายละเอียดสินค้า\n- กรณีสินค้าเป็น EDC/Mini EDC สมัครแบบบุคคล ต้องรอเลข RFD", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g329e83c85fa_0_4378", "contact": false, "lineTemplate": "", "remark": "กรณีสมัคร EDC  - ใส่ Opp. product ทั้ง EDC\nกรณีไม่สมัคร EDC  - ใส่ Opp. product  POSPAY\nกรณีไม่สมัคร EDC และมี Order & Pay  - ใส่ Opp. product  POSPAY", "remarkLink": null}, {"step": "7.0", "quest": "Side Quest", "system": "Google Form", "cat": "ทำเอกสาร", "detail": "A1 กรณีต้องการสมัคร EDC/Mini EDC กรอกใบสมัคร Auto Form เพื่อส่งให้ลูกค้าเซน เพื่อนำ PDF ไปแนบในการสมัครกับ LINE PAY", "detailLink": null, "manual": "ฟอร์ม , คู่มือการกรอก", "manualLink": "https://docs.google.com/forms/d/e/1FAIpQLSe3ARM-1kYwf_NIUOfD_4h92yNVVXjOF-Gwmj3u6BH4ZTRq1Q/viewform", "contact": false, "lineTemplate": "", "remark": "หากต้องการต้องการใช้ POSPAY ด้วยให้รอไปทำ ขั้นที่ 16", "remarkLink": null}, {"step": "8.0", "quest": "Side Quest", "system": "Google Form", "cat": "ทำเอกสาร", "detail": "B1 กรณีต้องการสมัคร POSPAY  หรือมี Order & Pay  กรอกลิ้งสมัคร KYM โดยเอาจาก Opp. Product", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g369fe1ce1de_0_101", "contact": false, "lineTemplate": "", "remark": "หากซื้อ Package ที่มี Order & Pay ต้องทำขั้นตอนนี้ด้วย", "remarkLink": null}, {"step": "9.0", "quest": "Side Quest", "system": "Google Form", "cat": "ทำเอกสาร", "detail": "A2 กรณีสมัคร EDC/Mini EDC​ หากลูกค้าเป็นบุคคลธรรมดา ทำใบ RFD เพื่อเก็บค่ามัดจำเครื่อง 990/500 บาท", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1g3xAnlydB-tfTd85SoOMs7wXMUiSKHakM2nI0-XsOCA/edit?slide=id.g3025dcaa113_0_362", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "10.0", "quest": "Side Quest", "system": "Line", "cat": "ส่งเอกสาร", "detail": "A3 ส่งเอกสารให้ลูกค้าตรวจสอบเอกสาร + เซน และ ชำระเงิน\n- ใบสมัคร EDC\n- (ถ้าเป็นบุคคลธรรมดา) ใบเก็บค่ามัดจำ 990/500 บาท\n- (ถ้ามี) ใบสมัคร Software รายวัน", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "*** กรณี Onsite และเจอลูกค้า ข้ามขั้นตอนการส่ง Chat ได้ และ สามารถใช้ EDC Linepay ให้ลูกค้ารูดเต็มได้", "remarkLink": null}, {"step": "11.0", "quest": "Side Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "A4 กรณีมีการสมัคร EDC/Mini EDC สอบถามลูกค้าเรื่องวันและเวลาที่สะดวกให้เจ้าที่เข้าไปติดตั้ง", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Template Chat", "remark": "ใช้เวลา 14 วันทำการ ในการอนุมัติ ให้นัดหลังจากนั้น", "remarkLink": null}, {"step": "12.0", "quest": "Side Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "A4 กรณีสมัคร EDC/Mini EDC นำใบสมัคร EDC พร้อมเอกสารการสมัคร กรอกข้อมูล KYM ใน Link สมัคร", "detailLink": null, "manual": "Click , ฟอร์ม", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g339344d7a06_0_89", "contact": false, "lineTemplate": "", "remark": "Link สมัคร อยู่ใน Opp. หลัก เลือกให้ถูกต้องระหว่าง บุคคลธรรมดา or นิติบุคคล\nแปลงไฟล์ JPG เป็น PDF", "remarkLink": "https://www.ilovepdf.com/th/jpg_to_pdf"}, {"step": "13.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "กด Next Stage  จาก Stage New/Touch  > Document > Ops Approval", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g339344d7a06_0_130", "contact": false, "lineTemplate": "", "remark": "กรณีสินค้ามีการใส่ส่วนลด หรือ ต่อรอง ต่าง ๆ จะไปที่ Stage Commercial Approval ก่อน", "remarkLink": null}, {"step": "14.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "แจ้งร้านเรื่องจะมีเจ้าหน้าที่โทรนัดหากมีการตรวจสอบเอกสารและสมัครผ่าน ภายใน 14 วัน", "detailLink": null, "manual": "", "manualLink": null, "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}], "resources": [{"label": "ตรวจสอบสถานะ LINE PAY Product", "text": "https://lookerstudio.google.com/u/0/reporting/b00548f1-25ca-4f1e-83d2-6875354be990/page/p_sv713dc3yd", "link": "https://lookerstudio.google.com/u/0/reporting/b00548f1-25ca-4f1e-83d2-6875354be990/page/p_sv713dc3yd"}, {"label": "ตรวจสอบสถานะ POSPAY", "text": "Pacific Sale Monitoring (Updated Aug 2025)", "link": "https://docs.google.com/spreadsheets/d/1Wl0AeGL3bUkyMubKC0sf200rcNVoqhBU0scFIPwbQL8/edit?gid=0"}, {"label": "ตรวจสอบขั้นตอนการขาย\n- ก่อนขาย\n- ระหว่างขาย\n- หลังการขาย", "text": "[L&D Master] MDS Knowledge Base - For Sales", "link": "https://docs.google.com/spreadsheets/d/180-vNUDBFBj1ogEvFh6dPJ6wn_ledtN2TfRBvMQruk0/edit?gid=927625185"}]}, {"id": "gp", "icon": "🛵", "color": "orange", "name": "GP", "sub": "LINE MAN GP 27%", "mode": "steps", "notes": [{"text": "Side Quest  เลือกทำ", "link": null}], "steps": [{"step": "1.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "นำเสนอ+ปิดการขายเรียบร้อยแล้ว ขอข้อมูลเบื้องต้นจากลูกค้า", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "", "remark": "ใช้ข้อมูลเดียวกับที่ได้จาก POS+LINE PAY", "remarkLink": null}, {"step": "2.0", "quest": "Main Quest", "system": "Wongnai", "cat": "ขอข้อมูล", "detail": "ตรวจเช็คร้านว่ามี Wongnai Link หรือยัง หากมีแล้ว Recheck กับร้าน (หากไม่มีสร้างใหม่)", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/17BKXFOR72q8nxwyPZ4jwOszUzCVzTVJzzxyQDkNGe1w/edit?slide=id.g35e473c7597_0_1093", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "3.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "สอบถามว่าร้านค้ามี Wongnai Merchant App หรือยัง หากยังไม่ สามารถส่งเรื่องสมัครให้ลูกค้าได้ผ่านฟอร์ม", "detailLink": null, "manual": "ฟอร์ม", "manualLink": "https://linemanwongnai.my.salesforce-sites.com/form?param_key=be8fmpqNfl1C9Eo1MLk9DLq%2BwKw%3D%3D", "contact": true, "lineTemplate": "Template Line", "remark": "จำเป็นต้องทำ เพื่อรับ Commission\nTotal Menu >=8\nMenu Photo >=8\n*** หากลูกค้าไม่สะดวกทำเมนู สามารถแจ้ง #help-merchant-setup ให้ add ให้ได้ \n\n*** หากทำการสร้าง WMA ให้ลูกค้า ลูกค้าต้อง login ด้วย email และกดลืมรหัสผ่าน เพื่อตั้งและเข้าใช้งาน", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "Line", "cat": "ขอข้อมูล", "detail": "ขอเอกสารจากลูกค้าเพื่อสมัคร GP", "detailLink": null, "manual": "Click", "manualLink": null, "contact": true, "lineTemplate": "", "remark": "ใช้เอกสารเดียวกับที่ได้จาก POS+LINE PAY", "remarkLink": null}, {"step": "5.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Create Opp.", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "6.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เลือก Select  WMA Contact เพื่อดึงข้อมูล", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_98", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "7.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ใส่และตรวจสอบรายละเอียดใน Opp\n- Account name\n- Contact\n- Yomi + Yomi Reason", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "8.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Add สินค้า GP GP 27% ใช้ Pro ปัจจุบัน\n- เลือก GP - POS LT เมื่อขายพร้อม POS ได้ GP 27%\n- ใส่ % Free Trial 0% และ 30 Days\n- เลือกวันที่จะเปิด GP (เลือกได้ไม่เกิน 60 วัน)", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_123", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "9.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Next Stage  จาก Stage New/Touch  > Document", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_123", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "10.0", "quest": "Side Quest", "system": "SF", "cat": "แจ้งลูกค้า", "detail": "A1 ให้ลูกค้าสมัครเอง ผ่าน WMA เมื่อลูกค้า Login เข้าไปจะพบสัญญาร่าง", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_204", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "11.0", "quest": "Side Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "B1 กรณีกรอกให้ลูกค้าทั้งหมด และส่งเอกสารให้ลูกค้า เซนกลับมา", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_217", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "12.0", "quest": "Side Quest", "system": "Line", "cat": "ส่งเอกสาร", "detail": "B2 ส่งเอกสารสัญญา LINE MAN GP ให้ลูกค้าเซน หน้า xx และส่งกลับให้ AE (สามารถเซน e-sign)", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "", "remark": "ขั้นตอนนี้หากทำพร้อม POS+LINE PAY แนะนำให้ส่งขอข้อมูลลูกค้า ในขั้นตอนที่", "remarkLink": null}, {"step": "13.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "นำเอกสารทั้งหมดมาแนบตามหัวข้อใน SF เพื่อ Validate SO\n- เอกสารบุคคลธรรม\n- เอกสารนิติบุคคล", "detailLink": null, "manual": "", "manualLink": null, "contact": false, "lineTemplate": "", "remark": "ขั้นตอนนี้หากทำพร้อม POS+LINE PAY แนบพร้อมกันได้เลย / ใช้เอกสารเดียวกับที่ได้จาก POS+LINE PAY\nหากเป็นนิติบุคคล ขอเอกสารที่คัดสำเนาไม่เกิน 3 เดือน", "remarkLink": null}, {"step": "14.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Next Stage  จาก Document > Ops Approval เพื่อรอตรวจ หากเรียบร้อยจะเปลี่ยน Stage เป็น Close 2-5 วันทำการ", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_254", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}], "resources": [{"label": "ตรวจสอบขั้นตอนการขาย\n- ก่อนขาย\n- ระหว่างขาย\n- หลังการขาย", "text": "[L&D Master] MDS Knowledge Base - For Sales", "link": "https://docs.google.com/spreadsheets/d/180-vNUDBFBj1ogEvFh6dPJ6wn_ledtN2TfRBvMQruk0/edit?gid=927625185"}]}, {"id": "sub", "icon": "📱", "color": "blue", "name": "POS Subscription", "sub": "เช่าใช้รายวัน", "mode": "steps", "notes": [{"text": "Side Quest  เลือกทำ", "link": null}, {"text": "- ร้านต้องมีสิทธิในการสมัคร Subscription", "link": null}], "steps": [{"step": "1.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "ติดต่อลูกค้าเพื่อปิดการขาย แนะนำข้อมูลการใช้งานให้ครบถ้วน", "detailLink": null, "manual": "วิธีการขาย", "manualLink": "https://docs.google.com/spreadsheets/d/1UcBcIVeQ0wxZ7zbGeMu7DpQpTQluOyhIhCAUuiOr7Oo/edit?gid=1121825735", "contact": true, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "2.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "แนะนำขั้นตอนการสมัคร ผ่าน WMA ให้กับลูกค้า\n1. ให้ทางร้านเข้า App WMA\n2. มองหา Banner สมัคร POS แบบรายวัน\n3. เลื่อนลงด้านล่าง แล้วมองหา \"ดูแพ็กเกจทั้งหมด\"\n4. แนะนำให้ทางร้านเลือกรุ่นที่เหมาะสม กด \"เลือกเครื่องนี้\"\n5. แนะนำ Software ที่เหมาะสมกับร้าน กดเลือก และ กด \"ถัดไป\"\n6. เลือก Software ส่วนเสริม และ กด \"ถัดไป\"\n7. สอบถามที่อยู่าและระบุที่อยู่สำหรับการจัดส่ง และ กด \"ถัดไป\"\n8. แจ้งใส่ที่ปรึกษา (AE) ให้กับลูกค้า และ กด \"ถัดไป\"\n9.ให้ลูกค้าตรวจทานสรุปการสั่งซื้อ และ กด \"ยืนยันการสั่งซื้อ\"\n10. แจ้งลูกค้าอ่านสัญญาและเซนยอมรับ หลังจากนั้น \"กดยอมรับข้อตกลง\"\n11. ระบบจะส่ง OTP ไปหาเบอร์ร้านค้าที่ใช้สมัคร LINEMAN เพื่อกรอกยืนยัน\n12. หลังจากนั้นแจ้งให้ลูกค้าบันทึก QR Code เพื่อนำไปชำระค่าประกันเครื่อง 1000 บาท", "detailLink": null, "manual": "VDO ตัวอย่างการสมัคร , ราคา HW+SW Sub ช่อง C26", "manualLink": "https://drive.google.com/drive/u/0/folders/1ZqO4t4M_X129J9d7TAKkod5ib8DIVu2O", "contact": true, "lineTemplate": "", "remark": "[External] ขั้นตอนการสมัคร Wongnai POS รายวัน", "remarkLink": "https://docs.google.com/presentation/d/1leLJRaN9bKB5Kq_ULepkdu_JzQ2YqctnWIwjpTBXDxQ/edit?slide=id.g37aa99b1143_0_136"}, {"step": "3.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "หลักจากสมัครแล้ว ขอ Slip จากลูกค้าเพื่อยืนยันการ สมัคร", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Line Chat'!C13", "remark": "", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "Line", "cat": "แจ้งลูกค้า", "detail": "แจ้งทางร้านว่าจะได้รับเครื่องไม่เกิน 7 วัน เมื่อได้รับเครื่องแล้วให้ทำการเปิดใช้งานเครื่องตามคู่มือที่ส่งไปพร้อมกับเครื่อง หรือ แจ้ง AE ให้เข้าไปทำการติดตั้งและสอนการใช้งาน", "detailLink": null, "manual": "", "manualLink": null, "contact": true, "lineTemplate": "Line Chat'!C14", "remark": "", "remarkLink": null}, {"step": "5.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Create Opp.", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "6.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ใส่และตรวจสอบรายละเอียดใน Opp\n- Account name\n- Contact\n- Yomi + Yomi Reason", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1mdm-WwaFBBaDxgg3cPBFNogyumRkOFoOOwR93wJTOX0/edit?slide=id.g3dc1594f75a_0_18", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "7.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "Add สินค้า POS ที่ลูกค้าต้องการ และใส่รายละเอียดสินค้า\n- PTHIFS999-666", "detailLink": null, "manual": "Click , Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_353", "contact": false, "lineTemplate": "", "remark": "*** ไม่ต้อง Add product POSPAY", "remarkLink": null}, {"step": "8.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เลื่อนหา Opportunity Product  (ด้านขวา) และ หาชื่อสินค้า PTHIFS999-666 เพื่อเข้าไปใส่รายละเอียดสินค้า\nหัวข้อ \"ข้อมูลการขาย 2\"\n1. POS Device Type  = Android\n2. Registration =  ลูกค้า GP สนใจสมัคร POS\n3. Package = เลือกตามที่ลูกค้าเลือก\n4. POS Package Type = รายวัน\n\nใส่ Yomi และ Save", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_21", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "9.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "กด NextStage จาก New/Touch จะเปลี่ยนเป็น Generate Work Order \nหากร้านสมัครมา ภายใน 24 ชั่วโมง ระบบจะจับข้อมูลและเปลี่ยนเป็น Closed เพื่อนับผลงาน", "detailLink": null, "manual": "Click", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g334b81c803f_0_73", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}], "resources": [{"label": "หลังจากลูค้าได้รับเครื่อง ทำตามขั้นตอนนี้ได้เลย", "text": "วิธีเข้าสู่ระบบ Wongnai POS - YouTube", "link": "https://www.youtube.com/watch?v=AmaK0RUXKok"}]}, {"id": "travel", "icon": "🧾", "color": "teal", "name": "ค่าเดินทาง", "sub": "เบิก & หลักฐานภาคสนาม", "mode": "steps", "notes": [{"text": "Side Quest  ไม่ได้ทำ ไม่ต้อง Check", "link": null}], "steps": [{"step": "", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ไปที่ Portfolio \"เบิกค่าเดินทางรายวัน_Port_xx.  และหา Portfolio Detail ชื่อ \"เบิกค่าเดินทางรายวัน\"", "detailLink": null, "manual": "หน้า 6 , 9", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g3346de1bebe_1_0", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "1.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เปิด Opp. ใน Portfolio Detail \"เบิกค่าเดินทางรายวัน\" เปลี่ยนชื่อเป็นรูปแบบ yyyymmdd_เบิกค่าเดินทางรายวัน_Fullname (เช่น 20250502_เบิกค่าเดินทางรายวัน_Umalee) แล้วกด Save", "detailLink": null, "manual": "หน้า 76", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_983", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "2.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ไปที่กล่อง Check in/Check out เลือกหัวข้อ \"อื่นๆ\" แล้วกด Check in  ก่อนออกไปทำงาน", "detailLink": null, "manual": "หน้า 77", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_995", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "3.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "[ก่อนออกบ้าน] ถ่ายรูปไมล์รถก่อนออกจากบ้าน ด้วย Timestamp", "detailLink": null, "manual": "ตัวอย่างรูป", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_949", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "ถึงร้าน ถ่ายรูปภาพหน้าร้าน (เห็นรายละเอียดร้านชัดเจน) ด้วย Timestamp", "detailLink": null, "manual": "ตัวอย่างรูป", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_949", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "4.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เปิด Opp. ร้านนั้น ๆ ใส่ชื่อร้าน และ ทำการ Check in - out  เมื่อไป Visit", "detailLink": null, "manual": "หน้า 85-88", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_1151", "contact": false, "lineTemplate": "", "remark": "แนะนำให้ทำให้ Mobile Version", "remarkLink": null}, {"step": "5.0", "quest": "Side Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "A1 กรณีเป็นร้านที่ต้องติดตั้งให้ตัวเอง หรือ ผู้อื่น ให้ถ่ายรูปภาพการติดตั้งที่เห็นเครื่อง POS ด้วย", "detailLink": null, "manual": "หน้า 13", "manualLink": "https://docs.google.com/presentation/d/1kAPrD7-mkHan5pm8sTBJ19KQtnhXQkez01RNhTRkZf8/edit?slide=id.g369d519d41a_0_231", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "6.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "[กลับบ้าน] ถ่ายรูปไมล์รถเมื่อกลับถึงบ้าน ด้วย Timestamp", "detailLink": null, "manual": "ตัวอย่างรูป", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_949", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "7.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เข้า Opp. เดิมที่เคยเปิดไว้ เพื่อ Check out เพื่อให้ได้ เลข CheckInOutHistory", "detailLink": null, "manual": "", "manualLink": null, "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "8.0", "quest": "Main Quest", "system": "Google Drive", "cat": "คีย์ข้อมูล", "detail": "เข้า Google Drive และ Upload หลักฐานทั้งหมด  โดยเข้าไปใน Drive Upload และหาชื่อ AE\n- เข้าไปแล้วสร้างและตั้งชื่อ Folder ตามวันที่ที่ลงพื้นที่ : ‘yyyy-mm-dd’\n- Upload หลักฐานรูปภาพ และเปิด Access เป็น All Permanent and Outsourcing Employees\n- นำ Link นี้ไปใส่ในขั้นตอนต่อไป", "detailLink": null, "manual": "หน้า 82 , Drive Upload", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_1066", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}, {"step": "9.0", "quest": "Main Quest", "system": "SF", "cat": "คีย์ข้อมูล", "detail": "เข้า SF ไปกรอกข้อมูลการเบิกใน CheckInOutHistory ให้เรียบร้อย\n- กรอกข้อมูลใน CheckInOutHistory:ระบุว่าต้องการเบิกค่าเดินทางหรือไม่ (Yes/No)\n- เลือกประเภทการเดินทาง (รถส่วนตัว/สาธารณะ)\n- ระบุค่าใช้จ่าย (ค่ารถสาธารณะ, ค่าทางด่วน/จอดรถ)\n- ระบุเลขไมล์เริ่มต้น และเลขไมล์สิ้นสุด (กรณีรถส่วนตัว)\n- ช่อง Transportation Reimbursement Remark: ให้แนบ Link Google Drive ของหลักฐาน\nและบันทึก", "detailLink": null, "manual": "หน้า 77,78", "manualLink": "https://docs.google.com/presentation/d/1fsO6DP-4U5SKY1ahNmI6AdTsEPKTkU_9Yp0qF1SP2s4/edit?slide=id.g365a6fcd55a_0_995", "contact": false, "lineTemplate": "", "remark": "", "remarkLink": null}], "resources": []}, {"id": "depa", "icon": "🏛️", "color": "pink", "name": "DEPA", "sub": "โครงการ Free SW (D-Voucher)", "mode": "sections", "notes": [{"text": "DEPA × Wongnai POS — ลูกค้าได้ Software ฟรีจากโครงการ DEPA · ตรวจสิทธิ์ก่อนขายทุกครั้ง · จ่าย Commission 2 งวด", "link": "https://script.google.com/macros/s/AKfycbxUIOCLdarsJUtwThh6UsIXOLPtUhdN8IY_jRhdE8DxDeiFenUCzPdf1vKvcbUfaNeZrA/exec"}], "sections": [{"title": "🎫 ตรวจสอบสิทธิ์ (ก่อนเปิดดีล)", "items": ["ตรวจ Tax ID 13 หลัก ว่ายังไม่เคยใช้สิทธิ์ DEPA", "ต้องไม่ใช่ Tax ID ที่เคยสมัคร DEPA รอบ Nov 2025 – Feb 2026", "สมัครได้ 1 สิทธิ์ ต่อ 1 Promotion เท่านั้น", "ถ้าใช้สิทธิ์ไม่ได้ → เปลี่ยนไป Flow ขาย Software ปกติ"]}, {"title": "📋 7 ขั้นตอนหลัก", "items": ["1) เปิด QT (ใบเสนอราคา) — ร้านจ่ายเงินได้ตั้งแต่ตอนออก QT", "2) แนบเอกสาร (ตามประเภทร้าน) ส่งตรวจ", "3) ออก SO (Sales Order)", "4) ติดตั้งเครื่อง", "5) สอนใช้งาน (Onsite หรือ Online)", "6) ส่ง Report to DEPA (Google Form) + แนบไฟล์ PDF ที่ลูกค้าเซ็น", "7) เก็บเงิน / จบ Process"]}, {"title": "📄 เอกสารตามประเภทร้าน", "items": ["บุคคลธรรมดา: หนังสือจดทะเบียนพาณิชย์ + สำเนาบัตร ปชช. ผู้มีอำนาจลงนาม", "นิติบุคคล: หนังสือรับรองบริษัท (คัดไม่เกิน 3 เดือน) + สำเนาบัตร ปชช. ผู้มีอำนาจ", "ไม่จดทะเบียนพาณิชย์ (หาบเร่/แผงลอย): สำเนาบัตร ปชช.", "สำเนาบัญชีธนาคาร", "รูปเซลฟี่คู่บัตรประชาชน (ยกเว้นนิติบุคคล)", "ภาพถ่ายหน้าร้าน ขั้นต่ำ 3 รูป (มุมกว้าง เห็นเจ้าของ + ป้ายชื่อร้าน)"]}, {"title": "💰 KPI & Commission", "items": ["ให้ Point เมื่อดีลสถานะ Won (คิด Point ตามแพ็กเกจปกติ ไม่มีโบนัส Bundle)", "Commission งวดที่ 1: จ่ายเมื่อ SW Activate (50%)", "Commission งวดที่ 2: จ่ายเมื่อส่ง Report DEPA ที่มีลายเซ็นลูกค้า + ตรวจสำเร็จ (50%)", "ผ่อน 0% นาน 10 เดือนได้", "ร้านนอกพื้นที่ LINE MAN ต้องซื้อคู่ Purchase Core SW 6 หรือ 12 เดือน"]}]}], "lineChat": [{"section": "POS", "no": "1.0", "text": "รบกวน (ชื่อลูกค้า) ขอข้อมูลเบื้องต้นเพื่อดำเนินการในระบบครับ/ค่ะ\n1. ชื่อร้านอาหารภาษาไทย =\n2. ชื่อร้านอาหารภาษาอังกฤษ  (ถ้ามี) =\n2. ชื่อเจ้าของร้าน =\n3. เบอร์เจ้าของร้าน =\n4. Email สำหรับใช้งาน/รายงาน = \n5. วันที่ใช้งานหรือวันที่เปิดร้าน =\n6. ซื้อในนามบุคคล/นิติบุคคล =", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "POS", "no": "2.0", "text": "รบกวนขอเอกสารเพื่อใช้ในการดำเนินการสั่งซื้อระบบ POS พร้อมระบบการรับชำระเงิน + LINE MAN  ครับ/ค่ะ\n1. รูปถ่ายบัตรประชาชน พร้อมเซนสำเนาถูกต้องตามตัวอย่าง\n2. รูปถ่ายบัญชีธนาคาร  พร้อมเซนสำเนาถูกต้องตามตัวอย่าง\n3. รูปถ่ายเจ้าของร้านคู่กับบัตรประชาชนตัวจริง ตามตัวอย่าง\n4 .รูปถ่ายหน้าร้าน ตามตัวอย่าง", "remark": "หากเป็นนิติให้เพิ่มเติมเอกสารลงไป", "ex1": {"text": "ตัวอย่างรูปที่ส่งขอเอกสารลูกค้า\nข้อมูลและเอกสารที่ต้องขอจากลูกค้า (นิติบุคคล).png\n ข้อมูลและเอกสารที่ต้องขอจากลูกค้า (บุคคล).png", "link": "https://drive.google.com/file/d/1Ebw9XA2W4WFWxc7gI3nrzglkGhqFOkh1/view?usp=sharing"}, "ex2": {"text": "ตัวอย่างเอกสารที่ขอ + ลายเซน\nบุคคลธรรมดา\nนิติ", "link": "https://drive.google.com/drive/u/0/folders/1C4ugHYyyVsRc6PJgJbhGo88Bo1zBBRcw"}}, {"section": "POS", "no": "3.0", "text": "รบกวน (ชื่อลูกค้า) ตรวจสอบใบเสนอราคา , เอกสารการสมัครการรับชำระเงิน , ใบสมัคร LINE MAN เมื่อตรวจสอบเรียบร้อยรบกวน เซน (สามารถเซน e-sign ได้) และโอนเงินตามยอดที่แสดง เข้าที่เลขที่บัญชี บริษัท วงใน มีเดีย จำกัด ที่แสดงในใบเสนอราคา และส่งไฟล์เอกสารที่เซนแล้ว รวมทั้งหลักฐานการชำระเงิน กลับมาใน Chat นี้เพื่อดำเนินการต่อ ครับ/ค่ะ", "remark": "กรณีจ่ายด้วยการโอน", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "POS", "no": "4.0", "text": "รบกวน (ชื่อลูกค้า) ตรวจสอบใบเสนอราคาและเอกสารการสมัครการรับชำระเงิน LINE PAY เมื่อตรวจสอบเรียบร้อยรบกวน เซน (สามารถเซน e-sign ได้) โดยสามารถชำระเงินผ่านลิ้งที่ส่งให้ และส่งไฟล์เอกสารที่เซนแล้ว รวมทั้งหลักฐานการชำระเงิน กลับมาใน Chat นี้เพื่อดำเนินการต่อ ครับ/ค่ะ", "remark": "กรณีจ่ายด้วย บัตรเครดิต Online (2c2p) ให้ส่งข้อมูลการซื้อให้ Teamlead เปิดลิ้งการชำระ", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "POS", "no": "5.0", "text": "ชำระค่ามัดเครื่อง EDC xxx บาท สามารถเปิดไฟล์และ Scan ชำระได้เลย ครับ/ค่ะ หลังจากนั้นรบกวน ส่ง Slip การชำระค่ามัดจำเพื่อเป็นหลักฐานและดำเนินการต่อ ครับ/ค่ะ", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "POS", "no": "6.0", "text": "รบกวนสอบเรื่องวัน เวลาที่สะดวก สำหรับแจ้งทีมติดตั้งเครื่อง EDC ในกรณีได้รับการอนุมัติแล้วครับ (ประมาณ 14 วันทำการ)\nเช่น เสาร์-อาทิตย์ ช่วง 14.00 เป็นต้นไป", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "POS", "no": "7.0", "text": "ตอนนี้การสั่งซื้อดำเนินการเรียบร้อยแล้ว ครับ/ค่ะ สินค้าจะจัดส่งไปที่ๆอยู่จัดส่งไม่เกิน 7 ว้นทำการ นะครับ/ค่ะ เมื่อ (ชื่อลูกค้า) ได้รับสินค้าแล้วรบกวนตรวจเช็คความสมบูรณ์และทดลองเปิดเครื่อง หรือ สามารถแจ้ง ผม/หนู เพื่อให้เข้าไปติดตั้งและสอนการใช้งาน โดยจะใช้เวลาประมาณ xx ชั่วโมง (Android 1 IOS 3)", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "GP", "no": "1.0", "text": "รบกวนสอบถามเกี่ยวกับ Lineman ครับ ทางร้านเคยโหลด Wongnai Merchant App หรือเคยสมัคร Lineman ก่อนหน้านี้ไหม ครับ/ค่ะ", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "Sub", "no": "1.0", "text": "เมื่อชำระค่าประกันแล้ว รบกวนส่งสลิปเพื่อยืนยันการสมัครให้ทีนะครับ/คะ", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}, {"section": "Sub", "no": "2.0", "text": "ทางร้านจะได้รับเครื่องไม่เกิน 7 วัน เมื่อได้รับเครื่องแล้วให้ทำการเปิดใช้งานเครื่องตามคู่มือที่ส่งไปพร้อมกับเครื่อง หรือ แจ้ง  ผม/หนู ให้เข้าไปทำการติดตั้งและสอนการใช้งานได้เลยครับ", "remark": "", "ex1": {"text": "", "link": null}, "ex2": {"text": "", "link": null}}]};
 
-const TOPICS = [
-  /* ─────── POS (ซื้อขาด) ─────── */
-  {
-    id:'pos', icon:'🖥️', color:'green', name:'POS', sub:'ซื้อขาด Hardware + Software',
-    note:'ซื้อขาด Hardware + Software แบบรายปี หรือ รายวัน · เหมาะกับร้านที่พร้อมเป็นเจ้าของเครื่องเอง',
-    sections:[
-      { title:'🔍 ก่อนการขาย', items:[
-        'สร้าง Opportunity และ Check-In ร้านในระบบ (บังคับ)',
-        'เข้าใจโปรไฟล์ร้าน: เปิดใหม่/เก่า, ใช้ระบบอะไรอยู่',
-        'ตรวจสอบว่าร้านมี GP LINE MAN แล้วหรือยัง (ถ้ายังไม่มี แนะนำสมัครพร้อมกัน)',
-        'เตรียมเครื่องเดโม + ใบเสนอราคา + App TimeStamp'
-      ]},
-      { title:'🤝 ระหว่างการขาย', items:[
-        'เปิดการสนทนา หา Pain Point ของระบบเดิม',
-        'เสนอแพ็กเกจซื้อขาด HW+SW (เลือกรายปี หรือ รายวัน)',
-        'หากยังไม่มี GP LINE MAN แนะนำให้สมัครไปพร้อมกัน',
-        'ตอบข้อโต้แย้ง (ราคา/ความคุ้มค่า) และปิดการขาย'
-      ]},
-      { title:'✅ หลังการขาย', items:[
-        'ติดตั้งเครื่อง POS และอบรมการใช้งานให้พนักงานร้าน',
-        'ถ่ายรูปเครื่องที่ติดตั้ง ด้วย App TimeStamp',
-        'ถ่ายรูป Checklist ที่ร้านเซ็นเรียบร้อย',
-        'Check-Out และอัปเดตสถานะ Opportunity ให้ครบ'
-      ]}
-    ]
-  },
-  /* ─────── LINE PAY ─────── */
-  {
-    id:'linepay', icon:'💳', color:'purple', name:'LINE PAY', sub:'ช่องทางรับชำระเงิน',
-    note:'เปิดใช้ LINE PAY เป็นช่องทางรับชำระเงินผ่านระบบ POS · มักขายคู่กับแพ็กเกจ POS ซื้อขาด',
-    sections:[
-      { title:'🔍 ก่อนการขาย', items:[
-        'ตรวจสอบว่าร้านสนใจรับชำระผ่าน LINE PAY',
-        'เตรียมข้อมูลบัญชีร้านสำหรับผูกรับเงิน'
-      ]},
-      { title:'🤝 ระหว่างการขาย', items:[
-        'อธิบายประโยชน์ LINE PAY: รับเงินไว ลดการถือเงินสด',
-        'เสนอขายคู่กับ POS (ซื้อขาด) เพื่อใช้งานร่วมกัน',
-        'ยืนยันเงื่อนไข/ค่าธรรมเนียมกับร้านให้ชัดเจน'
-      ]},
-      { title:'✅ หลังการขาย', items:[
-        'ตั้งค่าเชื่อม LINE PAY เข้ากับเครื่อง POS',
-        'ทดสอบรับชำระเงินตัวอย่าง 1 รายการ',
-        'สอนพนักงานรับชำระผ่าน LINE PAY',
-        'เก็บหลักฐานการติดตั้ง + Check-Out'
-      ]}
-    ]
-  },
-  /* ─────── GP - LINE MAN ─────── */
-  {
-    id:'gp', icon:'🛵', color:'orange', name:'GP – LINE MAN', sub:'ค่าคอมมิชชั่นเดลิเวอรี',
-    note:'ขายพร้อม POS ลด GP เหลือ 27% (ยังไม่รวม VAT 7%) · ได้ Free Trial 0% นาน 30 วัน นับจากวัน Active สัญญา',
-    sections:[
-      { title:'🔍 ก่อนการขาย', items:[
-        'ตรวจสอบว่าร้านมี GP LINE MAN อยู่แล้วหรือยัง',
-        'เช็คว่าร้านอยู่ในพื้นที่ให้บริการ LINE MAN'
-      ]},
-      { title:'🤝 ระหว่างการขาย', items:[
-        'เสนอ GP LINE MAN ขายพร้อม POS → ลด GP เหลือ 27% (ไม่รวม VAT 7%)',
-        'แจ้งสิทธิ์ Free Trial 0% นาน 30 วัน',
-        'อธิบายว่า Free Trial นับจากวันเริ่ม Active สัญญา',
-        'ปิดการขายพร้อมสมัคร GP ให้ร้าน'
-      ]},
-      { title:'✅ หลังการขาย', items:[
-        'ยืนยันวันเริ่ม Active สัญญา (จุดเริ่มนับ Free Trial 30 วัน)',
-        'ติดตามการใช้งานหลังเริ่ม Trial',
-        'แจ้งร้านล่วงหน้าก่อนหมด Free Trial'
-      ]}
-    ]
-  },
-  /* ─────── POS Subscription ─────── */
-  {
-    id:'sub', icon:'📱', color:'blue', name:'POS Subscription', sub:'เช่าใช้รายวัน',
-    note:'เช่าใช้รายวันเท่านั้น · เฉพาะ Android เครื่อง Single & Dual · ค่าสมัคร 1,000 บาท (ค่าประกัน) · จ่ายรายวันผ่าน LINE MAN Wallet',
-    sections:[
-      { title:'🔍 ก่อนการขาย', items:[
-        'ยืนยันว่าร้านมีสิทธิ์เช่าใช้รายวัน',
-        'ตรวจสอบว่าร้านใช้เครื่อง Android Single หรือ Dual เท่านั้น',
-        'เตรียมอธิบายค่าสมัคร 1,000 บาท (ค่าประกัน)'
-      ]},
-      { title:'🤝 ระหว่างการขาย', items:[
-        'เสนอแพ็กเกจเช่ารายวัน เหมาะกับร้านงบจำกัด',
-        'ชี้แจงค่าสมัคร 1,000 บาท เป็น "ค่าประกัน"',
-        'อธิบายการจ่ายค่าบริการรายวันผ่าน LINE MAN Wallet',
-        'ปิดการขายและเก็บค่าประกัน'
-      ]},
-      { title:'✅ หลังการขาย', items:[
-        'ผูก LINE MAN Wallet สำหรับหักค่าบริการรายวัน',
-        'ติดตั้งเครื่อง Android + อบรมการใช้งาน',
-        'ถ่ายรูปเครื่องติดตั้ง + Checklist ที่ร้านเซ็น',
-        'Check-Out และปิด Opportunity'
-      ]}
-    ]
-  },
-  /* ─────── ค่าเดินทาง / Travel ─────── */
-  {
-    id:'travel', icon:'🧾', color:'teal', name:'ค่าเดินทาง', sub:'การเบิก & เอกสารภาคสนาม',
-    note:'ขั้นตอนที่เซลล์ต้องทำทุกครั้งที่ออกพื้นที่ — เพื่อการเบิกค่าเดินทางและเก็บหลักฐานให้ครบ',
-    sections:[
-      { title:'📅 ทุกวันที่ออกพื้นที่', items:[
-        'ทำเรื่องเบิกค่าเดินทางรายวัน ทุกวันที่ออกทำงานในพื้นที่',
-        'ถ่ายภาพทุกจุดด้วย App TimeStamp'
-      ]},
-      { title:'🏪 ทุกร้านที่เข้าพบ', items:[
-        'สร้าง Opportunity ในระบบ',
-        'Check-In เมื่อถึงร้าน',
-        'Check-Out เมื่อออกจากร้าน'
-      ]},
-      { title:'🔧 กรณีมีการติดตั้ง', items:[
-        'ถ่ายรูปเครื่องที่ติดตั้ง (ด้วย TimeStamp)',
-        'ถ่ายรูป Checklist ที่ร้านเซ็นเรียบร้อย'
-      ]}
-    ]
-  },
-  /* ─────── DEPA ─────── */
-  {
-    id:'depa', icon:'🏛️', color:'pink', name:'DEPA', sub:'โครงการ Free SW (D-Voucher)',
-    note:'DEPA × Wongnai POS — ลูกค้าได้ Software ฟรีจากโครงการ DEPA · ตรวจสิทธิ์ก่อนขายทุกครั้ง · จ่าย Commission 2 งวด',
-    sections:[
-      { title:'🎫 ตรวจสอบสิทธิ์ (ก่อนเปิดดีล)', items:[
-        'ตรวจ Tax ID 13 หลัก ว่ายังไม่เคยใช้สิทธิ์ DEPA',
-        'ต้องไม่ใช่ Tax ID ที่เคยสมัคร DEPA รอบ Nov 2025 – Feb 2026',
-        'สมัครได้ 1 สิทธิ์ ต่อ 1 Promotion เท่านั้น',
-        'ถ้าใช้สิทธิ์ไม่ได้ → เปลี่ยนไป Flow ขาย Software ปกติ'
-      ]},
-      { title:'📋 7 ขั้นตอนหลัก', items:[
-        '1) เปิด QT (ใบเสนอราคา) — ร้านจ่ายเงินได้ตั้งแต่ตอนออก QT',
-        '2) แนบเอกสาร (ตามประเภทร้าน) ส่งตรวจ',
-        '3) ออก SO (Sales Order)',
-        '4) ติดตั้งเครื่อง',
-        '5) สอนใช้งาน (Onsite หรือ Online)',
-        '6) ส่ง Report to DEPA (Google Form) + แนบไฟล์ PDF ที่ลูกค้าเซ็น',
-        '7) เก็บเงิน / จบ Process'
-      ]},
-      { title:'📄 เอกสารตามประเภทร้าน', items:[
-        'บุคคลธรรมดา: หนังสือจดทะเบียนพาณิชย์ + สำเนาบัตร ปชช. ผู้มีอำนาจลงนาม',
-        'นิติบุคคล: หนังสือรับรองบริษัท (คัดไม่เกิน 3 เดือน) + สำเนาบัตร ปชช. ผู้มีอำนาจ',
-        'ไม่จดทะเบียนพาณิชย์ (หาบเร่/แผงลอย): สำเนาบัตร ปชช.',
-        'สำเนาบัญชีธนาคาร',
-        'รูปเซลฟี่คู่บัตรประชาชน (ยกเว้นนิติบุคคล)',
-        'ภาพถ่ายหน้าร้าน ขั้นต่ำ 3 รูป (มุมกว้าง เห็นเจ้าของ + ป้ายชื่อร้าน)'
-      ]},
-      { title:'📷 รูปถ่าย ก่อน–หลังใช้งาน', items:[
-        'ก่อนใช้งาน: หน้าร้านยังไม่มีระบบดิจิทัล (พนักงานจดบิล/สมุดจดออเดอร์)',
-        'หลังใช้งาน: เจ้าของถ่ายคู่ POS เห็นหน้าจอ SW Wongnai POS ชัดเจน',
-        'ห้าม POS จอดำ — ต้องขึ้นหน้า Software',
-        'ภาพสอนใช้งานต้องมีเซลล์ประกบ (Onsite) หรือเปิดกล้องทั้งคู่ (Online)',
-        'ห้ามตัดต่อ / Generate รูปด้วย AI เด็ดขาด',
-        'ลายเซ็นใน Report ต้องเป็นเจ้าของบัตร และเซ็นเหมือนตอนเซ็นสำเนาบัตร'
-      ]},
-      { title:'💰 KPI & Commission', items:[
-        'ให้ Point เมื่อดีลสถานะ Won (คิด Point ตามแพ็กเกจปกติ ไม่มีโบนัส Bundle)',
-        'Commission งวดที่ 1: จ่ายเมื่อ SW Activate (50%)',
-        'Commission งวดที่ 2: จ่ายเมื่อส่ง Report DEPA ที่มีลายเซ็นลูกค้า + ตรวจสำเร็จ (50%)',
-        'ผ่อน 0% นาน 10 เดือนได้',
-        'ร้านนอกพื้นที่ LINE MAN ต้องซื้อคู่ Purchase Core SW 6 หรือ 12 เดือน'
-      ]}
-    ]
-  }
-];
+const COLORS={
+ blue:{bg:'bg-accent-blue',text:'text-accent-blue',ring:'border-accent-blue',soft:'bg-blue-50',accent:'#3B7FD4'},
+ green:{bg:'bg-wongnai-green',text:'text-wongnai-green',ring:'border-wongnai-green',soft:'bg-wongnai-light',accent:'#6AAB27'},
+ orange:{bg:'bg-accent-orange',text:'text-accent-orange',ring:'border-accent-orange',soft:'bg-orange-50',accent:'#E8890C'},
+ purple:{bg:'bg-accent-purple',text:'text-accent-purple',ring:'border-accent-purple',soft:'bg-purple-50',accent:'#7C5CD4'},
+ pink:{bg:'bg-accent-pink',text:'text-accent-pink',ring:'border-accent-pink',soft:'bg-pink-50',accent:'#D4478A'},
+ teal:{bg:'bg-accent-teal',text:'text-accent-teal',ring:'border-accent-teal',soft:'bg-teal-50',accent:'#0EA5A5'}};
 
-const COLORS = {
-  blue:  {bg:'bg-accent-blue',  text:'text-accent-blue',  ring:'border-accent-blue',  soft:'bg-blue-50',   accent:'#3B7FD4'},
-  green: {bg:'bg-wongnai-green', text:'text-wongnai-green',ring:'border-wongnai-green',soft:'bg-wongnai-light',accent:'#6AAB27'},
-  orange:{bg:'bg-accent-orange', text:'text-accent-orange',ring:'border-accent-orange',soft:'bg-orange-50', accent:'#E8890C'},
-  purple:{bg:'bg-accent-purple', text:'text-accent-purple',ring:'border-accent-purple',soft:'bg-purple-50', accent:'#7C5CD4'},
-  pink:  {bg:'bg-accent-pink',   text:'text-accent-pink',  ring:'border-accent-pink',  soft:'bg-pink-50',   accent:'#D4478A'},
-  teal:  {bg:'bg-accent-teal',   text:'text-accent-teal',  ring:'border-accent-teal',  soft:'bg-teal-50',   accent:'#0EA5A5'}
-};
+const SYS={'Google Sheet':'📊','Line':'💬','Wongnai':'🍜','SF':'☁️','Google Form':'📝','Google Doc':'📄','Google Drive':'📁'};
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const linkBtn=(text,url,cls)=>`<a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ${cls} hover:opacity-80 transition">🔗 ${esc(text)}</a>`;
 
-/* ═══════════════ STATE (localStorage) ═══════════════ */
-const LS_KEY = 'mds-guide-checks';
-let checks = {};
-try { checks = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e){ checks = {}; }
-function saveChecks(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(checks)); }catch(e){} }
-function itemKey(topicId, si, ii){ return `${topicId}.${si}.${ii}`; }
+/* localStorage checklist */
+const LS='mds-guide-checks-v2';
+let checks={};try{checks=JSON.parse(localStorage.getItem(LS)||'{}')}catch(e){}
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(checks))}catch(e){}};
 
-let activeTopic = TOPICS[0].id;
+let active=DATA.topics[0].id;
+const SCEN='__scenario__';
+const root=document.getElementById('root');
 
-/* ═══════════════ HELPERS ═══════════════ */
-const root = document.getElementById('root');
-function topicProgress(t){
-  let total=0, done=0;
-  t.sections.forEach((s,si)=> s.items.forEach((_,ii)=>{ total++; if(checks[itemKey(t.id,si,ii)]) done++; }));
-  return { total, done, pct: total? Math.round(done/total*100):0 };
-}
+function topicById(id){return DATA.topics.find(t=>t.id===id)}
+function progress(t){let tot=0,dn=0;const items=t.mode==='steps'?t.steps:t.sections.flatMap(s=>s.items);
+ (t.mode==='steps'?t.steps:t.sections.flatMap(s=>s.items)).forEach((_,i)=>{tot++;});
+ // count via keys
+ tot=0;dn=0;
+ if(t.mode==='steps'){t.steps.forEach((_,i)=>{tot++;if(checks[t.id+'.'+i])dn++})}
+ else{let idx=0;t.sections.forEach(s=>s.items.forEach(()=>{if(checks[t.id+'.'+idx])dn++;idx++;tot++}))}
+ return{tot,dn,pct:tot?Math.round(dn/tot*100):0}}
 
-/* ═══════════════ RENDER ═══════════════ */
 function render(){
-  root.innerHTML = `
-  <header class="bg-wongnai-dark text-white sticky top-0 z-30 shadow-lg">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-      <div class="w-9 h-9 bg-wongnai-green rounded-lg flex items-center justify-center font-black flex-shrink-0">W</div>
-      <div class="flex-1 min-w-0">
-        <h1 class="font-bold text-base leading-tight">MDS Sales Guide</h1>
-        <p class="text-xs text-green-300 truncate">คู่มือขั้นตอนการขาย Wongnai POS · เช็กลิสต์สำหรับทีม MDS</p>
-      </div>
-      <button id="resetBtn" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex-shrink-0">↺ ล้างเช็กลิสต์</button>
-    </div>
-  </header>
-
-  <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row gap-5">
-    <!-- Sidebar -->
-    <aside class="md:w-60 flex-shrink-0">
-      <div id="tabList" class="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 md:sticky md:top-20"></div>
-    </aside>
-    <!-- Content -->
-    <main id="content" class="flex-1 min-w-0"></main>
-  </div>
-
-  <footer class="text-center text-xs text-gray-400 py-8 px-4">
-    MDS Sales Guide · จัดทำเพื่อการเรียนรู้ภายในทีม<br class="sm:hidden">
-    อ้างอิง: [L&amp;D Master] MDS Knowledge Base · Flow DEPA จาก DEPA × Wongnai POS Sales Hub
-  </footer>`;
-
-  document.getElementById('resetBtn').onclick = ()=>{
-    if(confirm('ล้างเครื่องหมายถูกทั้งหมด?')){ checks={}; saveChecks(); render(); }
-  };
-  renderTabs();
-  renderContent();
+ root.innerHTML=`
+ <header class="bg-wongnai-dark text-white sticky top-0 z-30 shadow-lg">
+   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+     <div class="w-9 h-9 bg-wongnai-green rounded-lg flex items-center justify-center font-black flex-shrink-0">W</div>
+     <div class="flex-1 min-w-0"><h1 class="font-bold text-base leading-tight">MDS Sales Guide · End To End</h1>
+     <p class="text-xs text-green-300 truncate">คู่มือขั้นตอนการขาย Wongnai POS · เช็กลิสต์ทีม MDS</p></div>
+     <button id="reset" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex-shrink-0">↺ ล้าง</button>
+   </div>
+ </header>
+ <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row gap-5">
+   <aside class="md:w-60 flex-shrink-0"><div id="tabs" class="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 md:sticky md:top-20"></div></aside>
+   <main id="content" class="flex-1 min-w-0"></main>
+ </div>
+ <footer class="text-center text-xs text-gray-400 py-8 px-4">MDS Sales Guide · จัดทำเพื่อการเรียนรู้ภายในทีม<br>
+ อ้างอิงเนื้อหาจาก: [AE-MDS] End To End (Tab ETE) · Flow DEPA จาก DEPA × Wongnai POS Sales Hub</footer>`;
+ document.getElementById('reset').onclick=()=>{if(confirm('ล้างเครื่องหมายถูกทั้งหมด?')){checks={};save();render()}};
+ renderTabs();renderContent();
 }
 
 function renderTabs(){
-  const list = document.getElementById('tabList');
-  list.innerHTML='';
-  TOPICS.forEach(t=>{
-    const c = COLORS[t.color];
-    const p = topicProgress(t);
-    const on = activeTopic===t.id;
-    const tab = document.createElement('button');
-    tab.className = `flex-shrink-0 md:w-full text-left px-3.5 py-3 rounded-xl border-2 transition-all flex items-center gap-2.5
-      ${on ? c.ring+' '+c.soft+' shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'}`;
-    tab.innerHTML = `
-      <span class="w-9 h-9 ${on?c.bg:'bg-gray-100'} ${on?'text-white':''} rounded-lg flex items-center justify-center text-lg flex-shrink-0">${t.icon}</span>
-      <div class="min-w-0">
-        <div class="font-bold text-sm ${on?c.text:'text-gray-700'} whitespace-nowrap md:whitespace-normal">${t.name}</div>
-        <div class="hidden md:flex items-center gap-1.5 mt-1">
-          <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${p.pct}%;background:${c.accent}"></div></div>
-          <span class="text-[10px] text-gray-400">${p.done}/${p.total}</span>
-        </div>
-      </div>`;
-    tab.onclick = ()=>{ activeTopic=t.id; renderTabs(); renderContent(); window.scrollTo({top:0,behavior:'smooth'}); };
-    list.appendChild(tab);
-  });
+ const list=document.getElementById('tabs');list.innerHTML='';
+ DATA.topics.forEach(t=>{
+  const c=COLORS[t.color],p=progress(t),on=active===t.id;
+  const b=document.createElement('button');
+  b.className=`flex-shrink-0 md:w-full text-left px-3.5 py-3 rounded-xl border-2 transition-all flex items-center gap-2.5 ${on?c.ring+' '+c.soft+' shadow-sm':'border-gray-200 bg-white hover:border-gray-300'}`;
+  b.innerHTML=`<span class="w-9 h-9 ${on?c.bg+' text-white':'bg-gray-100'} rounded-lg flex items-center justify-center text-lg flex-shrink-0">${t.icon}</span>
+   <div class="min-w-0"><div class="font-bold text-sm ${on?c.text:'text-gray-700'} whitespace-nowrap md:whitespace-normal">${t.name}</div>
+   <div class="hidden md:flex items-center gap-1.5 mt-1"><div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${p.pct}%;background:${c.accent}"></div></div><span class="text-[10px] text-gray-400">${p.dn}/${p.tot}</span></div></div>`;
+  b.onclick=()=>{active=t.id;renderTabs();renderContent();window.scrollTo({top:0,behavior:'smooth'})};
+  list.appendChild(b);
+ });
+ // scenario tab
+ const on=active===SCEN;
+ const b=document.createElement('button');
+ b.className=`flex-shrink-0 md:w-full text-left px-3.5 py-3 rounded-xl border-2 transition-all flex items-center gap-2.5 ${on?'border-wongnai-dark bg-wongnai-msg shadow-sm':'border-gray-200 bg-white hover:border-gray-300'}`;
+ b.innerHTML=`<span class="w-9 h-9 ${on?'bg-wongnai-dark text-white':'bg-gray-100'} rounded-lg flex items-center justify-center text-lg flex-shrink-0">🎬</span>
+  <div class="min-w-0"><div class="font-bold text-sm ${on?'text-wongnai-dark':'text-gray-700'} whitespace-nowrap md:whitespace-normal">สถานการณ์การขายจริง</div>
+  <div class="hidden md:block text-[10px] text-gray-400 mt-1">ตัวอย่าง + ข้อความ LINE</div></div>`;
+ b.onclick=()=>{active=SCEN;renderTabs();renderContent();window.scrollTo({top:0,behavior:'smooth'})};
+ list.appendChild(b);
+}
+
+function stepCard(t,st,i){
+ const c=COLORS[t.color];
+ const key=t.id+'.'+i;
+ const done=!!checks[key];
+ const title=(st.detail||st.cat||'').split('\n')[0];
+ const wrap=document.createElement('div');
+ wrap.className=`bg-white rounded-2xl border ${done?c.ring:'border-gray-200'} shadow-sm overflow-hidden`;
+ const sideq=st.quest==='Side Quest';
+ wrap.innerHTML=`
+  <div class="flex items-start gap-3 p-4">
+    <input type="checkbox" class="chk mt-1.5 w-4 h-4 flex-shrink-0" ${done?'checked':''} style="accent-color:${c.accent}">
+    <button class="head flex-1 min-w-0 text-left">
+      <div class="flex items-center gap-2 flex-wrap mb-1">
+        <span class="w-7 h-7 ${c.bg} text-white rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">${esc(st.step).replace('.0','')}</span>
+        <span class="text-[11px] px-1.5 py-0.5 rounded ${sideq?'bg-amber-100 text-amber-700':c.soft+' '+c.text} font-semibold">${sideq?'Side Quest':'Main Quest'}</span>
+        <span class="text-[11px] text-gray-500">${SYS[st.system]||'•'} ${esc(st.system)}</span>
+        <span class="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">${esc(st.cat)}</span>
+        ${st.contact?'<span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold">💬 ติดต่อลูกค้า</span>':''}
+      </div>
+      <div class="text-sm text-gray-800 font-medium wl">${esc(title)}</div>
+    </button>
+    <span class="chev text-gray-400 flex-shrink-0 pt-1">▾</span>
+  </div>
+  <div class="detail hidden px-4 pb-4 pl-11">
+    <div class="text-sm text-gray-700 wl border-l-2 ${c.ring} pl-3 mb-3">${esc(st.detail)}</div>
+    ${st.remark?`<div class="text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-2.5 mb-3 wl"><b>📌 หมายเหตุ:</b> ${esc(st.remark)} ${st.remarkLink?linkBtn('เปิดลิงก์',st.remarkLink,'bg-amber-100 text-amber-800'):''}</div>`:''}
+    <div class="flex flex-wrap gap-2">
+      ${st.manualLink?linkBtn(st.manual||'คู่มือ',st.manualLink,c.soft+' '+c.text):''}
+      ${st.detailLink?linkBtn('เอกสารประกอบ',st.detailLink,'bg-gray-100 text-gray-600'):''}
+      ${st.lineTemplate?`<button class="gotoScen inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-wongnai-msg text-wongnai-dark hover:opacity-80">💬 ตัวอย่างข้อความ LINE</button>`:''}
+    </div>
+  </div>`;
+ const cb=wrap.querySelector('.chk');
+ cb.onchange=()=>{checks[key]=cb.checked;if(!cb.checked)delete checks[key];save();renderTabs();
+   wrap.classList.toggle('border-gray-200',!cb.checked);};
+ const det=wrap.querySelector('.detail'),chev=wrap.querySelector('.chev');
+ wrap.querySelector('.head').onclick=()=>{det.classList.toggle('hidden');chev.style.transform=det.classList.contains('hidden')?'':'rotate(180deg)'};
+ const gs=wrap.querySelector('.gotoScen');if(gs)gs.onclick=()=>{active=SCEN;renderTabs();renderContent();window.scrollTo({top:0,behavior:'smooth'})};
+ return wrap;
 }
 
 function renderContent(){
-  const t = TOPICS.find(x=>x.id===activeTopic);
-  const c = COLORS[t.color];
-  const p = topicProgress(t);
-  const box = document.getElementById('content');
-  box.innerHTML = `
-    <div class="fade-in">
-      <!-- Topic header -->
-      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4">
-        <div class="flex items-start gap-3">
-          <span class="w-12 h-12 ${c.bg} text-white rounded-xl flex items-center justify-center text-2xl flex-shrink-0">${t.icon}</span>
-          <div class="flex-1 min-w-0">
-            <h2 class="font-black text-xl text-gray-800">${t.name}</h2>
-            <p class="text-xs font-semibold ${c.text} mb-1">${t.sub}</p>
-            <p class="text-sm text-gray-500 leading-relaxed">${t.note}</p>
-          </div>
-        </div>
-        <div class="mt-4 flex items-center gap-3">
-          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all" style="width:${p.pct}%;background:${c.accent}"></div></div>
-          <span class="text-xs font-bold ${c.text}">${p.pct}%</span>
-        </div>
-      </div>
+ if(active===SCEN)return renderScenario();
+ const t=topicById(active),c=COLORS[t.color],p=progress(t);
+ const box=document.getElementById('content');
+ box.innerHTML=`<div class="fade-in">
+   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4">
+     <div class="flex items-start gap-3">
+       <span class="w-12 h-12 ${c.bg} text-white rounded-xl flex items-center justify-center text-2xl flex-shrink-0">${t.icon}</span>
+       <div class="flex-1 min-w-0"><h2 class="font-black text-xl text-gray-800">${t.name}</h2>
+       <p class="text-xs font-semibold ${c.text}">${esc(t.sub)}</p></div>
+     </div>
+     ${(t.notes&&t.notes.length)?`<div class="mt-3 space-y-1.5">${t.notes.map(n=>`<div class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-gray-600 wl">💡 ${esc(n.text)} ${n.link?linkBtn('เปิด',n.link,c.soft+' '+c.text):''}</div>`).join('')}</div>`:''}
+     <div class="mt-4 flex items-center gap-3"><div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${p.pct}%;background:${c.accent}"></div></div><span class="text-xs font-bold ${c.text}">${p.pct}%</span></div>
+   </div>
+   <div id="body" class="space-y-3"></div>
+ </div>`;
+ const body=document.getElementById('body');
+ if(t.mode==='steps'){
+   t.steps.forEach((st,i)=>body.appendChild(stepCard(t,st,i)));
+   if(t.resources&&t.resources.length){
+     const r=document.createElement('div');r.className='bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-2';
+     r.innerHTML=`<h3 class="font-bold text-gray-800 mb-3">🔧 แหล่งข้อมูล / เครื่องมือเพิ่มเติม</h3>
+      <div class="space-y-2">${t.resources.map(x=>`<div class="flex items-center justify-between gap-2 text-sm"><span class="text-gray-600 wl">${esc(x.label)}</span>${x.link?linkBtn(x.text,x.link,c.soft+' '+c.text):esc(x.text)}</div>`).join('')}</div>`;
+     body.appendChild(r);
+   }
+ } else {
+   let idx=0;
+   t.sections.forEach(s=>{
+     const card=document.createElement('div');card.className='bg-white rounded-2xl border border-gray-200 shadow-sm p-5';
+     card.innerHTML=`<h3 class="font-bold text-gray-800 mb-3">${esc(s.title)}</h3>`;
+     const ul=document.createElement('div');ul.className='space-y-2';
+     s.items.forEach(item=>{const key=t.id+'.'+idx;const lab=document.createElement('label');
+       lab.className=`flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer ${checks[key]?c.soft+' '+c.ring:'border-gray-100 hover:bg-gray-50'}`;
+       lab.innerHTML=`<input type="checkbox" class="chk mt-0.5 w-4 h-4 flex-shrink-0" ${checks[key]?'checked':''} style="accent-color:${c.accent}"><span class="text-sm text-gray-700 wl">${esc(item)}</span>`;
+       const cb=lab.querySelector('input');const k=key;cb.onchange=()=>{checks[k]=cb.checked;if(!cb.checked)delete checks[k];save();renderTabs();renderContent()};
+       ul.appendChild(lab);idx++;});
+     card.appendChild(ul);body.appendChild(card);
+   });
+ }
+}
 
-      <!-- Sections -->
-      <div id="sections" class="space-y-4"></div>
-    </div>`;
+function copyBtn(text){
+ return `<button class="copy text-xs bg-wongnai-green text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-green-600" data-copy="${encodeURIComponent(text)}">📋 คัดลอก</button>`;
+}
 
-  const secWrap = document.getElementById('sections');
-  t.sections.forEach((s, si)=>{
-    const card = document.createElement('div');
-    card.className='bg-white rounded-2xl border border-gray-200 shadow-sm p-5';
-    card.innerHTML = `<h3 class="font-bold text-gray-800 mb-3">${s.title}</h3>`;
-    const ul = document.createElement('div');
-    ul.className='space-y-2';
-    s.items.forEach((item, ii)=>{
-      const key = itemKey(t.id, si, ii);
-      const label = document.createElement('label');
-      label.className=`flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition-all
-        ${checks[key] ? c.soft+' '+c.ring : 'border-gray-100 hover:bg-gray-50'}`;
-      label.innerHTML = `
-        <input type="checkbox" class="chk mt-0.5 w-4 h-4 flex-shrink-0" ${checks[key]?'checked':''}
-          style="accent-color:${c.accent}">
-        <span class="text-sm text-gray-700 leading-relaxed">${item}</span>`;
-      const cb = label.querySelector('input');
-      cb.onchange = ()=>{ checks[key]=cb.checked; if(!cb.checked) delete checks[key]; saveChecks(); renderTabs(); renderContent(); };
-      ul.appendChild(label);
-    });
-    card.appendChild(ul);
-    secWrap.appendChild(card);
-  });
+function renderScenario(){
+ const box=document.getElementById('content');
+ const tpls=DATA.lineChat;
+ const bySec=s=>tpls.filter(t=>t.section===s);
+ const tplCard=t=>`
+   <div class="bg-white rounded-xl border border-gray-200 p-4">
+     <div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-wongnai-dark">ข้อความที่ ${esc(t.no).replace('.0','')}</span>${copyBtn(t.text)}</div>
+     <div class="text-sm text-gray-700 wl bg-gray-50 rounded-lg p-3 border border-gray-100">${esc(t.text)}</div>
+     ${t.remark?`<p class="text-xs text-amber-700 mt-2 wl">📌 ${esc(t.remark)}</p>`:''}
+     ${(t.ex1.text||t.ex2.text)?`<div class="flex flex-wrap gap-2 mt-2">
+        ${t.ex1.link?linkBtn('ดูตัวอย่าง: '+(t.ex1.text.split('\n')[0]),t.ex1.link,'bg-blue-50 text-blue-700'):''}
+        ${t.ex2.link?linkBtn('ดูตัวอย่าง: '+(t.ex2.text.split('\n')[0]),t.ex2.link,'bg-blue-50 text-blue-700'):''}
+      </div>`:''}
+   </div>`;
+ box.innerHTML=`<div class="fade-in space-y-4">
+   <div class="bg-wongnai-dark text-white rounded-2xl p-5">
+     <h2 class="font-black text-xl">🎬 สถานการณ์การขายจริง</h2>
+     <p class="text-sm text-green-200 mt-1">ตัวอย่างเดินเรื่องหลังปิดการขาย — ทำอะไร ส่งข้อความอะไร ขอเอกสารอะไร พร้อมตัวอย่างให้กดดู</p>
+   </div>
+
+   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+     <h3 class="font-bold text-gray-800 mb-2">🏪 ร้านตัวอย่าง (สมมติ)</h3>
+     <div class="text-sm text-gray-700 space-y-1">
+       <p><b>ร้าน:</b> ก๋วยเตี๋ยวเรือป้าแดง (สาขาลาดพร้าว)</p>
+       <p><b>สินค้าที่ปิดการขาย:</b> POS ซื้อขาด 1 เครื่อง + LINE PAY (POSPAY) + สมัคร GP LINE MAN</p>
+       <p><b>ประเภท:</b> บุคคลธรรมดา · <b>วันเปิดใช้งาน:</b> อีก 10 วัน</p>
+       <p class="text-xs text-gray-400 mt-1">* เป็นร้านสมมติเพื่อการสอน ไม่ใช่ข้อมูลลูกค้าจริง</p>
+     </div>
+   </div>
+
+   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+     <h3 class="font-bold text-gray-800 mb-3">✅ หลังปิดการขาย ทำตามลำดับนี้</h3>
+     <ol class="space-y-2 text-sm text-gray-700 list-decimal pl-5">
+       <li>ขอ<b>ข้อมูลเบื้องต้น</b>ของร้านจากลูกค้า (ดูข้อความที่ 1)</li>
+       <li>ขอ<b>เอกสาร</b>เพื่อเปิดใบเสนอราคา (ดูข้อความที่ 2 + ตัวอย่างเอกสาร)</li>
+       <li>เปิด <b>Opportunity ใน Salesforce</b> → ใส่สินค้า → ออก Quotation (ดูแท็บ POS/LINE PAY/GP)</li>
+       <li>ส่ง<b>ใบเสนอราคา + เอกสารสมัคร</b> ให้ลูกค้าเซ็นและชำระเงิน (ดูข้อความที่ 3–4)</li>
+       <li>แนบเอกสารใน SF → Validate SO → ปิดการขาย</li>
+       <li>แจ้ง<b>การจัดส่ง + นัดติดตั้ง</b> (ดูข้อความที่ 7)</li>
+     </ol>
+   </div>
+
+   <div><h3 class="font-black text-lg text-gray-800 mb-1">💬 ข้อความ LINE ที่ต้องส่งหาร้าน</h3>
+   <p class="text-sm text-gray-500 mb-3">กด "คัดลอก" แล้ววางในแชท LINE ของลูกค้า (อย่าลืมแทนที่ (ชื่อลูกค้า) และตัวเลข)</p></div>
+
+   <div class="space-y-3">
+     <div class="text-sm font-bold text-wongnai-green">📦 POS + LINE PAY</div>
+     ${bySec('POS').map(tplCard).join('')}
+     <div class="text-sm font-bold text-accent-orange mt-4">🛵 GP LINE MAN</div>
+     ${bySec('GP').map(tplCard).join('')}
+     <div class="text-sm font-bold text-accent-blue mt-4">📱 POS Subscription (เช่ารายวัน)</div>
+     ${bySec('Sub').map(tplCard).join('')}
+   </div>
+ </div>`;
+ box.querySelectorAll('.copy').forEach(b=>b.onclick=()=>{
+   const txt=decodeURIComponent(b.dataset.copy);
+   navigator.clipboard.writeText(txt).then(()=>{const o=b.innerHTML;b.innerHTML='✓ คัดลอกแล้ว';setTimeout(()=>b.innerHTML=o,1500)});
+ });
 }
 
 render();

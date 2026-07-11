@@ -134,6 +134,7 @@ function renderContent(){
  if(active===SCEN)return renderScenario();
  const t=topicById(active),c=COLORS[t.color],p=progress(t);
  const box=document.getElementById('content');
+ if(t.checker){ box.innerHTML='<div class="fade-in" id="body"></div>'; document.getElementById('body').appendChild(buildHubEmbed(t)); return; }
  box.innerHTML=`<div class="fade-in">
    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4">
      <div class="flex items-start gap-3">

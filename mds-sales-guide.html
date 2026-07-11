@@ -86,7 +86,7 @@ function renderTabs(){
  const b=document.createElement('button');
  b.className=`flex-shrink-0 md:w-full text-left px-3.5 py-3 rounded-xl border-2 transition-all flex items-center gap-2.5 ${on?'border-wongnai-dark bg-wongnai-msg shadow-sm':'border-gray-200 bg-white hover:border-gray-300'}`;
  b.innerHTML=`<span class="w-9 h-9 ${on?'bg-wongnai-dark text-white':'bg-gray-100'} rounded-lg flex items-center justify-center text-lg flex-shrink-0">🎬</span>
-  <div class="min-w-0"><div class="font-bold text-sm ${on?'text-wongnai-dark':'text-gray-700'} whitespace-nowrap md:whitespace-normal">สถานการณ์การขายจริง</div>
+  <div class="min-w-0"><div class="font-bold text-sm ${on?'text-wongnai-dark':'text-gray-700'} whitespace-nowrap md:whitespace-normal">ตัวอย่างการสื่อสารกับร้าน</div>
   <div class="hidden md:block text-[10px] text-gray-400 mt-1">ตัวอย่าง + ข้อความ LINE</div></div>`;
  b.onclick=()=>{active=SCEN;renderTabs();renderContent();window.scrollTo({top:0,behavior:'smooth'})};
  list.appendChild(b);
@@ -274,17 +274,8 @@ function renderScenario(){
       </div>`:''}
    </div>`;
  box.innerHTML=`<div class="fade-in space-y-4">
-   <div class="bg-wongnai-dark text-white rounded-2xl p-5"><h2 class="font-black text-xl">🎬 สถานการณ์การขายจริง</h2>
+   <div class="bg-wongnai-dark text-white rounded-2xl p-5"><h2 class="font-black text-xl">🎬 ตัวอย่างการสื่อสารกับร้าน</h2>
      <p class="text-sm text-green-200 mt-1">ตัวอย่างเดินเรื่องหลังปิดการขาย — ทำอะไร ส่งข้อความอะไร ขอเอกสารอะไร พร้อมตัวอย่างให้กดดู</p></div>
-   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-     <h3 class="font-bold text-gray-800 mb-2">🏪 ร้านตัวอย่าง (สมมติ)</h3>
-     <div class="text-sm text-gray-700 space-y-1">
-       <p><b>ร้าน:</b> ก๋วยเตี๋ยวเรือป้าแดง (สาขาลาดพร้าว)</p>
-       <p><b>สินค้าที่ปิดการขาย:</b> POS ซื้อขาด 1 เครื่อง + LINE PAY (POSPAY) + สมัคร GP LINE MAN</p>
-       <p><b>ประเภท:</b> บุคคลธรรมดา · <b>วันเปิดใช้งาน:</b> อีก 10 วัน</p>
-       <p class="text-xs text-gray-400 mt-1">* เป็นร้านสมมติเพื่อการสอน ไม่ใช่ข้อมูลลูกค้าจริง</p>
-     </div>
-   </div>
    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
      <h3 class="font-bold text-gray-800 mb-3">✅ หลังปิดการขาย ทำตามลำดับนี้</h3>
      <ol class="space-y-2 text-sm text-gray-700 list-decimal pl-5">

@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Wongnai POS Area Map — แผนที่ร้านสำหรับ Area Sales</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+  <style>
+    :root {
+      --brand: #f25533;
+      --brand-dark: #d94420;
+      --brand-light: rgba(242,85,51,0.10);
+      --ok: #00a86b;
+      --ok-light: rgba(0,168,107,0.12);
+      --red: #e53935;
+      --red-light: rgba(229,57,53,0.10);
+      --blue: #1a73e8;
+      --surface: #ffffff;
+      --surface-2: #f4f6fb;
+      --bg: #eef1f7;
+      --border: rgba(0,0,0,0.09);
+      --text: #1a1a2e;
+      --text-2: #6b7280;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.12);
+      --header-h: 58px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Sarabun', 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow: hidden; font-size: 14px;
+    }
+    button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+    button { cursor: pointer; }
+
+    /* ── Header ── */
+    header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 14px; position: relative; z-index: 1000;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+    .logo { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .logo-title { font-size: 16px; font-weight: 800; letter-spacing: -.02em; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .pos-badge { background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+    .logo-sub { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spacer { flex: 1; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 1px solid var(--border); background: var(--surface);
+      padding: 8px 12px; border-radius: 10px; font-weight: 600; white-space: nowrap;
+      transition: background .15s, border-color .15s;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn.primary:hover { background: var(--brand-dark); }
+    .btn.sf { background: #0176d3; border-color: #0176d3; color: #fff; }
+    .btn.sf:hover { background: #015ba7; }
+    .btn.danger { color: var(--red); }
+    .btn.block { width: 100%; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .menu-wrap { position: relative; }
+    .menu {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); min-width: 240px; padding: 6px; display: none;
+    }
+    .menu.open { display: block; }
+    .menu button { display: flex; width: 100%; text-align: left; gap: 8px; border: 0; background: none; padding: 9px 10px; border-radius: 8px; }
+    .menu button:hover { background: var(--surface-2); }
+    .menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
+
+    /* ── Layout ── */
+    #app { position: absolute; top: var(--header-h); left: 0; right: 0; bottom: 0; display: flex; }
+    #sidebar {
+      width: 340px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 900;
+    }
+    #map { height: 100%; background: #e5e3df; position: relative; z-index: 0; isolation: isolate; }
+    #map.adding, #map.adding .leaflet-interactive { cursor: crosshair !important; }
+
+    .side-top { padding: 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+    .search { position: relative; }
+    .search input {
+      width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--border);
+      border-radius: 10px; background: var(--surface-2); outline: none;
+    }
+    .search input:focus { border-color: var(--brand); background: #fff; }
+    .search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-2); }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .stat {
+      border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 8px;
+      background: var(--surface); text-align: left; line-height: 1.2;
+    }
+    .stat .n { font-size: 19px; font-weight: 800; }
+    .stat .l { font-size: 11px; color: var(--text-2); display: flex; align-items: center; gap: 4px; }
+    .stat.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--text) inset; }
+    .stat.sold .n { color: var(--ok); }
+    .stat.sold.active { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok) inset; background: var(--ok-light); }
+    .stat.unsold .n { color: var(--red); }
+    .stat.unsold.active { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset; background: var(--red-light); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot.sold { background: var(--ok); }
+    .dot.unsold { background: var(--red); }
+    .bar { height: 6px; border-radius: 4px; background: var(--red-light); overflow: hidden; }
+    .bar > div { height: 100%; background: var(--ok); transition: width .3s; }
+    .bar-label { font-size: 11.5px; color: var(--text-2); display: flex; justify-content: space-between; margin-top: 4px; }
+    .side-row { display: flex; gap: 6px; }
+    .side-row select { flex: 1; padding: 7px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+
+    #list { flex: 1; overflow-y: auto; }
+    .item {
+      display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border);
+      cursor: pointer; align-items: flex-start;
+    }
+    .item:hover { background: var(--surface-2); }
+    .item.sel { background: var(--brand-light); }
+    .item .dot { margin-top: 6px; }
+    .item .t { font-weight: 700; line-height: 1.3; }
+    .item .s { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
+    .item .r { margin-left: auto; text-align: right; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+    .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); margin-left: 4px; vertical-align: 1px; }
+    .tag.warn { background: #fff4d6; color: #a16207; }
+    .tag.edit { background: #e8f0fe; color: var(--blue); }
+    .list-empty { padding: 24px 16px; text-align: center; color: var(--text-2); }
+    .list-more { padding: 10px; text-align: center; font-size: 12px; color: var(--text-2); }
+
+    /* ── Map floating controls ── */
+    .fab-col { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 800; }
+    .fab {
+      width: 42px; height: 42px; border-radius: 12px; background: var(--surface);
+      border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fab svg { width: 20px; height: 20px; }
+    .fab.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .layer-pop {
+      position: absolute; right: 52px; top: 50px; background: var(--surface); border-radius: 12px;
+      box-shadow: var(--shadow); padding: 6px; display: none; min-width: 170px;
+    }
+    .layer-pop.open { display: block; }
+    .layer-pop button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 8px 10px; border-radius: 8px; text-align: left; }
+    .layer-pop button.on { background: var(--brand-light); color: var(--brand-dark); font-weight: 700; }
+    .legend {
+      position: absolute; left: 12px; bottom: 22px; z-index: 800;
+      background: rgba(255,255,255,0.95); border-radius: 10px; padding: 7px 11px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-size: 12px; display: flex; gap: 12px; align-items: center;
+    }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    #addBanner {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 850;
+      background: var(--text); color: #fff; padding: 9px 14px; border-radius: 12px; display: none;
+      align-items: center; gap: 10px; box-shadow: var(--shadow); font-weight: 600; white-space: nowrap;
+    }
+    #addBanner.show { display: flex; }
+    #addBanner button { background: rgba(255,255,255,0.15); border: 0; color: #fff; padding: 4px 10px; border-radius: 8px; }
+    #listToggle { display: none; }
+
+    /* ── Pins ── */
+    .pin { background: none; border: none; }
+    .pin svg { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); transition: transform .15s; transform-origin: 50% 100%; }
+    .pin.sel svg { transform: scale(1.35); }
+    .pin.drag svg { transform: scale(1.35); animation: bob .8s ease-in-out infinite alternate; }
+    @keyframes bob { to { transform: scale(1.35) translateY(-4px); } }
+    .cl-wrap { background: none; }
+    .cl {
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 2px solid #fff;
+    }
+    .cl span { background: #fff; border-radius: 50%; min-width: 62%; height: 62%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; padding: 0 3px; }
+    .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(26,115,232,0.25); }
+
+    /* ── Editor drawer ── */
+    #editor {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 380px; max-width: 100%;
+      background: var(--surface); z-index: 950; box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+      transform: translateX(105%); transition: transform .22s ease; display: flex; flex-direction: column;
+    }
+    #editor.open { transform: none; }
+    .ed-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+    .ed-head h2 { font-size: 17px; font-weight: 800; line-height: 1.3; flex: 1; word-break: break-word; }
+    .ed-head .meta { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+    .icon-btn { border: 0; background: var(--surface-2); width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ed-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+    .status-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .status-toggle button {
+      border: 2px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 8px;
+      font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.25;
+    }
+    .status-toggle button small { font-weight: 500; font-size: 11px; color: var(--text-2); }
+    .status-toggle button.sold.on { border-color: var(--ok); background: var(--ok-light); color: #00794d; }
+    .status-toggle button.unsold.on { border-color: var(--red); background: var(--red-light); color: #b71c1c; }
+    .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .quick a, .quick button {
+      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px;
+      border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+      text-decoration: none; color: var(--text); font-size: 11.5px; font-weight: 600;
+    }
+    .quick a:hover, .quick button:hover { background: var(--surface-2); }
+    .quick svg { width: 18px; height: 18px; }
+    .quick .disabled { opacity: .35; pointer-events: none; }
+    .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; }
+    .field input, .field textarea, .field select {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); outline: none;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--brand); }
+    .field textarea { resize: vertical; min-height: 70px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .visit-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+    .visit-box .txt { flex: 1; font-size: 12.5px; line-height: 1.4; }
+    .hint { font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+    .ed-foot { padding: 12px 16px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ed-foot .btn.primary { grid-column: 1 / -1; padding: 11px; }
+
+    /* ── Modal ── */
+    .modal {
+      position: fixed; inset: 0; background: rgba(15,18,30,0.5); z-index: 2000;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      background: var(--surface); border-radius: 18px; width: 100%; max-width: 520px;
+      max-height: calc(100vh - 32px); display: flex; flex-direction: column; box-shadow: var(--shadow);
+    }
+    .modal-card.wide { max-width: 720px; }
+    .modal-head { padding: 16px 20px 10px; display: flex; align-items: flex-start; gap: 10px; }
+    .modal-head h3 { font-size: 18px; font-weight: 800; flex: 1; }
+    .modal-head p { font-size: 12.5px; color: var(--text-2); margin-top: 3px; font-weight: 400; }
+    .modal-body { padding: 4px 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot { padding: 12px 20px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .dropzone {
+      border: 2px dashed var(--border); border-radius: 14px; padding: 26px 16px; text-align: center;
+      background: var(--surface-2); cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .dropzone.over, .dropzone:hover { border-color: var(--brand); background: var(--brand-light); }
+    .dropzone b { display: block; font-size: 15px; margin-bottom: 4px; }
+    .steps { counter-reset: s; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .steps li { counter-increment: s; position: relative; padding-left: 30px; line-height: 1.5; font-size: 13px; }
+    .steps li::before {
+      content: counter(s); position: absolute; left: 0; top: 0; width: 21px; height: 21px; border-radius: 50%;
+      background: var(--brand); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
+    details { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+    details summary { font-weight: 700; cursor: pointer; }
+    details[open] summary { margin-bottom: 10px; }
+    .copy-row { display: flex; gap: 6px; }
+    .copy-row input { flex: 1; min-width: 0; }
+    .conn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; }
+    .conn.ok { background: var(--ok-light); color: #00794d; font-weight: 700; }
+    .map-table { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px 12px; align-items: center; }
+    .map-table label { font-weight: 600; font-size: 13px; }
+    .map-table label small { display: block; font-weight: 400; color: var(--text-2); font-size: 11px; }
+    .map-table select { padding: 7px 8px; border: 1px solid var(--border); border-radius: 9px; width: 100%; background: var(--surface); }
+    .vals { border: 1px solid var(--border); border-radius: 12px; max-height: 220px; overflow-y: auto; }
+    .vals label { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13px; }
+    .vals label:last-child { border-bottom: 0; }
+    .vals label .c { margin-left: auto; color: var(--text-2); font-size: 12px; }
+    .vals input { width: 16px; height: 16px; accent-color: var(--ok); }
+    .preview-bar { display: flex; gap: 14px; font-weight: 700; font-size: 13px; flex-wrap: wrap; }
+    .opt { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; }
+    .opt input { margin-top: 3px; accent-color: var(--brand); }
+    .section-t { font-weight: 800; font-size: 14px; }
+
+    /* ── Welcome ── */
+    #welcome {
+      position: absolute; inset: 0; z-index: 820; display: none; align-items: center; justify-content: center;
+      pointer-events: none; padding: 16px;
+    }
+    #welcome.show { display: flex; }
+    .welcome-card {
+      pointer-events: auto; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow);
+      padding: 24px; max-width: 420px; width: 100%;
+    }
+    .welcome-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .welcome-card p { color: var(--text-2); margin-bottom: 16px; line-height: 1.55; }
+    .welcome-card .btn { width: 100%; margin-bottom: 8px; padding: 11px; justify-content: flex-start; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: #fff; padding: 10px 16px; border-radius: 12px; z-index: 3000;
+      opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100% - 32px);
+      display: flex; gap: 12px; align-items: center; font-weight: 600;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+    #toast button { background: rgba(255,255,255,0.18); border: 0; color: #fff; padding: 4px 10px; border-radius: 8px; }
+
+    .leaflet-container { font-family: inherit; }
+
+    /* ── Mobile ── */
+    @media (max-width: 820px) {
+      .hide-m { display: none !important; }
+      .logo-sub { display: none; }
+      header { padding: 0 10px; gap: 6px; }
+      .btn { padding: 8px 10px; }
+      #sidebar {
+        position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 62%;
+        border-right: 0; border-top-left-radius: 18px; border-top-right-radius: 18px;
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.15); transform: translateY(105%); transition: transform .22s ease;
+      }
+      #sidebar.open { transform: none; }
+      #sidebar::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 3px; background: #d0d4dc; margin: 8px auto 0; }
+      #listToggle { display: flex; }
+      #editor {
+        top: auto; left: 0; width: 100%; height: 78%;
+        border-top-left-radius: 18px; border-top-right-radius: 18px; transform: translateY(105%);
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+      }
+      #editor.open { transform: none; }
+      .legend { bottom: 16px; }
+      #toast { bottom: auto; top: calc(var(--header-h) + 10px); transform: translateX(-50%) translateY(-20px); }
+      .map-table { grid-template-columns: 1fr; gap: 4px; }
+      .map-table label { margin-top: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <rect width="34" height="34" rx="9" fill="#f25533"/>
+      <path d="M17 7c-4.4 0-8 3.4-8 7.7 0 5.6 8 12.3 8 12.3s8-6.7 8-12.3C25 10.4 21.4 7 17 7z" fill="#fff"/>
+      <circle cx="17" cy="14.6" r="3.2" fill="#f25533"/>
+    </svg>
+    <div style="min-width:0">
+      <div class="logo-title">Area Map <span class="pos-badge">POS</span></div>
+      <div class="logo-sub" id="subline">แผนที่ร้านสำหรับ Area Sales · Wongnai POS</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn sf" id="btnSf" title="Sync ข้อมูลจาก Salesforce">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
+    <span class="hide-m">Sync Salesforce</span>
+  </button>
+  <button class="btn" id="btnUpload" title="อัปโหลดไฟล์ CSV / Excel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+    <span class="hide-m">อัปโหลด</span>
+  </button>
+  <button class="btn primary" id="btnAdd" title="เพิ่มหมุดร้านใหม่">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <span class="hide-m">เพิ่มหมุด</span>
+  </button>
+  <div class="menu-wrap">
+    <button class="btn" id="btnMenu" title="เมนู" aria-label="เมนู">
+      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </button>
+    <div class="menu" id="menu">
+      <button data-act="export">⬇️ Export CSV (ส่งกลับเข้า Salesforce)</button>
+      <button data-act="template">📄 ดาวน์โหลดไฟล์ตัวอย่าง (Template)</button>
+      <button data-act="sample">🧪 โหลดข้อมูลตัวอย่าง (Demo)</button>
+      <hr>
+      <button data-act="fit">🗺️ ซูมให้เห็นทุกหมุด</button>
+      <button data-act="clear" class="danger" style="color:var(--red)">🗑️ ล้างข้อมูลทั้งหมดในเครื่องนี้</button>
+    </div>
+  </div>
+</header>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-top">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="ค้นหาชื่อร้าน / ที่อยู่ / เบอร์โทร" autocomplete="off">
+      </div>
+      <div class="stats">
+        <button class="stat active" data-filter="all"><div class="n" id="nAll">0</div><div class="l">ทั้งหมด</div></button>
+        <button class="stat sold" data-filter="sold"><div class="n" id="nSold">0</div><div class="l"><span class="dot sold"></span>ขายแล้ว</div></button>
+        <button class="stat unsold" data-filter="unsold"><div class="n" id="nUnsold">0</div><div class="l"><span class="dot unsold"></span>ยังไม่ขาย</div></button>
+      </div>
+      <div>
+        <div class="bar"><div id="penBar" style="width:0%"></div></div>
+        <div class="bar-label"><span>สัดส่วนร้านที่มี Wongnai POS</span><b id="penTxt">0%</b></div>
+      </div>
+      <div class="side-row">
+        <select id="ownerSel" title="กรองตามผู้ดูแล"><option value="">👤 ผู้ดูแลทั้งหมด</option></select>
+        <select id="sortSel" title="เรียงลำดับ">
+          <option value="near">📍 ใกล้ฉันก่อน</option>
+          <option value="name">ก-ฮ ชื่อร้าน</option>
+          <option value="visit">เยี่ยมนานสุดก่อน</option>
+        </select>
+      </div>
+    </div>
+    <div id="list"></div>
+  </aside>
+
+  <div style="position:relative; flex:1; height:100%;">
+    <div id="map"></div>
+
+    <div class="fab-col">
+      <button class="fab" id="btnLocate" title="ตำแหน่งของฉัน" aria-label="ตำแหน่งของฉัน">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <button class="fab" id="btnLayers" title="รูปแบบแผนที่" aria-label="รูปแบบแผนที่">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>
+      </button>
+      <button class="fab" id="listToggle" title="รายการร้าน" aria-label="รายการร้าน">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      </button>
+      <div class="layer-pop" id="layerPop">
+        <button data-layer="gRoad">🗺️ Google Maps</button>
+        <button data-layer="gHybrid">🛰️ Google ดาวเทียม + ถนน</button>
+        <button data-layer="gSat">🌍 Google ดาวเทียม</button>
+        <button data-layer="osm">🧭 OpenStreetMap</button>
+      </div>
+    </div>
+
+    <div id="addBanner"><span>📍 แตะบนแผนที่ตรงตำแหน่งร้าน</span><button id="addHere">ใช้ตำแหน่งฉัน</button><button id="addCancel">ยกเลิก</button></div>
+
+    <div class="legend">
+      <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#00a86b"/></svg>ขายแล้ว (มี Wongnai POS)</span>
+      <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#e53935"/></svg>ยังไม่ขาย</span>
+    </div>
+
+    <div id="welcome">
+      <div class="welcome-card">
+        <h2>👋 เริ่มใช้ Area Map</h2>
+        <p>ดึงรายชื่อร้านมาปักหมุดบนแผนที่ <b style="color:var(--ok)">เขียว = ขายแล้ว</b> · <b style="color:var(--red)">แดง = ยังไม่ขาย</b> แล้วออกไปปิดการขายร้านสีแดงได้เลย</p>
+        <button class="btn sf" data-act="sf">🔄 Sync จาก Salesforce</button>
+        <button class="btn" data-act="upload">📂 อัปโหลดไฟล์ Report (CSV / Excel)</button>
+        <button class="btn" data-act="sample">🧪 ลองด้วยข้อมูลตัวอย่าง</button>
+      </div>
+    </div>
+
+    <aside id="editor" aria-label="รายละเอียดร้าน">
+      <div class="ed-head">
+        <div style="flex:1; min-width:0">
+          <h2 id="edTitle">-</h2>
+          <div class="meta" id="edMeta"></div>
+        </div>
+        <button class="icon-btn" id="edClose" aria-label="ปิด">✕</button>
+      </div>
+      <div class="ed-body">
+        <div class="status-toggle">
+          <button class="sold" data-status="sold">✅ ขายแล้ว<small>มี Wongnai POS แล้ว</small></button>
+          <button class="unsold" data-status="unsold">🔴 ยังไม่ขาย<small>เป้าหมายที่ต้องไปปิด</small></button>
+        </div>
+        <div class="quick">
+          <a id="qNav" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>นำทาง</a>
+          <a id="qCall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>โทร</a>
+          <a id="qGmap" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Google Maps</a>
+          <a id="qSf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 17.5 7 4.5 4.5 0 0 1 18 18H7z"/></svg>Salesforce</a>
+        </div>
+        <div class="visit-box">
+          <div class="txt" id="visitTxt">ยังไม่เคยบันทึกการเยี่ยม</div>
+          <button class="btn" id="btnCheckin">📌 เช็คอินวันนี้</button>
+        </div>
+        <div class="field"><label for="fName">ชื่อร้าน</label><input id="fName"></div>
+        <div class="grid2">
+          <div class="field"><label for="fPhone">เบอร์โทร</label><input id="fPhone" inputmode="tel"></div>
+          <div class="field"><label for="fType">ประเภทร้าน</label><input id="fType" list="typeList" placeholder="เช่น QSR / FSR / Buffet"></div>
+        </div>
+        <datalist id="typeList"><option value="QSR (จ่ายก่อนกิน)"><option value="FSR (มีโต๊ะนั่งทาน)"><option value="Buffet"><option value="Cafe"></datalist>
+        <div class="field"><label for="fAddr">ที่อยู่</label><input id="fAddr"></div>
+        <div class="field"><label for="fOwner">ผู้ดูแล (Owner)</label><input id="fOwner" list="ownerList"></div>
+        <datalist id="ownerList"></datalist>
+        <div class="field"><label for="fNote">บันทึกการขาย / Objection ที่เจอ</label><textarea id="fNote" placeholder="เช่น เจ้าของสนใจ FSR Premium · ติดเรื่องราคา · นัดเดโมวันศุกร์"></textarea></div>
+        <div class="grid2">
+          <div class="field"><label for="fLat">Latitude</label><input id="fLat" inputmode="decimal"></div>
+          <div class="field"><label for="fLng">Longitude</label><input id="fLng" inputmode="decimal"></div>
+        </div>
+        <div class="hint" id="edHint"></div>
+      </div>
+      <div class="ed-foot">
+        <button class="btn primary" id="edSave">💾 บันทึก</button>
+        <button class="btn" id="edMove">✋ ย้ายหมุด</button>
+        <button class="btn" id="edGeo">🔎 หาพิกัดจากที่อยู่</button>
+        <button class="btn" id="edCenter">🎯 ปักกลางจอ</button>
+        <button class="btn danger" id="edDelete">🗑️ ลบหมุด</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Upload modal -->
+<div class="modal" id="uploadModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>อัปโหลดรายชื่อร้าน<p>Export Report จาก Salesforce เป็น CSV หรือ Excel แล้วลากมาวางที่นี่</p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="dropzone" id="drop">
+        <b>📂 ลากไฟล์มาวาง หรือแตะเพื่อเลือกไฟล์</b>
+        <span class="hint">รองรับ .csv · .xlsx · .xls</span>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,text/csv" hidden>
+      </label>
+      <ol class="steps">
+        <li>ใน Salesforce เปิด <b>Report</b> รายชื่อร้าน (Account) ที่ดูแล</li>
+        <li>ให้มีคอลัมน์ <b>ชื่อร้าน</b>, <b>Latitude/Longitude</b> (หรือที่อยู่ / ลิงก์ Google Maps) และ <b>คอลัมน์ที่บอกว่ามี Wongnai POS แล้วหรือยัง</b></li>
+        <li>กด <b>Export → Details Only → .csv หรือ .xlsx</b> แล้วอัปโหลดที่นี่ ระบบจะให้จับคู่คอลัมน์ก่อนนำเข้า</li>
+      </ol>
+      <div class="hint">ยังไม่มีไฟล์? <a href="#" data-act="template">ดาวน์โหลดไฟล์ตัวอย่าง</a> ไปลองกรอกดูได้</div>
+    </div>
+  </div>
+</div>
+
+<!-- Salesforce modal -->
+<div class="modal" id="sfModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Sync จาก Salesforce<p>ดึงร้านด้วย SOQL ผ่าน Salesforce REST API (login ด้วยบัญชี Salesforce ของคุณ)</p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="conn" id="sfConn">⚪ ยังไม่ได้เชื่อมต่อ</div>
+      <div class="field"><label for="sfInstance">Salesforce URL ของบริษัท</label><input id="sfInstance" placeholder="https://yourcompany.my.salesforce.com"></div>
+      <div class="field"><label for="sfClient">Consumer Key (Client ID) ของ Connected App</label><input id="sfClient" placeholder="3MVG9..." autocomplete="off"></div>
+      <div class="field">
+        <label for="sfSoql">SOQL Query (เลือกฟิลด์ที่จะดึง)</label>
+        <textarea id="sfSoql" class="mono" rows="5" spellcheck="false"></textarea>
+        <div class="hint">ควรมีฟิลด์ที่บอกว่า <b>ร้านมี Wongnai POS แล้วหรือยัง</b> (เช่น Type, Stage หรือ custom field อย่าง <code>Has_Wongnai_POS__c</code>) เพื่อใช้แยกสีเขียว/แดง</div>
+      </div>
+      <details>
+        <summary>🛠️ ตั้งค่าครั้งแรก (ให้ Salesforce Admin ทำครั้งเดียว)</summary>
+        <ol class="steps">
+          <li>Setup → <b>App Manager</b> → New Connected App → เปิด <b>Enable OAuth Settings</b></li>
+          <li>Callback URL ใส่ค่านี้:
+            <div class="copy-row" style="margin-top:6px"><input class="mono" id="sfCallback" readonly><button class="btn" data-copy="sfCallback">คัดลอก</button></div>
+          </li>
+          <li>OAuth Scope: <b>Manage user data via APIs (api)</b> · ติ๊ก <b>Require PKCE</b> · <b>ไม่ติ๊ก</b> Require Secret for Web Server Flow</li>
+          <li>Setup → <b>CORS</b> → New → Origin URL:
+            <div class="copy-row" style="margin-top:6px"><input class="mono" id="sfOrigin" readonly><button class="btn" data-copy="sfOrigin">คัดลอก</button></div>
+            แล้วเปิด <b>Enable CORS for OAuth endpoints</b>
+          </li>
+          <li>คัดลอก <b>Consumer Key</b> มาใส่ช่องด้านบน → กด เชื่อมต่อ</li>
+        </ol>
+      </details>
+      <details>
+        <summary>🔑 ขั้นสูง: ใช้ Access Token โดยตรง</summary>
+        <div class="hint" style="margin-bottom:8px">สำหรับ Admin/Dev ที่มี token อยู่แล้ว (เช่นจาก <code>sf org display</code>) · token เก็บแค่ในแท็บนี้ ปิดแท็บแล้วหายไป</div>
+        <div class="copy-row"><input id="sfToken" type="password" class="mono" placeholder="00D...!AQ..."><button class="btn" id="sfUseToken">ใช้ Token นี้</button></div>
+      </details>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="sfLogout" style="margin-right:auto">ตัดการเชื่อมต่อ</button>
+      <button class="btn" data-close>ปิด</button>
+      <button class="btn sf" id="sfGo">🔄 เชื่อมต่อ &amp; Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- Column mapping modal -->
+<div class="modal" id="mapModal">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h3>จับคู่คอลัมน์ก่อนนำเข้า<p id="mapSummary"></p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="map-table" id="mapFields"></div>
+      <div>
+        <div class="section-t">ค่าไหนแปลว่า “ขายแล้ว” (หมุดเขียว)?</div>
+        <div class="hint" style="margin:2px 0 8px">ติ๊กค่าที่หมายถึงร้านมี Wongnai POS แล้ว · ค่าที่ไม่ได้ติ๊กจะเป็นหมุดแดง</div>
+        <div id="statusVals"></div>
+        <div class="preview-bar" style="margin-top:8px"><span style="color:var(--ok)">🟢 เขียว <span id="pvSold">0</span></span><span style="color:var(--red)">🔴 แดง <span id="pvUnsold">0</span></span><span style="color:var(--text-2)">ไม่มีพิกัด <span id="pvNoGeo">0</span></span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <label class="opt"><input type="checkbox" id="optKeep" checked><span><b>เก็บค่าที่แก้ด้วยมือไว้</b> — ร้านที่เคยเปลี่ยนสถานะหรือย้ายหมุดเอง จะไม่ถูกทับ (โน้ตและประวัติเยี่ยมเก็บไว้เสมอ)</span></label>
+        <label class="opt"><input type="checkbox" id="optReplace"><span><b>ลบร้านเดิมที่ไม่อยู่ในข้อมูลชุดนี้</b> (ร้านที่เพิ่มเองด้วยมือจะไม่ถูกลบ)</span></label>
+        <label class="opt"><input type="checkbox" id="optGeo"><span><b>หาพิกัดจากที่อยู่</b> ให้ร้านที่ไม่มี Latitude/Longitude (ใช้เวลา ~1 วินาที/ร้าน, พิกัดเป็นค่าประมาณ)</span></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>ยกเลิก</button>
+      <button class="btn primary" id="mapImport">นำเข้าและปักหมุด</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  /* ───────────────────────── Constants ───────────────────────── */
+  const LS_KEY = 'wpos-areamap-v1';
+  const SS_TOKEN = 'wpos-areamap-sf-token';
+  const SS_PKCE = 'wpos-areamap-sf-pkce';
+  const DEFAULT_SOQL =
+`SELECT Id, Name, Type, Phone, Owner.Name,
+       BillingStreet, BillingCity, BillingState,
+       BillingLatitude, BillingLongitude
+FROM Account
+WHERE BillingLatitude != null
+ORDER BY LastModifiedDate DESC
+LIMIT 2000`;
+  const COLORS = { sold: '#00a86b', unsold: '#e53935' };
+  const MAP_FIELDS = [
+    ['name',    'ชื่อร้าน',            'จำเป็น'],
+    ['status',  'สถานะ Wongnai POS',  'คอลัมน์ที่บอกว่าขายแล้วหรือยัง'],
+    ['lat',     'Latitude',          ''],
+    ['lng',     'Longitude',         ''],
+    ['gmap',    'ลิงก์ Google Maps / "lat,lng"', 'ใช้แทน Lat/Lng ได้'],
+    ['address', 'ที่อยู่',              ''],
+    ['phone',   'เบอร์โทร',            ''],
+    ['owner',   'ผู้ดูแล (Owner)',      ''],
+    ['type',    'ประเภทร้าน',           ''],
+    ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอน Sync ซ้ำ'],
+  ];
+  const GUESS = {
+    sfId:    [/^(account ?)?id$/i, /^(sf|salesforce|record|account)[ _]?id$/i, /(^|\.)id$/i],
+    name:    [/^account ?name$/i, /^name$/i, /ชื่อร้าน/, /(store|shop|restaurant|merchant|outlet) ?name/i, /ชื่อ/],
+    lat:     [/latitude/i, /^lat$/i, /lat/i, /ละติจูด/],
+    lng:     [/longitude/i, /^(lng|lon|long)$/i, /(lng|lon)/i, /ลองจิจูด/],
+    gmap:    [/google ?map/i, /map ?(link|url)/i, /พิกัด/, /^(location|geo|latlng|lat ?, ?lng)$/i],
+    address: [/^address$/i, /ที่อยู่/, /(billing|shipping)?.?street/i, /address/i],
+    phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
+    owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
+    type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
+    status:  [/wongnai ?pos/i, /has.?pos/i, /pos.?status/i, /สถานะ/, /^status$/i, /stage/i, /status/i, /ขาย/, /customer/i],
+  };
+  const SOLD_RE = /(closed ?won|ขายแล้ว|ติดตั้งแล้ว|ใช้งานแล้ว|เปิดใช้งาน|มี ?wongnai|^มี$|^ใช้$|^yes$|^y$|^true$|^1$|^sold$|^won$|^active$|^live$|^customer$|onboard|installed|go ?live)/i;
+  const NOT_SOLD_RE = /(not|ไม่|ยัง|inactive|lost|^no$|^n$|^false$|^0$|prospect|churn)/i;
+
+  /* ───────────────────────── State ───────────────────────── */
+  const state = {
+    records: [],
+    settings: {
+      layer: 'gRoad',
+      sf: { instanceUrl: '', clientId: '', soql: DEFAULT_SOQL, apiVersion: 'v60.0' },
+      mappings: {},   // per source: { field: column }
+      soldValues: {}, // per source: [values]
+      lastSync: null,
+    },
+    filter: 'all', owner: '', q: '', sort: 'near',
+    me: null, selectedId: null, dragId: null, addMode: false,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
+  const fmtDate = (t) => new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Array.isArray(d.records)) state.records = d.records;
+      if (d.settings) {
+        Object.assign(state.settings, d.settings);
+        state.settings.sf = Object.assign({ soql: DEFAULT_SOQL, apiVersion: 'v60.0' }, d.settings.sf || {});
+      }
+    } catch (e) { /* storage unavailable or corrupt: start fresh */ }
+  }
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ records: state.records, settings: state.settings })); }
+    catch (e) { toast('⚠️ บันทึกข้อมูลในเครื่องไม่สำเร็จ (พื้นที่เต็มหรือโหมดส่วนตัว)'); }
+  }
+
+  /* ───────────────────────── Toast ───────────────────────── */
+  let toastTimer;
+  function toast(msg, ms = 2800, action) {
+    $('toastMsg').textContent = msg;
+    const b = $('toastBtn');
+    if (action) { b.hidden = false; b.textContent = action.label; b.onclick = () => { action.fn(); hideToast(); }; }
+    else b.hidden = true;
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    if (ms) toastTimer = setTimeout(hideToast, ms);
+  }
+  function hideToast() { $('toast').classList.remove('show'); }
+
+  /* ───────────────────────── Map ───────────────────────── */
+  const map = L.map('map', { zoomControl: false, maxZoom: 21 }).setView([13.7563, 100.5018], 12);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
+  const gTile = (lyrs) => L.tileLayer(`https://{s}.google.com/vt/lyrs=${lyrs}&hl=th&x={x}&y={y}&z={z}`, {
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 21, attribution: 'Map data &copy; Google',
+  });
+  const LAYERS = {
+    gRoad: gTile('m'),
+    gHybrid: gTile('y'),
+    gSat: gTile('s'),
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
+  };
+  let currentLayer = null;
+  function setLayer(key) {
+    if (!LAYERS[key]) key = 'gRoad';
+    if (currentLayer) map.removeLayer(currentLayer);
+    currentLayer = LAYERS[key].addTo(map);
+    state.settings.layer = key;
+    document.querySelectorAll('#layerPop button').forEach(b => b.classList.toggle('on', b.dataset.layer === key));
+  }
+
+  const cluster = L.markerClusterGroup({
+    maxClusterRadius: 45, disableClusteringAtZoom: 17, showCoverageOnHover: false, spiderfyOnMaxZoom: true,
+    iconCreateFunction(c) {
+      const ms = c.getAllChildMarkers();
+      const sold = ms.filter(m => m.options.status === 'sold').length;
+      const n = ms.length, deg = Math.round(sold / n * 360);
+      const size = n < 10 ? 38 : n < 100 ? 46 : 54;
+      return L.divIcon({
+        className: 'cl-wrap', iconSize: [size, size],
+        html: `<div class="cl" style="width:${size}px;height:${size}px;background:conic-gradient(${COLORS.sold} 0 ${deg}deg, ${COLORS.unsold} ${deg}deg 360deg)"><span>${n}</span></div>`,
+      });
+    },
+  });
+  map.addLayer(cluster);
+
+  function pinIcon(r, cls = '') {
+    const c = COLORS[r.status] || COLORS.unsold;
+    const inner = r.status === 'sold'
+      ? `<circle cx="15" cy="15" r="6.5" fill="#fff"/><path d="M11.8 15.2l2.3 2.3 4.2-4.6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      : `<circle cx="15" cy="15" r="5" fill="#fff"/>`;
+    return L.divIcon({
+      className: 'pin ' + cls, iconSize: [30, 40], iconAnchor: [15, 39],
+      html: `<svg width="30" height="40" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="${c}" stroke="#fff" stroke-width="2"/>${inner}</svg>`,
+    });
+  }
+
+  const markers = new Map();
+  function passFilter(r, ignoreStatus = false) {
+    if (!ignoreStatus && state.filter !== 'all' && r.status !== state.filter) return false;
+    if (state.owner && (r.owner || '') !== state.owner) return false;
+    if (state.q) {
+      const hay = [r.name, r.address, r.phone, r.sfId, r.type, r.note].join(' ').toLowerCase();
+      if (!hay.includes(state.q.toLowerCase())) return false;
+    }
+    return true;
+  }
+  function makeMarker(r) {
+    const cls = r.id === state.dragId ? 'drag' : r.id === state.selectedId ? 'sel' : '';
+    const m = L.marker([r.lat, r.lng], {
+      icon: pinIcon(r, cls), status: r.status, title: r.name,
+      draggable: r.id === state.dragId, zIndexOffset: cls ? 1000 : 0,
+    });
+    m.on('click', () => openEditor(r.id));
+    m.on('dragend', () => {
+      const p = m.getLatLng();
+      r.lat = +p.lat.toFixed(6); r.lng = +p.lng.toFixed(6);
+      r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false;
+      touch(r); state.dragId = null; save(); renderAll(); openEditor(r.id, false);
+      toast('📍 ย้ายหมุดเรียบร้อย');
+    });
+    return m;
+  }
+  function renderMarkers() {
+    cluster.clearLayers(); markers.clear();
+    const list = [];
+    for (const r of state.records) {
+      if (!hasCoord(r) || !passFilter(r)) continue;
+      const m = makeMarker(r); markers.set(r.id, m); list.push(m);
+    }
+    cluster.addLayers(list);
+  }
+
+  /* ───────────────────────── Sidebar ───────────────────────── */
+  function distKm(a, b) {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+  function renderStats() {
+    const base = state.records.filter(r => passFilter(r, true));
+    const sold = base.filter(r => r.status === 'sold').length;
+    $('nAll').textContent = base.length.toLocaleString();
+    $('nSold').textContent = sold.toLocaleString();
+    $('nUnsold').textContent = (base.length - sold).toLocaleString();
+    const pct = base.length ? Math.round(sold / base.length * 100) : 0;
+    $('penBar').style.width = pct + '%';
+    $('penTxt').textContent = pct + '%';
+    document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter));
+
+    const owners = [...new Set(state.records.map(r => r.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+    const sel = $('ownerSel');
+    sel.innerHTML = '<option value="">👤 ผู้ดูแลทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
+    $('ownerList').innerHTML = owners.map(o => `<option value="${esc(o)}">`).join('');
+    const sync = state.settings.lastSync ? ` · Sync ล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
+    $('subline').textContent = `${state.records.length.toLocaleString()} ร้าน${sync}`;
+  }
+  const LIST_LIMIT = 300;
+  function renderList() {
+    let rows = state.records.filter(r => passFilter(r));
+    const me = state.me;
+    if (state.sort === 'near' && me) {
+      rows.forEach(r => { r._d = hasCoord(r) ? distKm(me, r) : Infinity; });
+      rows.sort((a, b) => a._d - b._d);
+    } else if (state.sort === 'visit') {
+      const lv = (r) => (r.visits && r.visits.length ? r.visits[r.visits.length - 1] : 0);
+      rows.sort((a, b) => lv(a) - lv(b));
+    } else {
+      rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
+    }
+    if (!rows.length) {
+      $('list').innerHTML = `<div class="list-empty">${state.records.length ? 'ไม่พบร้านตามเงื่อนไข' : 'ยังไม่มีข้อมูลร้าน<br>กด Sync Salesforce หรือ อัปโหลด'}</div>`;
+      return;
+    }
+    const html = rows.slice(0, LIST_LIMIT).map(r => {
+      const d = me && hasCoord(r) ? distKm(me, r) : null;
+      const right = d != null ? (d < 1 ? Math.round(d * 1000) + ' ม.' : d.toFixed(1) + ' กม.') : '';
+      const tags = (!hasCoord(r) ? '<span class="tag warn">ไม่มีพิกัด</span>' : '')
+        + (r.geoApprox ? '<span class="tag warn">พิกัดประมาณ</span>' : '')
+        + (r.manual && (r.manual.status || r.manual.pos) ? '<span class="tag edit">แก้ไขแล้ว</span>' : '')
+        + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '');
+      const sub = [r.address, r.owner && '👤 ' + r.owner].filter(Boolean).join(' · ');
+      const lv = r.visits && r.visits.length ? `เยี่ยม ${fmtDate(r.visits[r.visits.length - 1])}` : '';
+      return `<div class="item${r.id === state.selectedId ? ' sel' : ''}" data-id="${r.id}">
+        <span class="dot ${r.status}"></span>
+        <div style="min-width:0"><div class="t">${esc(r.name)}${tags}</div><div class="s">${sub ? esc(sub) : '&nbsp;'}</div></div>
+        <div class="r">${right}${lv ? '<br>' + lv : ''}</div></div>`;
+    }).join('');
+    $('list').innerHTML = html + (rows.length > LIST_LIMIT ? `<div class="list-more">แสดง ${LIST_LIMIT} จาก ${rows.length.toLocaleString()} ร้าน · ค้นหาเพื่อกรองเพิ่ม</div>` : '');
+  }
+  function renderAll() {
+    renderMarkers(); renderStats(); renderList();
+    $('welcome').classList.toggle('show', state.records.length === 0);
+  }
+
+  /* ───────────────────────── Editor ───────────────────────── */
+  const current = () => state.records.find(r => r.id === state.selectedId);
+  function touch(r) { r.updatedAt = Date.now(); }
+
+  function openEditor(id, fly = true) {
+    const r = state.records.find(x => x.id === id);
+    if (!r) return;
+    const prev = state.selectedId;
+    state.selectedId = id;
+    if (prev !== id) {
+      [prev, id].forEach(pid => {
+        const m = markers.get(pid), rr = state.records.find(x => x.id === pid);
+        if (m && rr) { m.setIcon(pinIcon(rr, pid === id ? 'sel' : '')); m.setZIndexOffset(pid === id ? 1000 : 0); }
+      });
+    }
+    fillEditor(r);
+    $('editor').classList.add('open');
+    if (isMobile()) $('sidebar').classList.remove('open');
+    document.querySelectorAll('#list .item').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+    if (fly && hasCoord(r)) flyToRecord(r);
+  }
+  function flyToRecord(r) {
+    // zoom past the clustering threshold and keep the pin visible beside the drawer / above the bottom sheet
+    const z = Math.max(map.getZoom(), 17);
+    const size = map.getSize();
+    const target = isMobile() ? L.point(size.x / 2, size.y * 0.2) : L.point((size.x - 380) / 2, size.y / 2);
+    const p = map.project([r.lat, r.lng], z).subtract(target.subtract(size.divideBy(2)));
+    map.setView(map.unproject(p, z), z);
+  }
+  function fillEditor(r) {
+    $('edTitle').textContent = r.name || '(ไม่มีชื่อ)';
+    const src = { sf: 'Salesforce', upload: 'ไฟล์อัปโหลด', manual: 'เพิ่มเอง', sample: 'ข้อมูลตัวอย่าง' }[r.source] || r.source;
+    $('edMeta').textContent = [r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
+    document.querySelectorAll('.status-toggle button').forEach(b => b.classList.toggle('on', b.dataset.status === r.status));
+    $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
+    $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
+    $('fLat').value = hasCoord(r) ? r.lat : ''; $('fLng').value = hasCoord(r) ? r.lng : '';
+
+    const geo = hasCoord(r);
+    setLink('qNav', geo && `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=driving`);
+    setLink('qGmap', geo ? `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`
+      : (r.address || r.name) && `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([r.name, r.address].filter(Boolean).join(' '))}`);
+    setLink('qCall', r.phone && 'tel:' + r.phone.replace(/[^\d+]/g, ''));
+    const inst = (state.settings.sf.instanceUrl || '').replace(/\/+$/, '');
+    setLink('qSf', r.sfId && inst && `${inst}/${encodeURIComponent(r.sfId)}`);
+
+    const v = r.visits || [];
+    $('visitTxt').innerHTML = v.length
+      ? `เยี่ยมล่าสุด <b>${fmtDate(v[v.length - 1])}</b> · รวม ${v.length} ครั้ง`
+      : 'ยังไม่เคยบันทึกการเยี่ยมร้านนี้';
+    $('edMove').disabled = !geo;
+    $('edCenter').textContent = geo ? '🎯 ย้ายมากลางจอ' : '🎯 ปักกลางจอ';
+    const hints = [];
+    if (!geo) hints.push('⚠️ ร้านนี้ยังไม่มีพิกัด — กด “หาพิกัดจากที่อยู่” หรือ “ปักกลางจอ” หรือกรอก Lat/Lng เอง');
+    if (r.geoApprox) hints.push('📍 พิกัดได้จากการค้นหาที่อยู่ (ค่าประมาณ) — ถ้าไม่ตรงให้กด “ย้ายหมุด” แล้วลากไปที่ร้านจริง');
+    if (r.manual && (r.manual.status || r.manual.pos)) hints.push('✏️ ร้านนี้ถูกแก้ด้วยมือ (' + [r.manual.status && 'สถานะ', r.manual.pos && 'ตำแหน่ง'].filter(Boolean).join(', ') + ') — ตอน Sync ครั้งถัดไปจะไม่ถูกทับถ้าติ๊ก “เก็บค่าที่แก้ด้วยมือไว้”');
+    hints.push('💡 Export CSV จากเมนู ⋮ เพื่อส่งการแก้ไขกลับเข้า Salesforce (Data Loader / Data Import Wizard)');
+    $('edHint').innerHTML = hints.map(esc).join('<br>');
+  }
+  function setLink(id, href) {
+    const a = $(id);
+    if (href) { a.href = href; a.classList.remove('disabled'); } else { a.removeAttribute('href'); a.classList.add('disabled'); }
+  }
+  function closeEditor() {
+    const prev = state.selectedId;
+    state.selectedId = null;
+    if (state.dragId) { state.dragId = null; renderMarkers(); }
+    const m = markers.get(prev), r = state.records.find(x => x.id === prev);
+    if (m && r) { m.setIcon(pinIcon(r)); m.setZIndexOffset(0); }
+    $('editor').classList.remove('open');
+    document.querySelectorAll('#list .item.sel').forEach(el => el.classList.remove('sel'));
+  }
+  function setStatus(status) {
+    const r = current(); if (!r || r.status === status) return;
+    const old = r.status;
+    r.status = status; r.manual = Object.assign({}, r.manual, { status: true }); touch(r);
+    save(); renderAll(); openEditor(r.id, false);
+    toast(status === 'sold' ? '🎉 ปิดการขายแล้ว! เปลี่ยนเป็นหมุดเขียว' : '🔴 เปลี่ยนเป็นยังไม่ขาย', 3500, {
+      label: 'เลิกทำ', fn: () => { r.status = old; touch(r); save(); renderAll(); openEditor(r.id, false); },
+    });
+  }
+  function saveEditor() {
+    const r = current(); if (!r) return;
+    const lat = parseNum($('fLat').value), lng = parseNum($('fLng').value);
+    const latStr = $('fLat').value.trim(), lngStr = $('fLng').value.trim();
+    if ((latStr || lngStr) && !validLatLng(lat, lng)) { toast('⚠️ Latitude / Longitude ไม่ถูกต้อง'); return; }
+    r.name = $('fName').value.trim() || '(ไม่มีชื่อ)';
+    r.phone = $('fPhone').value.trim(); r.type = $('fType').value.trim();
+    r.address = $('fAddr').value.trim(); r.owner = $('fOwner').value.trim(); r.note = $('fNote').value.trim();
+    if (latStr && lngStr) {
+      if (r.lat !== lat || r.lng !== lng) { r.lat = lat; r.lng = lng; r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false; }
+    } else if (!latStr && !lngStr) { r.lat = null; r.lng = null; }
+    touch(r); save(); renderAll(); openEditor(r.id, false);
+    toast('💾 บันทึกแล้ว');
+  }
+  function placeRecordAt(r, latlng) {
+    r.lat = +latlng.lat.toFixed(6); r.lng = +latlng.lng.toFixed(6);
+    r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false;
+    touch(r); save(); renderAll(); openEditor(r.id);
+  }
+
+  /* ───────────────────────── Add mode ───────────────────────── */
+  function setAddMode(on) {
+    state.addMode = on;
+    $('addBanner').classList.toggle('show', on);
+    $('map').classList.toggle('adding', on);
+    $('btnAdd').classList.toggle('on', on);
+    if (on) { closeEditor(); if (isMobile()) $('sidebar').classList.remove('open'); }
+  }
+  function createAt(latlng) {
+    const r = {
+      id: uid(), sfId: '', name: 'ร้านใหม่', status: 'unsold', lat: +latlng.lat.toFixed(6), lng: +latlng.lng.toFixed(6),
+      address: '', phone: '', owner: '', type: '', note: '', visits: [], source: 'manual', manual: {}, createdAt: Date.now(),
+    };
+    touch(r); state.records.push(r); setAddMode(false); save(); renderAll(); openEditor(r.id);
+    setTimeout(() => { $('fName').focus(); $('fName').select(); }, 250);
+    toast('📍 เพิ่มหมุดแล้ว ใส่ชื่อร้านแล้วกดบันทึก');
+  }
+  map.on('click', (e) => { if (state.addMode) createAt(e.latlng); });
+
+  /* ───────────────────────── Geolocation ───────────────────────── */
+  let meMarker = null, meCircle = null;
+  function locate(cb) {
+    if (!navigator.geolocation) { toast('⚠️ อุปกรณ์นี้ไม่รองรับการหาตำแหน่ง'); return; }
+    $('btnLocate').classList.add('on');
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      state.me = { lat, lng };
+      if (!meMarker) {
+        meMarker = L.marker([lat, lng], { icon: L.divIcon({ className: '', html: '<div class="me-dot"></div>', iconSize: [18, 18] }), interactive: false, zIndexOffset: 2000 }).addTo(map);
+        meCircle = L.circle([lat, lng], { radius: accuracy, color: '#1a73e8', weight: 1, fillOpacity: 0.08, interactive: false }).addTo(map);
+      } else { meMarker.setLatLng([lat, lng]); meCircle.setLatLng([lat, lng]).setRadius(accuracy); }
+      renderList();
+      if (cb) cb({ lat, lng }); else map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    }, (err) => {
+      $('btnLocate').classList.remove('on');
+      toast(err.code === 1 ? '⚠️ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์' : '⚠️ หาตำแหน่งไม่สำเร็จ ลองใหม่อีกครั้ง');
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  }
+
+  /* ───────────────────────── Parsing helpers ───────────────────────── */
+  function parseNum(v) {
+    if (v == null) return NaN;
+    if (typeof v === 'number') return v;
+    const s = String(v).trim().replace(/\s/g, '');
+    return s === '' ? NaN : Number(s);
+  }
+  function validLatLng(lat, lng) {
+    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
+  }
+  function parseLatLng(str) {
+    if (!str) return null;
+    const s = String(str);
+    const pats = [
+      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+      /@(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
+      /[?&](?:q|query|ll|destination|center)=(?:loc:)?(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i,
+      /^\s*\(?(-?\d+\.\d+)\s*[, ]\s*(-?\d+\.\d+)\)?\s*$/,
+    ];
+    for (const p of pats) {
+      const m = s.match(p);
+      if (m) { const lat = +m[1], lng = +m[2]; if (validLatLng(lat, lng)) return [lat, lng]; }
+    }
+    return null;
+  }
+  function flattenSf(rec, prefix = '', out = {}) {
+    for (const [k, v] of Object.entries(rec)) {
+      if (k === 'attributes') continue;
+      const key = prefix ? prefix + '.' + k : k;
+      if (v && typeof v === 'object' && !Array.isArray(v)) flattenSf(v, key, out);
+      else out[key] = v == null ? '' : v;
+    }
+    return out;
+  }
+  const normKey = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  function keyOf(r) {
+    if (r.sfId) return 'id:' + String(r.sfId).slice(0, 15);
+    return 'nm:' + normKey(r.name) + '|' + (hasCoord(r) ? r.lat.toFixed(4) + ',' + r.lng.toFixed(4) : normKey(r.address));
+  }
+
+  /* ───────────────────────── File upload ───────────────────────── */
+  function handleFile(file) {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    const done = (rows) => {
+      rows = rows.filter(r => Object.values(r).some(v => String(v ?? '').trim() !== ''));
+      if (!rows.length) { toast('⚠️ ไม่พบข้อมูลในไฟล์'); return; }
+      closeModal('uploadModal'); openMapping(rows, 'upload', file.name);
+    };
+    if (name.endsWith('.csv') || file.type === 'text/csv') {
+      Papa.parse(file, {
+        header: true, skipEmptyLines: true, transformHeader: h => h.replace(/^﻿/, '').trim(),
+        complete: (res) => done(res.data), error: () => toast('⚠️ อ่านไฟล์ CSV ไม่สำเร็จ'),
+      });
+    } else {
+      const fr = new FileReader();
+      fr.onload = () => {
+        try {
+          const wb = XLSX.read(fr.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          done(XLSX.utils.sheet_to_json(ws, { defval: '', raw: true }));
+        } catch (e) { toast('⚠️ อ่านไฟล์ Excel ไม่สำเร็จ'); }
+      };
+      fr.readAsArrayBuffer(file);
+    }
+  }
+
+  /* ───────────────────────── Column mapping ───────────────────────── */
+  let pending = null;
+  function guessColumns(headers) {
+    const used = new Set(), out = {};
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'status', 'type', 'address'];
+    for (const f of order) {
+      for (const re of GUESS[f]) {
+        const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)));
+        if (h) { out[f] = h; used.add(h); break; }
+      }
+    }
+    return out;
+  }
+  function openMapping(rows, source, label) {
+    const headers = [...new Set(rows.slice(0, 300).flatMap(r => Object.keys(r)))].filter(h => !h.startsWith('__parsed'));
+    const saved = state.settings.mappings[source];
+    const savedOk = saved && Object.values(saved).every(c => !c || headers.includes(c));
+    const mapping = savedOk ? { ...saved } : guessColumns(headers);
+    pending = { rows, source, headers };
+    $('mapSummary').textContent = `${label} · พบ ${rows.length.toLocaleString()} แถว · ${headers.length} คอลัมน์`;
+    const opts = (sel) => '<option value="">— ไม่ใช้ —</option>' + headers.map(h => `<option${h === sel ? ' selected' : ''} value="${esc(h)}">${esc(h)}</option>`).join('');
+    $('mapFields').innerHTML = MAP_FIELDS.map(([k, label, sub]) =>
+      `<label for="mf_${k}">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</label><select id="mf_${k}" data-field="${k}">${opts(mapping[k])}</select>`
+    ).join('');
+    $('mapFields').querySelectorAll('select').forEach(s => s.addEventListener('change', () => {
+      if (s.dataset.field === 'status') renderStatusValues(); else updatePreview();
+    }));
+    $('optReplace').checked = false;
+    $('optGeo').checked = false;
+    renderStatusValues();
+    openModal('mapModal');
+  }
+  function getMapping() {
+    const m = {};
+    $('mapFields').querySelectorAll('select').forEach(s => { if (s.value) m[s.dataset.field] = s.value; });
+    return m;
+  }
+  function renderStatusValues() {
+    const col = $('mf_status').value;
+    if (!col) {
+      $('statusVals').innerHTML = '<div class="hint" style="padding:10px;border:1px dashed var(--border);border-radius:12px">ไม่ได้เลือกคอลัมน์สถานะ → ทุกร้านจะเป็น <b style="color:var(--red)">หมุดแดง</b> (เปลี่ยนเป็นเขียวด้วยมือทีหลังได้)</div>';
+      updatePreview(); return;
+    }
+    const counts = new Map();
+    pending.rows.forEach(r => { const v = String(r[col] ?? '').trim(); counts.set(v, (counts.get(v) || 0) + 1); });
+    const vals = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const savedSold = state.settings.soldValues[pending.source];
+    const useSaved = Array.isArray(savedSold) && savedSold.some(v => counts.has(v));
+    const isSold = (v) => useSaved ? savedSold.includes(v) : (SOLD_RE.test(v) && !NOT_SOLD_RE.test(v));
+    const shown = vals.slice(0, 80);
+    $('statusVals').innerHTML = `<div class="vals">${shown.map(([v, c]) =>
+      `<label><input type="checkbox" value="${esc(v)}"${isSold(v) ? ' checked' : ''}><span>${v === '' ? '<i style="color:var(--text-2)">(ว่าง)</i>' : esc(v)}</span><span class="c">${c.toLocaleString()} ร้าน</span></label>`
+    ).join('')}</div>${vals.length > 80 ? `<div class="hint">แสดง 80 ค่าแรกจาก ${vals.length} ค่า — คอลัมน์นี้อาจไม่ใช่คอลัมน์สถานะ</div>` : ''}`;
+    $('statusVals').querySelectorAll('input').forEach(i => i.addEventListener('change', updatePreview));
+    updatePreview();
+  }
+  function getSoldSet() {
+    return new Set([...$('statusVals').querySelectorAll('input:checked')].map(i => i.value));
+  }
+  function rowToRecord(row, m, soldSet, source) {
+    const get = (k) => (m[k] ? String(row[m[k]] ?? '').trim() : '');
+    let lat = parseNum(m.lat ? row[m.lat] : ''), lng = parseNum(m.lng ? row[m.lng] : '');
+    if (validLatLng(lng, lat) && !validLatLng(lat, lng)) [lat, lng] = [lng, lat];
+    if (!validLatLng(lat, lng)) {
+      const p = parseLatLng(get('gmap'));
+      if (p) [lat, lng] = p; else { lat = null; lng = null; }
+    }
+    const raw = get('status');
+    return {
+      sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
+      address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'),
+      status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
+    };
+  }
+  function updatePreview() {
+    if (!pending) return;
+    const m = getMapping(), sold = getSoldSet();
+    let s = 0, noGeo = 0;
+    for (const row of pending.rows) {
+      const r = rowToRecord(row, m, sold, pending.source);
+      if (r.status === 'sold') s++;
+      if (!hasCoord(r)) noGeo++;
+    }
+    $('pvSold').textContent = s.toLocaleString();
+    $('pvUnsold').textContent = (pending.rows.length - s).toLocaleString();
+    $('pvNoGeo').textContent = noGeo.toLocaleString();
+  }
+  function doImport() {
+    const m = getMapping();
+    if (!m.name) { toast('⚠️ กรุณาเลือกคอลัมน์ “ชื่อร้าน”'); return; }
+    const soldSet = getSoldSet();
+    const { rows, source } = pending;
+    state.settings.mappings[source] = m;
+    state.settings.soldValues[source] = [...soldSet];
+    const keep = $('optKeep').checked, replace = $('optReplace').checked, geo = $('optGeo').checked;
+
+    const incoming = rows.map(row => rowToRecord(row, m, soldSet, source));
+    const idx = new Map(state.records.map(r => [keyOf(r), r]));
+    const seen = new Set();
+    let added = 0, updated = 0;
+    for (const inc of incoming) {
+      const k = keyOf(inc);
+      if (seen.has(k)) continue; // duplicate rows in the same file
+      seen.add(k);
+      const ex = idx.get(k);
+      if (ex) {
+        const man = keep ? (ex.manual || {}) : {};
+        const keepPos = (man.pos || (!hasCoord(inc) && hasCoord(ex)));
+        Object.assign(ex, {
+          sfId: inc.sfId || ex.sfId, name: inc.name, address: inc.address || ex.address, phone: inc.phone || ex.phone,
+          owner: inc.owner || ex.owner, type: inc.type || ex.type, rawStatus: inc.rawStatus,
+          status: man.status ? ex.status : inc.status,
+          lat: keepPos ? ex.lat : inc.lat, lng: keepPos ? ex.lng : inc.lng,
+          geoApprox: keepPos ? ex.geoApprox : false,
+          source: ex.source === 'manual' ? 'manual' : source,
+          manual: keep ? ex.manual : {},
+        });
+        touch(ex); updated++;
+      } else {
+        const r = { id: uid(), note: '', visits: [], manual: {}, ...inc };
+        touch(r); state.records.push(r); idx.set(k, r); added++;
+      }
+    }
+    let removed = 0;
+    if (replace) {
+      const before = state.records.length;
+      state.records = state.records.filter(r => r.source === 'manual' || seen.has(keyOf(r)));
+      removed = before - state.records.length;
+    }
+    if (source === 'sf') state.settings.lastSync = Date.now();
+    save(); closeModal('mapModal'); pending = null;
+    closeEditor(); renderAll(); fitAll();
+    toast(`✅ นำเข้าแล้ว: เพิ่ม ${added} · อัปเดต ${updated}${removed ? ` · ลบ ${removed}` : ''} ร้าน`, 4000);
+    if (geo) {
+      const todo = state.records.filter(r => !hasCoord(r) && (r.address || r.name) && seen.has(keyOf(r)));
+      if (todo.length) setTimeout(() => runGeocode(todo), 1200);
+    }
+  }
+
+  /* ───────────────────────── Geocoding (OpenStreetMap Nominatim) ───────────────────────── */
+  let geoCancel = false;
+  async function geocodeOne(r) {
+    const q = [r.address, r.address ? '' : r.name].filter(Boolean).join(' ');
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=th&accept-language=th&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (j[0]) { r.lat = +(+j[0].lat).toFixed(6); r.lng = +(+j[0].lon).toFixed(6); r.geoApprox = true; touch(r); return true; }
+    return false;
+  }
+  async function runGeocode(list) {
+    geoCancel = false;
+    let ok = 0;
+    for (let i = 0; i < list.length && !geoCancel; i++) {
+      toast(`🔎 กำลังหาพิกัด ${i + 1}/${list.length} (พบ ${ok})`, 0, { label: 'หยุด', fn: () => { geoCancel = true; } });
+      try { if (await geocodeOne(list[i])) ok++; } catch (e) { /* skip this row */ }
+      if (i % 10 === 9) { save(); renderAll(); }
+      await new Promise(res => setTimeout(res, 1100)); // Nominatim usage policy: max 1 request/sec
+    }
+    save(); renderAll();
+    toast(`📍 หาพิกัดได้ ${ok} จาก ${list.length} ร้าน${ok < list.length ? ' · ร้านที่เหลือปักหมุดเองได้' : ''}`, 5000);
+  }
+
+  /* ───────────────────────── Salesforce (OAuth 2.0 PKCE + REST) ───────────────────────── */
+  const redirectUri = () => location.origin + location.pathname;
+  const instBase = () => (state.settings.sf.instanceUrl || '').trim().replace(/\/+$/, '');
+  function getToken() { try { return JSON.parse(sessionStorage.getItem(SS_TOKEN) || 'null'); } catch (e) { return null; } }
+  function setToken(t) { try { t ? sessionStorage.setItem(SS_TOKEN, JSON.stringify(t)) : sessionStorage.removeItem(SS_TOKEN); } catch (e) { /* ignore */ } }
+  const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const randStr = (n) => b64url(crypto.getRandomValues(new Uint8Array(n))).slice(0, n);
+
+  function readSfForm() {
+    const sf = state.settings.sf;
+    sf.instanceUrl = $('sfInstance').value.trim().replace(/\/+$/, '');
+    sf.clientId = $('sfClient').value.trim();
+    sf.soql = $('sfSoql').value.trim() || DEFAULT_SOQL;
+    save();
+  }
+  function openSfModal() {
+    const sf = state.settings.sf;
+    $('sfInstance').value = sf.instanceUrl || '';
+    $('sfClient').value = sf.clientId || '';
+    $('sfSoql').value = sf.soql || DEFAULT_SOQL;
+    $('sfCallback').value = redirectUri();
+    $('sfOrigin').value = location.origin;
+    const t = getToken();
+    $('sfConn').className = 'conn' + (t ? ' ok' : '');
+    $('sfConn').textContent = t ? `🟢 เชื่อมต่อแล้ว · ${t.instance_url}` : '⚪ ยังไม่ได้เชื่อมต่อ — กด “เชื่อมต่อ & Sync” เพื่อ Login Salesforce';
+    $('sfGo').textContent = t ? '🔄 Sync ตอนนี้' : '🔄 เชื่อมต่อ & Sync';
+    $('sfLogout').style.visibility = t ? 'visible' : 'hidden';
+    openModal('sfModal');
+  }
+  async function sfConnect() {
+    readSfForm();
+    const inst = instBase(), sf = state.settings.sf;
+    if (!/^https:\/\//i.test(inst)) { toast('⚠️ ใส่ Salesforce URL ให้ถูกต้อง (ขึ้นต้นด้วย https://)'); return; }
+    if (!sf.clientId) { toast('⚠️ ใส่ Consumer Key ก่อน (ดูวิธีตั้งค่าครั้งแรกด้านล่าง)'); return; }
+    if (!window.crypto || !crypto.subtle) { toast('⚠️ ต้องเปิดหน้านี้ผ่าน https เพื่อเชื่อมต่อ Salesforce'); return; }
+    const verifier = randStr(64);
+    const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    const st = randStr(20);
+    try { sessionStorage.setItem(SS_PKCE, JSON.stringify({ verifier, state: st, inst, autoSync: true })); }
+    catch (e) { toast('⚠️ เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูลชั่วคราว'); return; }
+    const p = new URLSearchParams({
+      response_type: 'code', client_id: sf.clientId, redirect_uri: redirectUri(),
+      code_challenge: challenge, code_challenge_method: 'S256', state: st, scope: 'api',
+    });
+    location.href = `${inst}/services/oauth2/authorize?${p}`;
+  }
+  async function handleOAuthReturn() {
+    const p = new URLSearchParams(location.search);
+    if (!p.has('code') && !p.has('error')) return;
+    history.replaceState(null, '', redirectUri() + location.hash);
+    if (p.get('error')) { toast('⚠️ Salesforce: ' + (p.get('error_description') || p.get('error')), 6000); return; }
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(SS_PKCE) || 'null'); sessionStorage.removeItem(SS_PKCE); } catch (e) { /* ignore */ }
+    if (!saved || saved.state !== p.get('state')) { toast('⚠️ การเชื่อมต่อไม่ถูกต้อง (state ไม่ตรง) ลองใหม่อีกครั้ง', 5000); return; }
+    toast('🔐 กำลังยืนยันตัวตนกับ Salesforce…', 0);
+    try {
+      const res = await fetch(`${saved.inst}/services/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code', code: p.get('code'), client_id: state.settings.sf.clientId,
+          redirect_uri: redirectUri(), code_verifier: saved.verifier,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.access_token) throw new Error(j.error_description || j.error || 'HTTP ' + res.status);
+      setToken({ access_token: j.access_token, instance_url: (j.instance_url || saved.inst).replace(/\/+$/, '') });
+      toast('🟢 เชื่อมต่อ Salesforce สำเร็จ');
+      if (saved.autoSync) sfSync();
+    } catch (e) {
+      toast(e instanceof TypeError
+        ? '⚠️ เชื่อมต่อไม่ได้: ให้ Admin เพิ่ม URL นี้ใน Salesforce CORS และเปิด “Enable CORS for OAuth endpoints”'
+        : '⚠️ Salesforce: ' + e.message, 8000);
+    }
+  }
+  async function sfSync() {
+    const t = getToken();
+    if (!t) return sfConnect();
+    const soql = state.settings.sf.soql || DEFAULT_SOQL;
+    const v = state.settings.sf.apiVersion || 'v60.0';
+    let url = `${t.instance_url}/services/data/${v}/query?q=${encodeURIComponent(soql)}`;
+    const all = [];
+    closeModal('sfModal');
+    try {
+      while (url) {
+        toast(`🔄 กำลังดึงข้อมูลจาก Salesforce… ${all.length.toLocaleString()} ร้าน`, 0);
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t.access_token, Accept: 'application/json' } });
+        if (res.status === 401) {
+          setToken(null);
+          toast('🔐 Session Salesforce หมดอายุ', 8000, { label: 'Login ใหม่', fn: sfConnect });
+          return;
+        }
+        const j = await res.json().catch(() => null);
+        if (!res.ok) throw new Error((Array.isArray(j) && j[0] && j[0].message) || 'HTTP ' + res.status);
+        all.push(...j.records.map(r => flattenSf(r)));
+        url = j.done ? null : t.instance_url + j.nextRecordsUrl;
+      }
+    } catch (e) {
+      toast(e instanceof TypeError
+        ? '⚠️ ดึงข้อมูลไม่ได้: ให้ Admin เพิ่ม URL นี้ใน Salesforce → Setup → CORS'
+        : '⚠️ Salesforce: ' + e.message, 8000);
+      return;
+    }
+    hideToast();
+    if (!all.length) { toast('ไม่พบข้อมูลจาก Query นี้', 4000); return; }
+    openMapping(all, 'sf', 'Salesforce');
+  }
+
+  /* ───────────────────────── Export / template / sample ───────────────────────── */
+  function download(name, text) {
+    const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  function exportCsv() {
+    if (!state.records.length) { toast('ยังไม่มีข้อมูลให้ Export'); return; }
+    const rows = state.records.map(r => ({
+      Id: r.sfId || '', Name: r.name, Wongnai_POS_Status: r.status === 'sold' ? 'Sold' : 'Not Sold',
+      Status_TH: r.status === 'sold' ? 'ขายแล้ว' : 'ยังไม่ขาย', Original_SF_Status: r.rawStatus || '',
+      Latitude: hasCoord(r) ? r.lat : '', Longitude: hasCoord(r) ? r.lng : '',
+      Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: r.note || '',
+      Status_Changed_Manually: r.manual && r.manual.status ? 'Y' : '', Pin_Moved_Manually: r.manual && r.manual.pos ? 'Y' : '',
+      Approx_Location: r.geoApprox ? 'Y' : '', Visit_Count: (r.visits || []).length,
+      Last_Visit: r.visits && r.visits.length ? new Date(r.visits[r.visits.length - 1]).toISOString().slice(0, 10) : '',
+      Source: r.source, Updated_At: r.updatedAt ? new Date(r.updatedAt).toISOString() : '',
+    }));
+    const d = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    download(`area-map-export-${d}.csv`, Papa.unparse(rows));
+    toast('⬇️ Export แล้ว — นำเข้า Salesforce ด้วย Data Loader โดยจับคู่คอลัมน์ Id');
+  }
+  function downloadTemplate() {
+    download('area-map-template.csv', Papa.unparse([
+      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว' },
+      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย' },
+      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย' },
+    ]));
+  }
+  function loadSample() {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const areas = [
+      { n: 'สยาม', lat: 13.7457, lng: 100.5341 }, { n: 'อารีย์', lat: 13.7797, lng: 100.5447 },
+      { n: 'ทองหล่อ', lat: 13.7325, lng: 100.5800 }, { n: 'สีลม', lat: 13.7262, lng: 100.5287 },
+      { n: 'บางนา', lat: 13.6680, lng: 100.6050 }, { n: 'ลาดพร้าว', lat: 13.8160, lng: 100.5610 },
+    ];
+    const kinds = ['ก๋วยเตี๋ยว', 'ข้าวมันไก่', 'คาเฟ่', 'หมูกระทะ', 'ชาบู', 'ส้มตำ', 'ข้าวขาหมู', 'ซูชิ', 'สเต๊ก', 'ติ่มซำ', 'ขนมหวาน', 'ราเมง'];
+    const names = ['เจ๊หมวย', 'บ้านสวน', 'ลุงพล', 'The Corner', 'ป้าศรี', 'Happy Bowl', 'นายหนวด', 'Mellow', 'โกอ้วน', 'Little Tree', 'ครัวคุณยาย', 'Urban'];
+    const types = ['QSR (จ่ายก่อนกิน)', 'FSR (มีโต๊ะนั่งทาน)', 'Buffet', 'Cafe'];
+    const owners = ['สมชาย ใจดี', 'มานี มีนา', 'ปิติ ชูใจ'];
+    const notes = ['', '', 'เจ้าของสนใจ ขอใบเสนอราคา', 'ติดเรื่องราคา อยากได้โปรผ่อน', 'ใช้ระบบเจ้าอื่นอยู่ สัญญาหมดเดือนหน้า', 'นัดเดโมวันศุกร์ บ่ายสาม'];
+    const recs = [];
+    let i = 0;
+    areas.forEach((a, ai) => {
+      const count = 8 + Math.floor(rnd() * 5);
+      for (let k = 0; k < count; k++, i++) {
+        const sold = rnd() < 0.38;
+        const visits = rnd() < 0.5 ? [Date.now() - Math.floor(rnd() * 40) * 864e5] : [];
+        recs.push({
+          id: uid() + i, sfId: '001DEMO' + String(100000 + i).padStart(11, '0'),
+          name: `${kinds[Math.floor(rnd() * kinds.length)]}${names[Math.floor(rnd() * names.length)]}`,
+          lat: +(a.lat + (rnd() - 0.5) * 0.022).toFixed(6), lng: +(a.lng + (rnd() - 0.5) * 0.022).toFixed(6),
+          address: `ย่าน${a.n} กรุงเทพฯ`, phone: '08' + Math.floor(10000000 + rnd() * 89999999),
+          owner: owners[ai % owners.length], type: types[Math.floor(rnd() * types.length)],
+          status: sold ? 'sold' : 'unsold', rawStatus: sold ? 'Closed Won' : 'Prospect',
+          note: sold ? '' : notes[Math.floor(rnd() * notes.length)], visits, source: 'sample', manual: {}, updatedAt: Date.now(),
+        });
+      }
+    });
+    state.records = state.records.filter(r => r.source !== 'sample').concat(recs);
+    save(); closeEditor(); renderAll(); fitAll();
+    toast(`🧪 โหลดข้อมูลตัวอย่าง ${recs.length} ร้าน (ย่านกรุงเทพฯ)`);
+  }
+  function fitAll() {
+    const pts = state.records.filter(r => hasCoord(r) && passFilter(r)).map(r => [r.lat, r.lng]);
+    if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+  }
+
+  /* ───────────────────────── Modals ───────────────────────── */
+  function openModal(id) { $(id).classList.add('open'); }
+  function closeModal(id) { $(id).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-close]')) closeModal(m.id); });
+  });
+  const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
+
+  /* ───────────────────────── Wiring ───────────────────────── */
+  function runAct(act) {
+    $('menu').classList.remove('open');
+    if (act === 'export') exportCsv();
+    else if (act === 'template') downloadTemplate();
+    else if (act === 'sample') loadSample();
+    else if (act === 'fit') fitAll();
+    else if (act === 'sf') openSfModal();
+    else if (act === 'upload') openModal('uploadModal');
+    else if (act === 'clear') {
+      if (confirm('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้? (ข้อมูลใน Salesforce ไม่ถูกลบ)\nแนะนำ Export CSV เก็บไว้ก่อน')) {
+        state.records = []; state.settings.lastSync = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
+      }
+    }
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-act]');
+    if (a) { e.preventDefault(); runAct(a.dataset.act); return; }
+    if (!e.target.closest('.menu-wrap')) $('menu').classList.remove('open');
+    if (!e.target.closest('#layerPop, #btnLayers')) $('layerPop').classList.remove('open');
+    const cp = e.target.closest('[data-copy]');
+    if (cp) {
+      const inp = $(cp.dataset.copy); inp.select();
+      (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject()).then(() => toast('📋 คัดลอกแล้ว')).catch(() => document.execCommand('copy'));
+    }
+  });
+  $('btnMenu').onclick = () => $('menu').classList.toggle('open');
+  $('btnSf').onclick = openSfModal;
+  $('btnUpload').onclick = () => openModal('uploadModal');
+  $('btnAdd').onclick = () => setAddMode(!state.addMode);
+  $('addCancel').onclick = () => setAddMode(false);
+  $('addHere').onclick = () => locate((p) => { map.setView([p.lat, p.lng], 17); createAt(L.latLng(p.lat, p.lng)); });
+  $('btnLocate').onclick = () => locate();
+  $('btnLayers').onclick = () => $('layerPop').classList.toggle('open');
+  $('layerPop').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-layer]'); if (!b) return;
+    setLayer(b.dataset.layer); save(); $('layerPop').classList.remove('open');
+  });
+  $('listToggle').onclick = () => { $('sidebar').classList.toggle('open'); $('editor').classList.remove('open'); };
+
+  $('q').addEventListener('input', (e) => { state.q = e.target.value.trim(); renderMarkers(); renderStats(); renderList(); });
+  document.querySelectorAll('.stat').forEach(b => b.addEventListener('click', () => {
+    state.filter = state.filter === b.dataset.filter ? 'all' : b.dataset.filter; renderAll();
+  }));
+  $('ownerSel').addEventListener('change', (e) => { state.owner = e.target.value; renderAll(); fitAll(); });
+  $('sortSel').addEventListener('change', (e) => {
+    state.sort = e.target.value;
+    if (state.sort === 'near' && !state.me) locate(() => {}); else renderList();
+  });
+  $('list').addEventListener('click', (e) => {
+    const it = e.target.closest('.item'); if (it) openEditor(it.dataset.id);
+  });
+
+  $('edClose').onclick = closeEditor;
+  document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListener('click', () => setStatus(b.dataset.status)));
+  $('edSave').onclick = saveEditor;
+  $('btnCheckin').onclick = () => {
+    const r = current(); if (!r) return;
+    r.visits = (r.visits || []).concat(Date.now()); touch(r); save(); renderList(); fillEditor(r);
+    toast('📌 บันทึกการเยี่ยมร้านวันนี้แล้ว');
+  };
+  $('edMove').onclick = () => {
+    const r = current(); if (!r || !hasCoord(r)) return;
+    state.dragId = r.id; renderMarkers();
+    map.setView([r.lat, r.lng], Math.max(map.getZoom(), 18));
+    if (isMobile()) $('editor').classList.remove('open');
+    toast('✋ ลากหมุดที่เด้งอยู่ไปวางตรงร้านจริง', 0, { label: 'ยกเลิก', fn: () => { state.dragId = null; renderMarkers(); } });
+  };
+  $('edCenter').onclick = () => { const r = current(); if (r) placeRecordAt(r, map.getCenter()); };
+  $('edGeo').onclick = async () => {
+    const r = current(); if (!r) return;
+    const addr = $('fAddr').value.trim();
+    if (!addr && !r.name) { toast('ใส่ที่อยู่ก่อน'); return; }
+    r.address = addr || r.address;
+    toast('🔎 กำลังค้นหาพิกัด…', 0);
+    try {
+      if (await geocodeOne(r)) { save(); renderAll(); openEditor(r.id); toast('📍 เจอพิกัดแล้ว (ค่าประมาณ) ถ้าไม่ตรงให้กด ย้ายหมุด'); }
+      else toast('ไม่พบพิกัดจากที่อยู่นี้ ลอง “ปักกลางจอ” แทน', 4000);
+    } catch (e) { toast('⚠️ ค้นหาพิกัดไม่สำเร็จ', 4000); }
+  };
+  $('edDelete').onclick = () => {
+    const r = current(); if (!r) return;
+    if (!confirm(`ลบหมุด “${r.name}” ออกจากแผนที่ในเครื่องนี้?`)) return;
+    const i = state.records.indexOf(r);
+    state.records.splice(i, 1); closeEditor(); save(); renderAll();
+    toast('🗑️ ลบหมุดแล้ว', 4000, { label: 'เลิกทำ', fn: () => { state.records.splice(i, 0, r); save(); renderAll(); } });
+  };
+
+  const drop = $('drop');
+  $('fileInput').addEventListener('change', (e) => { handleFile(e.target.files[0]); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
+  $('mapImport').onclick = doImport;
+
+  $('sfGo').onclick = () => { readSfForm(); getToken() ? sfSync() : sfConnect(); };
+  $('sfLogout').onclick = () => { setToken(null); openSfModal(); toast('ตัดการเชื่อมต่อ Salesforce แล้ว'); };
+  $('sfUseToken').onclick = () => {
+    readSfForm();
+    const tok = $('sfToken').value.trim(), inst = instBase();
+    if (!tok || !/^https:\/\//i.test(inst)) { toast('⚠️ ใส่ Salesforce URL และ Access Token'); return; }
+    setToken({ access_token: tok, instance_url: inst }); $('sfToken').value = ''; sfSync();
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (state.addMode) setAddMode(false);
+    else if (document.querySelector('.modal.open')) document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id));
+    else closeEditor();
+  });
+
+  /* ───────────────────────── Boot ───────────────────────── */
+  load();
+  setLayer(state.settings.layer);
+  renderAll();
+  if (state.records.some(hasCoord)) fitAll();
+  handleOAuthReturn();
+})();
+</script>
+</body>
+</html>

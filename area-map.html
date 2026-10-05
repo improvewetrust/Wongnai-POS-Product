@@ -193,6 +193,49 @@
     .zone-label::before { display: none; }
     #map.far .zone-label { display: none; }
     .tag.zone { background: var(--brand-light); color: var(--brand-dark); }
+    .tag.sales { background: var(--tag-edit-bg); color: var(--blue); }
+    .zmode { position: sticky; left: -12px; z-index: 2; box-shadow: -12px 0 0 var(--surface), 6px 0 8px -4px var(--surface); display: inline-flex; flex-shrink: 0; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
+    .zmode button { border: 0; background: none; padding: 4px 11px; border-radius: 999px; font-weight: 700; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+    .zmode button.on { background: var(--inverse); color: var(--on-inverse); }
+    .tb-label {
+      background: var(--overlay); border: 1px solid var(--border); color: var(--text); font-family: inherit;
+      font-size: 11px; font-weight: 700; border-radius: 6px; padding: 1px 6px; box-shadow: none; text-align: center; line-height: 1.3;
+    }
+    .tb-label::before { display: none; }
+    .tb-label small { display: block; font-weight: 800; color: var(--blue); }
+    .tb-label.none small { color: var(--text-2); font-weight: 600; }
+    #map.mid .tb-label { display: none; }
+    .tb-pop { font-family: 'Sarabun', sans-serif; min-width: 190px; }
+    .tb-pop b { font-size: 14px; }
+    .tb-pop select { width: 100%; margin-top: 6px; padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; }
+    /* team editor */
+    .team-grid { display: grid; grid-template-columns: 220px 1fr; gap: 14px; min-height: 360px; }
+    .team-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 60vh; }
+    .tm {
+      text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 12px; padding: 8px 10px; line-height: 1.3;
+    }
+    .tm b { font-size: 14px; } .tm small { display: block; color: var(--text-2); font-size: 11.5px; }
+    .tm.on { border-color: var(--brand); background: var(--brand-light); }
+    .tm.add { border-style: dashed; color: var(--text-2); font-weight: 700; text-align: center; }
+    .team-edit { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 60vh; padding-right: 4px; }
+    .tz { border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; }
+    .tz-head { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+    .tz-head .c { margin-left: auto; font-size: 12px; color: var(--text-2); font-weight: 600; }
+    .tz-amp { font-size: 11.5px; color: var(--text-2); font-weight: 700; margin: 6px 0 2px; }
+    .tbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .tb {
+      display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px 3px 6px;
+      font-size: 12.5px; cursor: pointer; background: var(--surface);
+    }
+    .tb input, .tz-head input { accent-color: var(--brand); width: 15px; height: 15px; }
+    .tb.mine { border-color: var(--brand); background: var(--brand-light); font-weight: 700; }
+    .tb .who { font-size: 10.5px; color: var(--text-2); background: var(--surface-2); border-radius: 999px; padding: 0 6px; }
+    @media (max-width: 820px) {
+      .team-grid { grid-template-columns: 1fr; }
+      .team-list { flex-direction: row; overflow-x: auto; max-height: none; padding-bottom: 4px; }
+      .tm { flex-shrink: 0; }
+      .team-edit { max-height: none; }
+    }
     #sidebar {
       width: 340px; flex-shrink: 0; background: var(--surface);
       border-right: 1px solid var(--border);
@@ -483,6 +526,7 @@
       <button data-act="template">📄 ดาวน์โหลดไฟล์ตัวอย่าง (Template)</button>
       <button data-act="sample">🧪 โหลดข้อมูลตัวอย่าง (Demo)</button>
       <hr>
+      <button data-act="team">👥 ทีมเซลส์ & พื้นที่ดูแล</button>
       <button data-act="fit">🗺️ ซูมให้เห็นทุกหมุด</button>
       <button data-act="clear" class="danger" style="color:var(--red)">🗑️ ล้างข้อมูลทั้งหมดในเครื่องนี้</button>
     </div>
@@ -509,7 +553,7 @@
       </div>
       <button class="stale-alert" id="staleBtn" title="แสดงเฉพาะร้านที่ไม่อัปเดตเกิน 1 เดือน">⏰ ร้านที่ไม่อัปเดตเกิน 1 เดือน<b id="nStale">0</b></button>
       <div class="side-row">
-        <select id="ownerSel" title="กรองตามผู้ดูแล"><option value="">👤 ผู้ดูแลทั้งหมด</option></select>
+        <select id="ownerSel" title="กรองตาม Account Owner ใน Salesforce"><option value="">SF Owner ทั้งหมด</option></select>
         <select id="ageSel" title="กรองตามระยะเวลาที่ไม่ได้อัปเดต">
           <option value="">⏱️ อัปเดตทุกช่วง</option>
           <option value="fresh">✅ อัปเดตภายใน 1 เดือน</option>
@@ -594,7 +638,7 @@
         </div>
         <datalist id="typeList"><option value="QSR (จ่ายก่อนกิน)"><option value="FSR (มีโต๊ะนั่งทาน)"><option value="Buffet"><option value="Cafe"></datalist>
         <div class="field"><label for="fAddr">ที่อยู่</label><input id="fAddr"></div>
-        <div class="field"><label for="fOwner">ผู้ดูแล (Owner)</label><input id="fOwner" list="ownerList"></div>
+        <div class="field"><label for="fOwner">Account Owner (Salesforce)</label><input id="fOwner" list="ownerList"></div>
         <datalist id="ownerList"></datalist>
         <div class="field"><label for="fNote">บันทึกการขาย / Objection ที่เจอ</label><textarea id="fNote" placeholder="เช่น เจ้าของสนใจ FSR Premium · ติดเรื่องราคา · นัดเดโมวันศุกร์"></textarea></div>
         <div class="grid2">
@@ -675,6 +719,27 @@
   </div>
 </div>
 
+<!-- Team / territory modal -->
+<div class="modal" id="teamModal">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h3>👥 ทีมเซลส์ & พื้นที่ดูแล<p>เลือกเซลส์ แล้วติ๊กตำบล/แขวงที่ดูแล · 1 ตำบลมีผู้ดูแลได้ 1 คน · ติ๊กชื่ออำเภอเพื่อเลือกทั้งอำเภอ</p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="team-grid">
+        <div class="team-list" id="teamList"></div>
+        <div class="team-edit" id="teamEdit"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
+      <button class="btn" id="teamReset" style="margin-right:auto" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">↺ ใช้ค่าจากไฟล์กลาง</button>
+      <button class="btn primary" data-close>เสร็จ</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -682,6 +747,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="area-map-zones.js"></script>
+<script src="area-map-tambons.js"></script>
+<script src="area-sales-team.js"></script>
+<script src="area-geo.js"></script>
 <script>
 (() => {
   'use strict';
@@ -887,46 +955,73 @@
   }
 
   /* ───────────────────────── Focus zones (area-map-zones.js) ───────────────────────── */
-  const ZONES = (window.AREA_ZONES || []).map(z => {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    z.polygons.forEach(p => p[0].forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }));
-    return { ...z, bbox: [x0, y0, x1, y1], latlngs: z.polygons.map(p => p.map(r => r.map(([x, y]) => [y, x]))) };
-  });
-  const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
-  function ringContains(ring, x, y) {
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const [xi, yi] = ring[i], [xj, yj] = ring[j];
-      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  const { ZONES, ZONE_BY_ID, TAMBONS, TAMBON_BY_CODE, zoneOf, tambonOf } = window.AreaGeo;
+
+  /* ── Sales team & territories (area-sales-team.js, local edits in settings.team) ── */
+  let TAMBON_OWNER = {};
+  const team = () => state.settings.team || window.AREA_SALES_TEAM || [];
+  const memberById = (id) => team().find(m => m.id === id);
+  function rebuildTeam() { TAMBON_OWNER = window.AreaGeo.teamIndex(team()); }
+  function setTeam(t) { state.settings.team = t; save(); rebuildTeam(); }
+  const salesOf = (r) => { const t = tambonOf(r); return t ? (TAMBON_OWNER[t] || '') : ''; };
+  const isSalesView = () => state.zone.startsWith('sales:');
+  const salesSel = () => state.zone.slice(6); // 'all' | 'none' | member id
+  rebuildTeam();
+
+  const zoneName = (id) => {
+    if (id.startsWith('sales:')) {
+      const s = id.slice(6), m = memberById(s);
+      return s === 'all' ? 'เซลส์ทุกคน' : s === 'none' ? 'ยังไม่มีผู้ดูแล' : m ? `${m.nick} (${m.name})` : 'เซลส์';
     }
-    return inside;
-  }
-  function zoneContains(z, lat, lng) {
-    const b = z.bbox;
-    if (lng < b[0] || lng > b[2] || lat < b[1] || lat > b[3]) return false;
-    return z.polygons.some(p => ringContains(p[0], lng, lat) && !p.slice(1).some(h => ringContains(h, lng, lat)));
-  }
-  const zoneCache = new Map();
-  // Zone id for a record: by pin position; shops without coordinates fall back to district names in the address
-  function zoneOf(r) {
-    if (hasCoord(r)) {
-      const k = r.lat + ',' + r.lng;
-      if (!zoneCache.has(k)) { const z = ZONES.find(z => zoneContains(z, r.lat, r.lng)); zoneCache.set(k, z ? z.id : ''); }
-      return zoneCache.get(k);
-    }
-    const a = (r.address || '').toLowerCase();
-    if (!a) return '';
-    const z = ZONES.find(z => z.keywords.some(k => a.includes(k.toLowerCase())));
-    return z ? z.id : '';
-  }
-  const zoneName = (id) => (id === 'focus' ? 'Focus ทั้งหมด' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : 'ทุกพื้นที่');
+    return id === 'focus' ? 'Focus ทั้งหมด' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : 'ทุกพื้นที่';
+  };
 
   const zoneLayer = L.layerGroup().addTo(map);
   // zone name labels pile up when Bangkok and Phuket are both in view
-  const syncLabelZoom = () => $('map').classList.toggle('far', map.getZoom() < 10);
+  const syncLabelZoom = () => { $('map').classList.toggle('far', map.getZoom() < 10); $('map').classList.toggle('mid', map.getZoom() < 12); };
   map.on('zoomend', syncLabelZoom); syncLabelZoom();
+  const MASK_WORLD = [[-85, -180], [-85, 180], [85, 180], [85, -180]];
+  const maskOutside = (rings) => L.polygon([MASK_WORLD, ...rings], { stroke: false, fillColor: '#1a1a2e', fillOpacity: 0.32, interactive: false }).addTo(zoneLayer);
+  function salesTambons() {
+    const sel = salesSel();
+    if (sel === 'all') return TAMBONS;
+    if (sel === 'none') return TAMBONS.filter(t => !TAMBON_OWNER[t.code]);
+    return TAMBONS.filter(t => TAMBON_OWNER[t.code] === sel);
+  }
+  function tambonPopup(t) {
+    const cur = TAMBON_OWNER[t.code] || '';
+    const div = document.createElement('div');
+    div.className = 'tb-pop';
+    const title = document.createElement('b'); title.textContent = (t.zone === 'bang-phlat' ? 'แขวง' : 'ต.') + t.th;
+    const sub = document.createElement('div'); sub.textContent = `อ.${t.amphoe} · ร้านในตำบลนี้ ${state.records.filter(r => tambonOf(r) === t.code).length} ร้าน`;
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="">— ยังไม่มีผู้ดูแล —</option>' + team().map(m => `<option value="${esc(m.id)}">${esc(m.nick)} · ${esc(m.name)}</option>`).join('');
+    sel.value = cur;
+    sel.addEventListener('change', () => { assignTambon(t.code, sel.value); map.closePopup(); toast(`✅ ต.${t.th} → ${sel.value ? memberById(sel.value).nick : 'ไม่มีผู้ดูแล'}`); });
+    div.append(title, sub, sel);
+    return div;
+  }
+  function renderSalesZones() {
+    const sel = salesSel(), mine = new Set(salesTambons().map(t => t.code));
+    ZONES.forEach(z => L.polygon(z.latlngs, { color: '#f25533', weight: 2, opacity: 0.8, fill: false, interactive: false }).addTo(zoneLayer));
+    for (const t of TAMBONS) {
+      const on = mine.has(t.code), owner = memberById(TAMBON_OWNER[t.code]);
+      const pg = L.polygon(t.latlngs, {
+        color: on && sel !== 'all' ? '#f25533' : '#5b6575', weight: on && sel !== 'all' ? 2.5 : 1, opacity: on ? 0.9 : 0.45,
+        fillColor: '#f25533', fillOpacity: on && sel !== 'all' ? 0.06 : 0.01, dashArray: on ? null : '3 3',
+      }).addTo(zoneLayer);
+      if (on || sel === 'all') {
+        pg.bindTooltip(`${esc(t.th)}<small>${owner ? '👤 ' + esc(owner.nick) : '— ว่าง —'}</small>`,
+          { permanent: true, direction: 'center', className: 'tb-label' + (owner ? '' : ' none') });
+      }
+      pg.on('click', (e) => { if (state.addMode) return; L.popup().setLatLng(e.latlng).setContent(tambonPopup(t)).openOn(map); });
+    }
+    const rings = (sel === 'all' ? ZONES : salesTambons()).flatMap(o => o.latlngs.map(p => p[0]));
+    if (rings.length) maskOutside(rings);
+  }
   function renderZones() {
     zoneLayer.clearLayers();
+    if (isSalesView()) { renderSalesZones(); return; }
     const single = state.zone && state.zone !== 'focus' ? ZONE_BY_ID[state.zone] : null;
     for (const z of ZONES) {
       if (single && z !== single) {
@@ -943,36 +1038,48 @@
         pg.on('click', () => { if (!state.addMode) setZone(z.id); });
       }
     }
-    if (state.zone) {
-      // dim everything outside the selected zone(s)
-      const holes = (single ? [single] : ZONES).flatMap(z => z.latlngs.map(p => p[0]));
-      L.polygon([[[-85, -180], [-85, 180], [85, 180], [85, -180]], ...holes], {
-        stroke: false, fillColor: '#1a1a2e', fillOpacity: 0.32, interactive: false,
-      }).addTo(zoneLayer);
-    }
+    // dim everything outside the selected zone(s)
+    if (state.zone) maskOutside((single ? [single] : ZONES).flatMap(z => z.latlngs.map(p => p[0])));
   }
   function renderZoneBar() {
     if (!ZONES.length) { $('zoneBar').style.display = 'none'; return; }
-    const cnt = { '': [0, 0], focus: [0, 0] };
-    ZONES.forEach(z => { cnt[z.id] = [0, 0]; });
+    const sales = isSalesView();
+    const cnt = {};
+    const bump = (k, sold) => { const c = cnt[k] || (cnt[k] = [0, 0]); c[0]++; c[1] += sold; };
     for (const r of state.records) {
       if (state.owner && (r.owner || '') !== state.owner) continue;
       const z = zoneOf(r), sold = r.status === 'sold' ? 1 : 0;
-      cnt[''][0]++; cnt[''][1] += sold;
-      if (z) { cnt.focus[0]++; cnt.focus[1] += sold; cnt[z][0]++; cnt[z][1] += sold; }
+      if (sales) {
+        if (!z) continue;
+        bump('sales:all', sold); bump('sales:' + (salesOf(r) || 'none'), sold);
+      } else {
+        bump('', sold);
+        if (z) { bump('focus', sold); bump(z, sold); }
+      }
     }
-    const tab = (id, label, cls = '') => {
-      const [n, s] = cnt[id];
+    const tab = (id, label, cls = '', title = '') => {
+      const [n, s] = cnt[id] || [0, 0];
       const pen = n ? `<span class="pen">${Math.round(s / n * 100)}%</span>` : '';
-      return `<a class="ztab ${cls}${state.zone === id ? ' on' : ''}" href="#zone=${id || 'all'}" data-zone="${id}" title="${esc(label)} · ${n} ร้าน · ขายแล้ว ${s}">${label}<span class="cnt">${n.toLocaleString()}</span>${pen}</a>`;
+      const href = id.startsWith('sales:') ? '#sales=' + id.slice(6) : '#zone=' + (id || 'all');
+      return `<a class="ztab ${cls}${state.zone === id ? ' on' : ''}" href="${href}" data-zone="${esc(id)}" title="${esc(title || label)} · ${n} ร้าน · ใช้ POS ${s}">${label}<span class="cnt">${n.toLocaleString()}</span>${pen}</a>`;
     };
-    $('zoneBar').innerHTML = tab('', '🗺️ ทุกพื้นที่') + tab('focus', `⭐ Focus ${ZONES.length} เขต`, 'focus') + '<span class="zsep"></span>'
-      + ZONES.map(z => tab(z.id, esc(z.th))).join('')
-      + '<span class="zsep"></span><button class="ztab" id="zoneLink" title="คัดลอกลิงก์ของพื้นที่นี้">🔗 คัดลอกลิงก์</button>';
+    const mode = `<span class="zmode" role="tablist" aria-label="เลือกดูตาม"><button data-mode="area" class="${sales ? '' : 'on'}">📍 พื้นที่</button><button data-mode="sales" class="${sales ? 'on' : ''}">👤 เซลส์</button></span>`;
+    const chips = sales
+      ? tab('sales:all', '👥 ทุกคน', 'focus') + '<span class="zsep"></span>'
+        + team().map(m => tab('sales:' + m.id, esc(m.nick), '', `${m.name} · ดูแล ${(m.tambons || []).length} ตำบล`)).join('')
+        + tab('sales:none', '❔ ยังไม่มีผู้ดูแล') + '<span class="zsep"></span><button class="ztab" id="teamBtn">⚙️ จัดการทีม</button>'
+      : tab('', '🗺️ ทุกพื้นที่') + tab('focus', `⭐ Focus ${ZONES.length} เขต`, 'focus') + '<span class="zsep"></span>'
+        + ZONES.map(z => tab(z.id, esc(z.th))).join('');
+    $('zoneBar').innerHTML = mode + '<span class="zsep"></span>' + chips
+      + '<span class="zsep"></span><button class="ztab" id="zoneLink" title="คัดลอกลิงก์ของมุมมองนี้">🔗 คัดลอกลิงก์</button>';
     const on = $('zoneBar').querySelector('.ztab.on');
     if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function fitZone() {
+    if (isSalesView() && salesSel() !== 'all') {
+      const ts = salesTambons();
+      if (ts.length) { map.fitBounds(L.featureGroup(ts.map(t => L.polygon(t.latlngs))).getBounds(), { padding: [24, 24] }); return; }
+    }
     const single = ZONE_BY_ID[state.zone];
     if (single) { map.fitBounds(L.polygon(single.latlngs).getBounds(), { padding: [24, 24] }); return; }
     const pts = state.records.filter(r => hasCoord(r) && passFilter(r)).map(r => [r.lat, r.lng]);
@@ -993,14 +1100,120 @@
     return best;
   }
   function setZone(id, fit = true) {
-    if (id && id !== 'focus' && !ZONE_BY_ID[id]) id = '';
+    if (id.startsWith('sales:')) { const s = id.slice(6); if (s !== 'all' && s !== 'none' && !memberById(s)) id = 'sales:all'; }
+    else if (id && id !== 'focus' && !ZONE_BY_ID[id]) id = '';
     state.zone = id;
-    const hash = '#zone=' + (id || 'all');
+    const hash = id.startsWith('sales:') ? '#sales=' + id.slice(6) : '#zone=' + (id || 'all');
     if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
     closeEditor(); renderZones(); renderAll();
     if (fit) fitZone();
   }
-  const zoneFromHash = () => { const m = location.hash.match(/zone=([\w-]+)/); return m ? (m[1] === 'all' ? '' : m[1]) : null; };
+  const zoneFromHash = () => {
+    const sm = location.hash.match(/sales=([\w-]+)/);
+    if (sm) return 'sales:' + sm[1];
+    const m = location.hash.match(/zone=([\w-]+)/);
+    return m ? (m[1] === 'all' ? '' : m[1]) : null;
+  };
+  function assignTambon(code, memberId) {
+    setTeam(team().map(m => ({ ...m, tambons: (m.tambons || []).filter(c => c !== code).concat(m.id === memberId ? [code] : []) })));
+    renderZones(); renderAll();
+    if ($('teamModal').classList.contains('open')) renderTeam();
+  }
+
+  /* ── Team editor ── */
+  let teamSel = null;
+  function openTeam(id) { teamSel = id || teamSel || (team()[0] || {}).id || null; renderTeam(); openModal('teamModal'); }
+  function renderTeam() {
+    const t = team();
+    if (teamSel && !t.some(m => m.id === teamSel)) teamSel = (t[0] || {}).id || null;
+    const shopsOf = (id) => state.records.filter(r => salesOf(r) === id).length;
+    $('teamList').innerHTML = t.map(m => `<button class="tm${m.id === teamSel ? ' on' : ''}" data-tm="${esc(m.id)}"><b>${esc(m.nick)}</b><small>${esc(m.name)}</small>`
+      + `<small>${(m.tambons || []).length} ตำบล · ${shopsOf(m.id)} ร้าน</small></button>`).join('')
+      + '<button class="tm add" id="tmAdd">➕ เพิ่มเซลส์</button>';
+    const m = memberById(teamSel);
+    if (!m) { $('teamEdit').innerHTML = '<div class="hint">ยังไม่มีเซลส์ — กด “เพิ่มเซลส์”</div>'; return; }
+    const mine = new Set(m.tambons || []);
+    const groups = ZONES.map(z => {
+      const ts = TAMBONS.filter(x => x.zone === z.id);
+      const nMine = ts.filter(x => mine.has(x.code)).length;
+      const amps = [...new Set(ts.map(x => x.amphoe))];
+      const chip = (x) => {
+        const who = TAMBON_OWNER[x.code], other = who && who !== m.id ? memberById(who) : null;
+        return `<label class="tb${mine.has(x.code) ? ' mine' : ''}"><input type="checkbox" data-tb="${x.code}"${mine.has(x.code) ? ' checked' : ''}>${esc(x.th)}${other ? `<span class="who">${esc(other.nick)}</span>` : ''}</label>`;
+      };
+      const body = amps.length > 1
+        ? amps.map(a => `<div class="tz-amp">อ.${esc(a)}</div><div class="tbs">${ts.filter(x => x.amphoe === a).map(chip).join('')}</div>`).join('')
+        : `<div class="tbs">${ts.map(chip).join('')}</div>`;
+      return `<div class="tz"><label class="tz-head"><input type="checkbox" data-zall="${z.id}"${nMine === ts.length && ts.length ? ' checked' : ''}>${esc(z.th)}<span class="c">${nMine}/${ts.length} ตำบล</span></label>${body}</div>`;
+    }).join('');
+    $('teamEdit').innerHTML = `<div class="grid2">
+        <div class="field"><label for="tmNick">ชื่อเล่น</label><input id="tmNick" value="${esc(m.nick)}"></div>
+        <div class="field"><label for="tmName">ชื่อ-นามสกุล</label><input id="tmName" value="${esc(m.name)}"></div>
+      </div>
+      <div class="side-row"><button class="btn" id="tmShow">🗺️ ดูพื้นที่ของ ${esc(m.nick)} บนแผนที่</button><button class="btn danger" id="tmDel">🗑️ ลบ</button></div>
+      ${groups}`;
+    const tmSet = $('teamEdit').querySelector('.tz-head input');
+    if (tmSet) $('teamEdit').querySelectorAll('[data-zall]').forEach(cb => {
+      const ts = TAMBONS.filter(x => x.zone === cb.dataset.zall), n = ts.filter(x => mine.has(x.code)).length;
+      cb.indeterminate = n > 0 && n < ts.length;
+    });
+  }
+  function updateMember(id, fn) { setTeam(team().map(m => (m.id === id ? fn({ ...m, tambons: [...(m.tambons || [])] }) : m))); }
+  $('teamList').addEventListener('click', (e) => {
+    if (e.target.closest('#tmAdd')) {
+      const nick = (prompt('ชื่อเล่นเซลส์ใหม่') || '').trim();
+      if (!nick) return;
+      let id = nick.toLowerCase().replace(/[^a-z0-9ก-๙]+/g, '-').replace(/^-|-$/g, '') || 'sales';
+      while (memberById(id)) id += '-2';
+      setTeam(team().concat({ id, nick, name: '', tambons: [] }));
+      teamSel = id; renderTeam(); renderZoneBar();
+      setTimeout(() => $('tmName') && $('tmName').focus(), 50);
+      return;
+    }
+    const b = e.target.closest('[data-tm]'); if (b) { teamSel = b.dataset.tm; renderTeam(); }
+  });
+  $('teamEdit').addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'tmNick' || t.id === 'tmName') {
+      const v = t.value.trim();
+      updateMember(teamSel, m => ({ ...m, [t.id === 'tmNick' ? 'nick' : 'name']: v || (t.id === 'tmNick' ? m.nick : '') }));
+      renderTeam(); renderZoneBar(); return;
+    }
+    const codes = t.dataset.tb ? [t.dataset.tb] : t.dataset.zall ? TAMBONS.filter(x => x.zone === t.dataset.zall).map(x => x.code) : null;
+    if (!codes) return;
+    // exclusive: claiming a sub-district takes it away from whoever had it
+    setTeam(team().map(m => {
+      let ts = (m.tambons || []).filter(c => !codes.includes(c));
+      if (m.id === teamSel && t.checked) ts = ts.concat(codes);
+      return { ...m, tambons: ts };
+    }));
+    renderTeam(); renderZones(); renderAll();
+  });
+  $('teamEdit').addEventListener('click', (e) => {
+    if (e.target.closest('#tmShow')) { closeModal('teamModal'); setZone('sales:' + teamSel); }
+    else if (e.target.closest('#tmDel')) {
+      const m = memberById(teamSel);
+      if (m && confirm(`ลบ ${m.nick} ออกจากทีม? ตำบลที่ดูแลจะกลายเป็น “ยังไม่มีผู้ดูแล”`)) {
+        setTeam(team().filter(x => x.id !== teamSel)); teamSel = null;
+        if (state.zone === 'sales:' + m.id) setZone('sales:all'); else { renderZones(); renderAll(); }
+        renderTeam();
+      }
+    }
+  });
+  $('teamDownload').onclick = () => {
+    const body = team().map(m => `  { id: ${JSON.stringify(m.id)}, nick: ${JSON.stringify(m.nick)}, name: ${JSON.stringify(m.name)}, tambons: ${JSON.stringify(m.tambons || [])} },`).join('\n');
+    const js = `/* Area Sales team and the sub-districts (ตำบล/แขวง) each person covers — shared default for everyone.\n`
+      + ` * Exported from Area Map ${new Date().toISOString().slice(0, 10)}. Replace area-sales-team.js in the repository with this file. */\n`
+      + `window.AREA_SALES_TEAM = [\n${body}\n];\n`;
+    const blob = new Blob([js], { type: 'text/javascript;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'area-sales-team.js';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-sales-team.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
+  };
+  $('teamReset').onclick = () => {
+    if (!confirm('ทิ้งการแก้ไขทีมในเครื่องนี้ แล้วใช้รายชื่อ/พื้นที่จากไฟล์กลาง?')) return;
+    delete state.settings.team; save(); rebuildTeam(); renderTeam(); renderZones(); renderAll();
+  };
 
   const markers = new Map();
   function passFilter(r, ignoreStatus = false) {
@@ -1008,7 +1221,11 @@
     if (state.owner && (r.owner || '') !== state.owner) return false;
     if (state.zone) {
       const z = zoneOf(r);
-      if (state.zone === 'focus' ? !z : z !== state.zone) return false;
+      if (isSalesView()) {
+        if (!z) return false;
+        const sel = salesSel(), who = salesOf(r);
+        if (sel === 'none' ? who : sel !== 'all' && who !== sel) return false;
+      } else if (state.zone === 'focus' ? !z : z !== state.zone) return false;
     }
     if (state.age) {
       const i = AGE_INDEX[ageTier(r).k];
@@ -1072,7 +1289,7 @@
 
     const owners = [...new Set(state.records.map(r => r.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
     const sel = $('ownerSel');
-    sel.innerHTML = '<option value="">👤 ผู้ดูแลทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
+    sel.innerHTML = '<option value="">SF Owner ทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
     $('ownerList').innerHTML = owners.map(o => `<option value="${esc(o)}">`).join('');
     const sync = state.settings.lastSync ? ` · อัปโหลดล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
     $('subline').textContent = `${state.zone ? '📍 ' + zoneName(state.zone) + ' · ' : ''}${state.records.length.toLocaleString()} ร้าน${sync}`;
@@ -1103,8 +1320,10 @@
         + (r.manual && (r.manual.status || r.manual.pos) ? '<span class="tag edit">แก้ไขแล้ว</span>' : '')
         + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '');
       const zid = zoneOf(r);
-      if (zid && state.zone !== zid) tags += `<span class="tag zone">${esc(ZONE_BY_ID[zid].th)}</span>`;
-      const sub = [r.address, r.owner && '👤 ' + r.owner].filter(Boolean).join(' · ');
+      if (zid && state.zone !== zid && !isSalesView()) tags += `<span class="tag zone">${esc(ZONE_BY_ID[zid].th)}</span>`;
+      const sid = zid ? salesOf(r) : '';
+      if (sid && memberById(sid) && state.zone !== 'sales:' + sid) tags += `<span class="tag sales">👤 ${esc(memberById(sid).nick)}</span>`;
+      const sub = [r.address, r.owner && 'SF: ' + r.owner].filter(Boolean).join(' · ');
       const lv = `อัปเดต ${agoText(r)}`;
       return `<div class="item${r.id === state.selectedId ? ' sel' : ''}" data-id="${r.id}">
         <span class="dot ${r.status}"></span>
@@ -1150,7 +1369,9 @@
     $('edTitle').textContent = r.name || '(ไม่มีชื่อ)';
     const src = { sf: 'Salesforce', upload: 'ไฟล์อัปโหลด', manual: 'เพิ่มเอง', sample: 'ข้อมูลตัวอย่าง' }[r.source] || r.source;
     const zid = zoneOf(r);
-    $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th : '📍 นอกพื้นที่ Focus', r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
+    const tb = TAMBON_BY_CODE[tambonOf(r)], sm = memberById(salesOf(r));
+    $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th + (tb ? ` · ${zid === 'bang-phlat' ? 'แขวง' : 'ต.'}${tb.th}` : '') : '📍 นอกพื้นที่ Focus',
+      zid && (sm ? `👤 ดูแลโดย ${sm.nick}` : '👤 ยังไม่มีผู้ดูแลพื้นที่'), r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
     document.querySelectorAll('.status-toggle button').forEach(b => b.classList.toggle('on', b.dataset.status === r.status));
     $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
     $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
@@ -1666,6 +1887,7 @@
     else if (act === 'sample') loadSample();
     else if (act === 'fit') fitAll();
     else if (act === 'upload') openUpload();
+    else if (act === 'team') openTeam();
     else if (act === 'clear') {
       if (confirm('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้? (ข้อมูลใน Salesforce ไม่ถูกลบ)\nแนะนำ Export CSV เก็บไว้ก่อน')) {
         state.records = []; state.settings.lastSync = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
@@ -1685,12 +1907,15 @@
   });
   $('zoneBar').addEventListener('click', (e) => {
     if (e.target.closest('#zoneLink')) {
-      const url = location.origin + location.pathname + '#zone=' + (state.zone || 'all');
+      const url = location.origin + location.pathname + (isSalesView() ? '#sales=' + salesSel() : '#zone=' + (state.zone || 'all'));
       (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
         .then(() => toast(`🔗 คัดลอกลิงก์ “${zoneName(state.zone)}” แล้ว — ส่งให้ทีมเปิดเฉพาะพื้นที่นี้ได้`, 4000))
         .catch(() => toast(url, 8000));
       return;
     }
+    const mb = e.target.closest('[data-mode]');
+    if (mb) { setZone(mb.dataset.mode === 'sales' ? 'sales:all' : 'focus'); return; }
+    if (e.target.closest('#teamBtn')) { openTeam(); return; }
     const a = e.target.closest('[data-zone]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let the browser open a new tab
     e.preventDefault(); setZone(a.dataset.zone);
@@ -1782,7 +2007,8 @@
   $('btnTheme').onclick = cycleTheme;
   // Home view is always “Focus 7 เขต”; a #zone=… link opens a specific tab instead
   { const z = zoneFromHash(); state.zone = z !== null ? z : (ZONES.length ? 'focus' : ''); }
-  if (state.zone && state.zone !== 'focus' && !ZONE_BY_ID[state.zone]) state.zone = '';
+  if (state.zone.startsWith('sales:')) { const s = state.zone.slice(6); if (s !== 'all' && s !== 'none' && !memberById(s)) state.zone = 'sales:all'; }
+  else if (state.zone && state.zone !== 'focus' && !ZONE_BY_ID[state.zone]) state.zone = '';
   renderZones();
   renderAll();
   if (state.zone) fitZone();

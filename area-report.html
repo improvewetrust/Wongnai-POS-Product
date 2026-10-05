@@ -178,8 +178,11 @@
       <button data-period="month">รายเดือน</button>
       <button data-period="year">รายปี</button>
     </div>
-    <select id="zoneSel" aria-label="พื้นที่"></select>
-    <select id="ownerSel" aria-label="เซลส์ผู้ดูแล"></select>
+    <div class="seg" id="bySeg" role="tablist" aria-label="ดูตาม">
+      <button data-by="area">📍 ตามพื้นที่</button>
+      <button data-by="sales">👤 ตามเซลส์</button>
+    </div>
+    <select id="scopeSel" aria-label="เลือกพื้นที่หรือเซลส์"></select>
     <span class="range-note" id="rangeNote"></span>
   </div>
 
@@ -187,6 +190,9 @@
 </main>
 
 <script src="area-map-zones.js"></script>
+<script src="area-map-tambons.js"></script>
+<script src="area-sales-team.js"></script>
+<script src="area-geo.js"></script>
 <script>
 (() => {
   'use strict';
@@ -207,46 +213,29 @@
   const settings = store.settings || {};
   const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
 
-  /* ── zones (same logic as the map) ── */
-  const ZONES = (window.AREA_ZONES || []).map(z => {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    z.polygons.forEach(p => p[0].forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }));
-    return { ...z, bbox: [x0, y0, x1, y1] };
-  });
-  const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
-  function ringContains(ring, x, y) {
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const [xi, yi] = ring[i], [xj, yj] = ring[j];
-      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-    }
-    return inside;
-  }
-  function zoneOf(r) {
-    if (r._z !== undefined) return r._z;
-    let id = '';
-    if (hasCoord(r)) {
-      const z = ZONES.find(z => { const b = z.bbox; return r.lng >= b[0] && r.lng <= b[2] && r.lat >= b[1] && r.lat <= b[3]
-        && z.polygons.some(p => ringContains(p[0], r.lng, r.lat) && !p.slice(1).some(h => ringContains(h, r.lng, r.lat))); });
-      id = z ? z.id : '';
-    } else if (r.address) {
-      const a = r.address.toLowerCase();
-      const z = ZONES.find(z => z.keywords.some(k => a.includes(k.toLowerCase())));
-      id = z ? z.id : '';
-    }
-    return (r._z = id);
-  }
+  /* ── zones, sub-districts, team (shared with the map) ── */
+  const { ZONES, ZONE_BY_ID, TAMBONS, TAMBON_BY_CODE, zoneOf, tambonOf } = window.AreaGeo;
+  const TEAM = settings.team || window.AREA_SALES_TEAM || [];
+  const TAMBON_OWNER = window.AreaGeo.teamIndex(TEAM);
+  const MEMBER = Object.fromEntries(TEAM.map(m => [m.id, m]));
+  const NONE = '__none';
+  const salesOf = (r) => { const t = tambonOf(r); return (t && TAMBON_OWNER[t]) || NONE; };
+  const salesLabel = (id) => (id === NONE ? 'ยังไม่มีผู้ดูแล' : MEMBER[id] ? `${MEMBER[id].nick} · ${MEMBER[id].name}` : id);
+  const tambonLabel = (code) => { const t = TAMBON_BY_CODE[code]; return t ? `${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${t.th} (${t.amphoe})` : 'ไม่ทราบตำบล'; };
   const OUTSIDE = '__outside';
   const zoneLabel = (id) => (id === OUTSIDE ? 'นอกพื้นที่ Focus' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : id);
 
   /* ── UI state ── */
-  let ui = { period: 'month', zone: ZONES.length ? 'focus' : '', owner: '' };
+  let ui = { period: 'month', by: 'area', zone: ZONES.length ? 'focus' : '', sales: 'all' };
   try { ui = Object.assign(ui, JSON.parse(localStorage.getItem(UI_KEY) || '{}')); } catch (e) { /* defaults */ }
   const saveUi = () => { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ignore */ } };
 
   function inScope(r) {
-    if (ui.owner && (r.owner || '(ไม่ระบุ)') !== ui.owner) return false;
     const z = zoneOf(r);
+    if (ui.by === 'sales') {
+      if (!z) return false; // territories live inside the focus zones
+      return ui.sales === 'all' || salesOf(r) === ui.sales;
+    }
     if (ui.zone === 'focus') return !!z;
     if (ui.zone === OUTSIDE) return !z;
     if (ui.zone) return z === ui.zone;
@@ -309,18 +298,25 @@
 
   /* ── filters ── */
   function fillFilters() {
-    const zs = ['<option value="">🗺️ ทุกพื้นที่</option>'];
-    if (ZONES.length) zs.push(`<option value="focus">⭐ Focus ${ZONES.length} เขต</option>`);
-    ZONES.forEach(z => zs.push(`<option value="${z.id}">📍 ${esc(z.th)}</option>`));
-    if (ZONES.length) zs.push(`<option value="${OUTSIDE}">นอกพื้นที่ Focus</option>`);
-    $('zoneSel').innerHTML = zs.join('');
-    $('zoneSel').value = ui.zone;
-    if ($('zoneSel').value !== ui.zone) { ui.zone = ''; $('zoneSel').value = ''; }
-    const owners = [...new Set(records.map(r => r.owner || '(ไม่ระบุ)'))].sort((a, b) => a.localeCompare(b, 'th'));
-    $('ownerSel').innerHTML = '<option value="">👤 เซลส์ทุกคน</option>' + owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
-    $('ownerSel').value = ui.owner;
-    if ($('ownerSel').value !== ui.owner) { ui.owner = ''; $('ownerSel').value = ''; }
-    document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.period === ui.period));
+    const opts = [];
+    if (ui.by === 'sales') {
+      opts.push('<option value="all">👥 เซลส์ทุกคน</option>');
+      TEAM.forEach(m => opts.push(`<option value="${esc(m.id)}">👤 ${esc(m.nick)} · ${esc(m.name)}</option>`));
+      opts.push(`<option value="${NONE}">❔ ยังไม่มีผู้ดูแล</option>`);
+      $('scopeSel').innerHTML = opts.join('');
+      $('scopeSel').value = ui.sales;
+      if ($('scopeSel').value !== ui.sales) { ui.sales = 'all'; $('scopeSel').value = 'all'; }
+    } else {
+      opts.push('<option value="">🗺️ ทุกพื้นที่</option>');
+      if (ZONES.length) opts.push(`<option value="focus">⭐ Focus ${ZONES.length} เขต</option>`);
+      ZONES.forEach(z => opts.push(`<option value="${z.id}">📍 ${esc(z.th)}</option>`));
+      if (ZONES.length) opts.push(`<option value="${OUTSIDE}">นอกพื้นที่ Focus</option>`);
+      $('scopeSel').innerHTML = opts.join('');
+      $('scopeSel').value = ui.zone;
+      if ($('scopeSel').value !== ui.zone) { ui.zone = ''; $('scopeSel').value = ''; }
+    }
+    document.querySelectorAll('[data-period]').forEach(b => b.classList.toggle('on', b.dataset.period === ui.period));
+    document.querySelectorAll('[data-by]').forEach(b => b.classList.toggle('on', b.dataset.by === ui.by));
   }
 
   /* ── render ── */
@@ -353,11 +349,12 @@
     const covD = covCur === covPrev ? { cls: 'flat', txt: '● เท่าเดิม' }
       : { cls: covCur > covPrev ? 'up' : 'down', txt: `${covCur > covPrev ? '▲ +' : '▼ '}${covCur - covPrev} จุด` };
 
-    const scopeName = ui.zone === 'focus' ? `Focus ${ZONES.length} เขต` : ui.zone ? zoneLabel(ui.zone) : 'ทุกพื้นที่';
+    const scopeName = ui.by === 'sales' ? (ui.sales === 'all' ? 'เซลส์ทุกคน' : salesLabel(ui.sales))
+      : ui.zone === 'focus' ? `Focus ${ZONES.length} เขต` : ui.zone ? zoneLabel(ui.zone) : 'ทุกพื้นที่';
     let html = `
       <div class="top">
         <div class="card hero">
-          <div class="label">ร้านที่ใช้ Wongnai POS แล้ว · ${esc(scopeName)}${ui.owner ? ' · ' + esc(ui.owner) : ''}</div>
+          <div class="label">ร้านที่ใช้ Wongnai POS แล้ว · ${esc(scopeName)}</div>
           <div class="value">${pct(sold)}%</div>
           <div class="of">${fmt(sold)} จาก ${fmt(total)} ร้าน</div>
           <div class="meter" role="img" aria-label="ใช้ POS ${pct(sold)}% ยังไม่ใช้ ${pct(unsold)}%">
@@ -390,33 +387,55 @@
       ${B.map(b => `<tr><td>${esc(b.long)}</td><td class="n">${fmt(b.n)}</td><td class="n">${fmt(b.shops)}</td></tr>`).join('')}
       </tbody></table></div></details></div>`;
 
-    // by zone
-    const zoneIds = ui.zone === 'focus' ? ZONES.map(z => z.id) : ui.zone ? [ui.zone] : [...ZONES.map(z => z.id), OUTSIDE];
+    // breakdown tables (all scoped by the filters above)
+    const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ POS</th><th>% ใช้ POS</th><th class="n">ยังไม่ใช้</th>
+      <th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
     const groupRow = (name, list) => {
       const t = list.length, s = list.filter(r => r.status === 'sold').length;
       const c = visitsIn(list, P.cur), p = visitsIn(list, P.prev), d = delta(c.n, p.n);
       const sp = t ? Math.round(s / t * 100) : 0;
-      return { t, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td>
+      return { t, c: c.n, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td>
         <td><span class="mini">${s ? `<i style="flex:${s};background:var(--ok)"></i>` : ''}${t - s ? `<i style="flex:${t - s};background:var(--red);opacity:.85"></i>` : ''}</span>${sp}%</td>
         <td class="n">${fmt(t - s)}</td><td class="n">${fmt(c.n)}</td><td class="n">${fmt(p.n)}</td><td class="n ${d.cls}">${d.txt}</td>` };
     };
-    const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ POS</th><th>% ใช้ POS</th><th class="n">ยังไม่ใช้</th>
-      <th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
-    const zRows = zoneIds.map(id => groupRow(zoneLabel(id), rs.filter(r => (id === OUTSIDE ? !zoneOf(r) : zoneOf(r) === id)))).filter(x => x.t || ui.zone);
     const totalRow = groupRow('รวม', rs);
-    html += `<div class="card"><h2>แยกตามพื้นที่</h2><div class="sub">เข้าพบ: ${esc(P.curLabel)} เทียบ ${esc(P.prevLabel)}</div>
-      <div class="table-scroll"><table>${head('พื้นที่')}<tbody>${zRows.map(r => `<tr>${r.html}</tr>`).join('')}${zRows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : ''}</tbody></table></div></div>`;
+    const table = (title, sub, first, rows, keepEmpty = false) => {
+      rows = rows.filter(r => r.t || keepEmpty);
+      if (!rows.length) return '';
+      return `<div class="card"><h2>${title}</h2><div class="sub">${sub}</div><div class="table-scroll"><table>${head(first)}<tbody>`
+        + rows.map(r => `<tr>${r.html}</tr>`).join('') + (rows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : '') + '</tbody></table></div></div>';
+    };
+    const vsNote = `เข้าพบ: ${esc(P.curLabel)} เทียบ ${esc(P.prevLabel)}`;
+    const groupBy = (keyFn, ids, labelFn) => ids.map(id => groupRow(labelFn(id), rs.filter(r => keyFn(r) === id)));
 
-    // by salesperson
-    const owners = [...new Set(rs.map(r => r.owner || '(ไม่ระบุ)'))];
-    const oRows = owners.map(o => ({ o, list: rs.filter(r => (r.owner || '(ไม่ระบุ)') === o) }))
-      .map(x => ({ ...groupRow(x.o, x.list), c: visitsIn(x.list, P.cur).n }))
-      .sort((a, b) => b.c - a.c || b.t - a.t);
-    html += `<div class="card"><h2>แยกตามเซลส์ผู้ดูแล</h2><div class="sub">เรียงจากเข้าพบมากที่สุดในช่วงนี้</div>
-      <div class="table-scroll"><table>${head('เซลส์')}<tbody>${oRows.map(r => `<tr>${r.html}</tr>`).join('')}${oRows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : ''}</tbody></table></div></div>`;
+    // by salesperson (territory = sub-districts assigned in the team editor)
+    const salesIds = ui.by === 'sales' && ui.sales !== 'all' ? [ui.sales] : [...TEAM.map(m => m.id), NONE];
+    const inFocus = rs.filter(r => zoneOf(r));
+    if (inFocus.length && !(ui.by === 'sales' && ui.sales !== 'all')) {
+      const rows = groupBy(salesOf, salesIds, salesLabel).sort((a, b) => b.c - a.c || b.t - a.t);
+      html += table('แยกตามเซลส์ (พื้นที่ที่ดูแล)', `${vsNote} · เรียงจากเข้าพบมากที่สุด`, 'เซลส์', rows, true);
+    }
+    // by zone
+    if (!(ui.by === 'area' && ui.zone && ui.zone !== 'focus')) {
+      const zoneIds = ui.by === 'area' && ui.zone === 'focus' ? ZONES.map(z => z.id) : [...ZONES.map(z => z.id), OUTSIDE];
+      html += table('แยกตามพื้นที่', vsNote, 'พื้นที่', groupBy(r => zoneOf(r) || OUTSIDE, zoneIds, zoneLabel));
+    }
+    // by sub-district when one zone or one salesperson is selected
+    if ((ui.by === 'area' && ZONE_BY_ID[ui.zone]) || (ui.by === 'sales' && ui.sales !== 'all')) {
+      const codes = ui.by === 'area' ? TAMBONS.filter(t => t.zone === ui.zone).map(t => t.code)
+        : ui.sales === NONE ? TAMBONS.filter(t => !TAMBON_OWNER[t.code]).map(t => t.code)
+        : (MEMBER[ui.sales] ? MEMBER[ui.sales].tambons : []);
+      const rows = groupBy(tambonOf, codes, (c) => tambonLabel(c) + (ui.by === 'area' && TAMBON_OWNER[c] ? ` · 👤 ${MEMBER[TAMBON_OWNER[c]].nick}` : ''))
+        .sort((a, b) => b.t - a.t);
+      const title = ui.by === 'area' ? `แยกตามตำบล · ${esc(zoneLabel(ui.zone))}` : `ตำบลที่ ${esc(MEMBER[ui.sales] ? MEMBER[ui.sales].nick : 'ยังไม่มีผู้ดูแล')} ดูแล`;
+      const empty = ui.by === 'sales' && ui.sales !== NONE && !codes.length;
+      html += empty ? `<div class="card"><h2>${title}</h2><div class="sub">ยังไม่ได้กำหนดพื้นที่ — ไปที่หน้าแผนที่ → 👤 เซลส์ → ⚙️ จัดการทีม</div></div>`
+        : table(title, `${vsNote} · ตำบลที่มีร้านเท่านั้น`, 'ตำบล / แขวง', rows);
+    }
 
     html += `<p class="foot">ที่มาของข้อมูล: รายชื่อร้านและสถานะ POS จากไฟล์ Salesforce ที่อัปโหลดในหน้าแผนที่ · การเข้าพบ = การกด “เช็คอินวันนี้” ในแอป
-      และคอลัมน์ “วันที่เข้าพบ” จาก Report กิจกรรมที่อัปโหลด (นับร้านละไม่เกิน 1 ครั้งต่อวัน) · การเปรียบเทียบใช้ช่วงเวลาเท่ากัน เช่น 1–5 ต.ค. เทียบ 1–5 ก.ย.
+      และคอลัมน์ “วันที่เข้าพบ” จาก Report กิจกรรมที่อัปโหลด (นับร้านละไม่เกิน 1 ครั้งต่อวัน)
+      · เซลส์ = ผู้ดูแลตำบลที่ร้านตั้งอยู่ (กำหนดในหน้าแผนที่ → จัดการทีม) · ขอบเขตตำบลเป็นค่าประมาณ · การเปรียบเทียบใช้ช่วงเวลาเท่ากัน เช่น 1–5 ต.ค. เทียบ 1–5 ก.ย.
       · ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้ ${settings.lastSync ? `· อัปโหลดล่าสุด ${dTh(new Date(settings.lastSync))} ${yTh(new Date(settings.lastSync).getFullYear())}` : ''}</p>`;
     $('content').innerHTML = html;
     drawChart(B);
@@ -479,12 +498,15 @@
   }
 
   /* ── wiring ── */
+  $('bySeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-by]'); if (!b) return;
+    ui.by = b.dataset.by; saveUi(); render();
+  });
   document.querySelector('.seg').addEventListener('click', (e) => {
     const b = e.target.closest('[data-period]'); if (!b) return;
     ui.period = b.dataset.period; saveUi(); render();
   });
-  $('zoneSel').addEventListener('change', (e) => { ui.zone = e.target.value; saveUi(); render(); });
-  $('ownerSel').addEventListener('change', (e) => { ui.owner = e.target.value; saveUi(); render(); });
+  $('scopeSel').addEventListener('change', (e) => { if (ui.by === 'sales') ui.sales = e.target.value; else ui.zone = e.target.value; saveUi(); render(); });
   $('btnPrint').onclick = () => window.print();
   let rt;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });

@@ -320,20 +320,6 @@
     .opt input { margin-top: 3px; accent-color: var(--brand); }
     .section-t { font-weight: 800; font-size: 14px; }
 
-    /* ── Welcome ── */
-    #welcome {
-      position: absolute; inset: 0; z-index: 820; display: none; align-items: center; justify-content: center;
-      pointer-events: none; padding: 16px;
-    }
-    #welcome.show { display: flex; }
-    .welcome-card {
-      pointer-events: auto; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow);
-      padding: 24px; max-width: 420px; width: 100%;
-    }
-    .welcome-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-    .welcome-card p { color: var(--text-2); margin-bottom: 16px; line-height: 1.55; }
-    .welcome-card .btn { width: 100%; margin-bottom: 8px; padding: 11px; justify-content: flex-start; }
-
     /* ── Toast ── */
     #toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
@@ -484,15 +470,6 @@
       <div class="row">
         <span>ไม่อัปเดต:</span>
         <span class="b age-m1">1M</span><span class="b age-m3">3M</span><span class="b age-m6">6M</span><span class="b age-y1">1Y</span>
-      </div>
-    </div>
-
-    <div id="welcome">
-      <div class="welcome-card">
-        <h2>👋 เริ่มใช้ Area Map</h2>
-        <p>ดึงรายชื่อร้านมาปักหมุดบนแผนที่ <b style="color:var(--ok)">เขียว = ขายแล้ว</b> · <b style="color:var(--red)">แดง = ยังไม่ขาย</b> แล้วออกไปปิดการขายร้านสีแดงได้เลย · หมุดมีป้าย <b>1M / 3M / 6M / 1Y</b> = ไม่ได้อัปเดตนานแค่ไหน</p>
-        <button class="btn sf" data-act="upload">📂 อัปโหลดข้อมูลจาก Salesforce (CSV / Excel)</button>
-        <button class="btn" data-act="sample">🧪 ลองด้วยข้อมูลตัวอย่าง</button>
       </div>
     </div>
 
@@ -882,12 +859,24 @@
     if (single) { map.fitBounds(L.polygon(single.latlngs).getBounds(), { padding: [24, 24] }); return; }
     const pts = state.records.filter(r => hasCoord(r) && passFilter(r)).map(r => [r.lat, r.lng]);
     if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
-    else if (state.zone === 'focus') map.fitBounds(L.featureGroup(ZONES.map(z => L.polygon(z.latlngs))).getBounds(), { padding: [24, 24] });
+    else if (state.zone === 'focus') map.fitBounds(L.featureGroup(mainZoneGroup().map(z => L.polygon(z.latlngs))).getBounds(), { padding: [24, 24] });
+  }
+  // With no shops loaded, fitting all focus zones would span Bangkok to Phuket (half the country).
+  // Open on the largest group of neighbouring zones instead; far zones stay one tab away.
+  function mainZoneGroup() {
+    const c = (z) => [(z.bbox[1] + z.bbox[3]) / 2, (z.bbox[0] + z.bbox[2]) / 2];
+    let best = ZONES;
+    let bestN = 0;
+    for (const z of ZONES) {
+      const [a, b] = c(z);
+      const g = ZONES.filter(o => { const [x, y] = c(o); return Math.hypot(x - a, y - b) < 1; });
+      if (g.length > bestN) { best = g; bestN = g.length; }
+    }
+    return best;
   }
   function setZone(id, fit = true) {
     if (id && id !== 'focus' && !ZONE_BY_ID[id]) id = '';
     state.zone = id;
-    state.settings.zone = id; save();
     const hash = '#zone=' + (id || 'all');
     if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
     closeEditor(); renderZones(); renderAll();
@@ -981,7 +970,7 @@
       rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
     }
     if (!rows.length) {
-      $('list').innerHTML = `<div class="list-empty">${state.records.length ? 'ไม่พบร้านตามเงื่อนไข' : 'ยังไม่มีข้อมูลร้าน<br>กด Sync Salesforce หรือ อัปโหลด'}</div>`;
+      $('list').innerHTML = `<div class="list-empty">${state.records.length ? 'ไม่พบร้านตามเงื่อนไข' : 'ยังไม่มีข้อมูลร้าน<br>กด “อัปโหลดข้อมูล SF” เพื่อปักหมุดร้านบนแผนที่'}</div>`;
       return;
     }
     const html = rows.slice(0, LIST_LIMIT).map(r => {
@@ -1006,7 +995,6 @@
   }
   function renderAll() {
     renderMarkers(); renderStats(); renderList(); renderZoneBar();
-    $('welcome').classList.toggle('show', state.records.length === 0);
   }
 
   /* ───────────────────────── Editor ───────────────────────── */
@@ -1653,7 +1641,8 @@
   /* ───────────────────────── Boot ───────────────────────── */
   load();
   setLayer(state.settings.layer);
-  { const z = zoneFromHash(); state.zone = z !== null ? z : (state.settings.zone || ''); }
+  // Home view is always “Focus 7 เขต”; a #zone=… link opens a specific tab instead
+  { const z = zoneFromHash(); state.zone = z !== null ? z : (ZONES.length ? 'focus' : ''); }
   if (state.zone && state.zone !== 'focus' && !ZONE_BY_ID[state.zone]) state.zone = '';
   renderZones();
   renderAll();

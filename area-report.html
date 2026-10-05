@@ -94,6 +94,8 @@
     .meter > div { height: 100%; }
     .meter .m-sold { background: var(--ok); }
     .meter .m-unsold { background: var(--red); opacity: .85; }
+    .plat-split { margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+    .plat-split b { color: var(--text); font-weight: 700; }
     .meter-key { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
     .key { display: inline-flex; align-items: center; gap: 6px; }
     .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
@@ -133,7 +135,7 @@
     .mini { display: inline-flex; width: 70px; height: 7px; gap: 1px; border-radius: 4px; overflow: hidden; vertical-align: middle; margin-right: 8px; background: var(--surface); }
     .mini i { display: block; height: 100%; }
     .table-scroll { overflow-x: auto; }
-    td:nth-child(4) { white-space: nowrap; }
+    td:nth-child(6) { white-space: nowrap; }
 
     .empty { text-align: center; padding: 48px 16px; }
     .empty h2 { font-size: 20px; margin-bottom: 6px; }
@@ -343,6 +345,10 @@
 
     const total = rs.length, sold = rs.filter(r => r.status === 'sold').length, unsold = total - sold;
     const pct = (n) => (total ? Math.round(n / total * 100) : 0);
+    const soldRs = rs.filter(r => r.status === 'sold');
+    const nAnd = soldRs.filter(r => r.platform === 'android').length, nIpad = soldRs.filter(r => r.platform === 'ipad').length, nUnk = sold - nAnd - nIpad;
+    const sp = (n) => (sold ? Math.round(n / sold * 100) + '%' : '–');
+    const platLine = sold ? `ร้านที่ใช้ Wongnai POS: <b>🤖 Android ${fmt(nAnd)}</b> (${sp(nAnd)}) · <b>🍎 iPad ${fmt(nIpad)}</b> (${sp(nIpad)})${nUnk ? ` · ไม่ระบุ ${fmt(nUnk)}` : ''}` : '';
     const cur = visitsIn(rs, P.cur), prev = visitsIn(rs, P.prev);
     const lastVisit = (r) => (r.visits && r.visits.length ? Math.max(...r.visits) : 0);
     const notVisited90 = rs.filter(r => lastVisit(r) < Date.now() - 90 * DAY).length;
@@ -359,16 +365,17 @@
           <div class="label">ร้านที่ใช้ Wongnai POS แล้ว · ${esc(scopeName)}</div>
           <div class="value">${pct(sold)}%</div>
           <div class="of">${fmt(sold)} จาก ${fmt(total)} ร้าน</div>
-          <div class="meter" role="img" aria-label="ใช้ POS ${pct(sold)}% ยังไม่ใช้ ${pct(unsold)}%">
+          <div class="meter" role="img" aria-label="ใช้ Wongnai POS ${pct(sold)}% ไม่ใช้ ${pct(unsold)}%">
             ${sold ? `<div class="m-sold" style="flex:${sold}"></div>` : ''}${unsold ? `<div class="m-unsold" style="flex:${unsold}"></div>` : ''}
           </div>
-          <div class="meter-key"><span class="key"><i class="sw" style="background:var(--ok)"></i>ใช้ POS แล้ว ${fmt(sold)} ร้าน (${pct(sold)}%)</span>
-            <span class="key"><i class="sw" style="background:var(--red)"></i>ยังไม่ใช้ ${fmt(unsold)} ร้าน (${pct(unsold)}%)</span></div>
+          <div class="meter-key"><span class="key"><i class="sw" style="background:var(--ok)"></i>ใช้ Wongnai POS ${fmt(sold)} ร้าน (${pct(sold)}%)</span>
+            <span class="key"><i class="sw" style="background:var(--red)"></i>ไม่ใช้ ${fmt(unsold)} ร้าน (${pct(unsold)}%)</span></div>
+          <div class="plat-split">${platLine}</div>
         </div>
         <div class="kpis">
           ${tile('ร้านทั้งหมด', fmt(total), '<small>ร้าน</small>')}
-          ${tile('<i class="sw" style="background:var(--ok)"></i>ใช้ POS แล้ว', fmt(sold), `<small>${pct(sold)}%</small>`)}
-          ${tile('<i class="sw" style="background:var(--red)"></i>ยังไม่ใช้ POS', fmt(unsold), `<small>${pct(unsold)}%</small>`)}
+          ${tile('🤖 ใช้ Wongnai POS บน Android', fmt(nAnd), `<small>${sp(nAnd)} ของร้านที่ใช้</small>`)}
+          ${tile('🍎 ใช้ Wongnai POS บน iPad', fmt(nIpad), `<small>${sp(nIpad)} ของร้านที่ใช้</small>`)}
           ${tile('ไม่ได้เข้าพบเกิน 90 วัน', fmt(notVisited90), `<small>${pct(notVisited90)}%</small>`)}
         </div>
       </div>
@@ -390,13 +397,14 @@
       </tbody></table></div></details></div>`;
 
     // breakdown tables (all scoped by the filters above)
-    const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ POS</th><th>% ใช้ POS</th><th class="n">ยังไม่ใช้</th>
+    const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ Wongnai POS</th><th class="n">🤖 Android</th><th class="n">🍎 iPad</th><th>% ใช้</th><th class="n">ไม่ใช้</th>
       <th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
     const groupRow = (name, list) => {
       const t = list.length, s = list.filter(r => r.status === 'sold').length;
       const c = visitsIn(list, P.cur), p = visitsIn(list, P.prev), d = delta(c.n, p.n);
       const sp = t ? Math.round(s / t * 100) : 0;
-      return { t, c: c.n, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td>
+      const a = list.filter(r => r.status === 'sold' && r.platform === 'android').length, ip = list.filter(r => r.status === 'sold' && r.platform === 'ipad').length;
+      return { t, c: c.n, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td><td class="n">${fmt(a)}</td><td class="n">${fmt(ip)}</td>
         <td><span class="mini">${s ? `<i style="flex:${s};background:var(--ok)"></i>` : ''}${t - s ? `<i style="flex:${t - s};background:var(--red);opacity:.85"></i>` : ''}</span>${sp}%</td>
         <td class="n">${fmt(t - s)}</td><td class="n">${fmt(c.n)}</td><td class="n">${fmt(p.n)}</td><td class="n ${d.cls}">${d.txt}</td>` };
     };

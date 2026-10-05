@@ -270,6 +270,19 @@
       background: var(--surface); text-align: left; line-height: 1.2;
     }
     .stat .n { font-size: 19px; font-weight: 800; }
+    .plat-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--text-2); }
+    .plat-row:empty { display: none; }
+    .plat-btn {
+      display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--border); background: var(--surface);
+      border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 12.5px;
+    }
+    .plat-btn b { font-size: 14px; } .plat-btn span { color: var(--text-2); font-weight: 600; }
+    .plat-btn.active { border-color: var(--ok); background: var(--ok-light); }
+    .plat-pick { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+    .plat-pick[hidden] { display: none; }
+    .plat-pick button { border: 1.5px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-weight: 700; color: var(--text); }
+    .plat-pick button.on { border-color: var(--ok); background: var(--ok-light); color: var(--ok-ink); }
+    .lg-plat { display: inline-flex; width: 15px; height: 15px; border-radius: 50%; background: #00a86b; color: #fff; font-size: 10px; font-weight: 800; align-items: center; justify-content: center; }
     .stat .p { font-size: 12px; font-weight: 800; color: var(--text-2); margin-top: 1px; }
     .stat .l { font-size: 11px; color: var(--text-2); display: flex; align-items: center; gap: 4px; }
     .stat.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--text) inset; }
@@ -558,12 +571,13 @@
       </div>
       <div class="stats">
         <button class="stat active" data-filter="all"><div class="n" id="nAll">0</div><div class="l">ทั้งหมด</div></button>
-        <button class="stat sold" data-filter="sold"><div class="n" id="nSold">0</div><div class="l"><span class="dot sold"></span>ใช้ POS แล้ว</div><div class="p" id="pSold">0%</div></button>
-        <button class="stat unsold" data-filter="unsold"><div class="n" id="nUnsold">0</div><div class="l"><span class="dot unsold"></span>ยังไม่ใช้</div><div class="p" id="pUnsold">0%</div></button>
+        <button class="stat sold" data-filter="sold"><div class="n" id="nSold">0</div><div class="l"><span class="dot sold"></span>ใช้ Wongnai POS</div><div class="p" id="pSold">0%</div></button>
+        <button class="stat unsold" data-filter="unsold"><div class="n" id="nUnsold">0</div><div class="l"><span class="dot unsold"></span>ไม่ใช้</div><div class="p" id="pUnsold">0%</div></button>
       </div>
+      <div class="plat-row" id="platRow"></div>
       <div>
         <div class="bar"><div id="penBar" style="width:0%"></div></div>
-        <div class="bar-label"><span>สัดส่วนร้านที่มี Wongnai POS</span><b id="penTxt">0%</b></div>
+        <div class="bar-label"><span>สัดส่วนร้านที่ใช้ Wongnai POS</span><b id="penTxt">0%</b></div>
       </div>
       <button class="stale-alert" id="staleBtn" title="แสดงเฉพาะร้านที่ไม่อัปเดตเกิน 1 เดือน">⏰ ร้านที่ไม่อัปเดตเกิน 1 เดือน<b id="nStale">0</b></button>
       <div class="side-row">
@@ -613,8 +627,11 @@
 
     <div class="legend">
       <div class="row">
-        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#00a86b"/></svg>ขายแล้ว (มี Wongnai POS)</span>
-        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#e53935"/></svg>ยังไม่ขาย</span>
+        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#00a86b"/></svg>ใช้ Wongnai POS</span>
+        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#e53935"/></svg>ไม่ใช้</span>
+      </div>
+      <div class="row">
+        <span class="lg-plat">A</span>Android <span class="lg-plat">i</span>iPad
       </div>
       <div class="row">
         <span>ไม่อัปเดต:</span>
@@ -632,8 +649,14 @@
       </div>
       <div class="ed-body">
         <div class="status-toggle">
-          <button class="sold" data-status="sold">✅ ขายแล้ว<small>มี Wongnai POS แล้ว</small></button>
-          <button class="unsold" data-status="unsold">🔴 ยังไม่ขาย<small>เป้าหมายที่ต้องไปปิด</small></button>
+          <button class="sold" data-status="sold">✅ ใช้ Wongnai POS<small>ลูกค้าแล้ว</small></button>
+          <button class="unsold" data-status="unsold">🔴 ไม่ใช้<small>เป้าหมายที่ต้องไปปิด</small></button>
+        </div>
+        <div class="plat-pick" id="platPick">
+          <span>ระบบที่ใช้</span>
+          <button data-plat="android">🤖 Android</button>
+          <button data-plat="ipad">🍎 iPad</button>
+          <button data-plat="">ไม่ระบุ</button>
         </div>
         <div class="quick">
           <a id="qNav" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>นำทาง</a>
@@ -711,10 +734,10 @@
     <div class="modal-body">
       <div class="map-table" id="mapFields"></div>
       <div>
-        <div class="section-t">ค่าไหนแปลว่า “ขายแล้ว” (หมุดเขียว)?</div>
+        <div class="section-t">ค่าไหนแปลว่า “ใช้ Wongnai POS” (หมุดเขียว)?</div>
         <div class="hint" style="margin:2px 0 8px">ติ๊กค่าที่หมายถึงร้านมี Wongnai POS แล้ว · ค่าที่ไม่ได้ติ๊กจะเป็นหมุดแดง</div>
         <div id="statusVals"></div>
-        <div class="preview-bar" style="margin-top:8px"><span style="color:var(--ok)">🟢 เขียว <span id="pvSold">0</span></span><span style="color:var(--red)">🔴 แดง <span id="pvUnsold">0</span></span><span style="color:var(--text-2)">ไม่มีพิกัด <span id="pvNoGeo">0</span></span></div>
+        <div class="preview-bar" style="margin-top:8px"><span style="color:var(--ok)">🟢 ใช้ Wongnai POS <span id="pvSold">0</span> <span id="pvPlat" style="font-weight:600;color:var(--text-2)"></span></span><span style="color:var(--red)">🔴 ไม่ใช้ <span id="pvUnsold">0</span></span><span style="color:var(--text-2)">ไม่มีพิกัด <span id="pvNoGeo">0</span></span></div>
       </div>
       <div>
         <div class="section-t">ความสดของข้อมูล (นับจากวันที่อัปเดตล่าสุด)</div>
@@ -789,7 +812,8 @@
   const COLORS = { sold: '#00a86b', unsold: '#e53935' };
   const MAP_FIELDS = [
     ['name',    'ชื่อร้าน',            'จำเป็น'],
-    ['status',  'สถานะ Wongnai POS',  'คอลัมน์ที่บอกว่าขายแล้วหรือยัง'],
+    ['status',  'สถานะ Wongnai POS',  'คอลัมน์ที่บอกว่าใช้ Wongnai POS หรือไม่'],
+    ['platform','ระบบ POS (Android / iPad)', 'เช่น POS Device / Package — ไม่มีก็ได้'],
     ['updated', 'วันที่อัปเดตล่าสุด',     'เช่น Last Activity / Last Modified Date'],
     ['visit',   'วันที่เข้าพบ (สำหรับรายงาน)', 'Report กิจกรรม: 1 แถว = เข้าพบ 1 ครั้ง'],
     ['lat',     'Latitude',          ''],
@@ -811,6 +835,7 @@
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
+    platform:[/platform/i, /แพลตฟอร์ม/, /(pos ?)?device/i, /อุปกรณ์/, /hardware/i, /ระบบ ?pos/i, /^package/i, /แพ็กเกจ|แพคเกจ/],
     visit:   [/visit ?date/i, /วันที่เข้าพบ/, /เข้าพบ/, /^(activity ?)?date$/i, /^due ?date$/i, /^start/i, /visit/i],
     updated: [/last ?activity/i, /last ?modified/i, /last ?(update|visit)/i, /อัปเดต/, /แก้ไขล่าสุด/, /เยี่ยมล่าสุด/, /modified/i, /(update|date)/i, /วันที่/],
     status:  [/wongnai ?pos/i, /has.?pos/i, /pos.?status/i, /สถานะ/, /^status$/i, /stage/i, /status/i, /ขาย/, /customer/i],
@@ -827,6 +852,11 @@
   ];
   const AGE_INDEX = Object.fromEntries(AGE_TIERS.map((t, i) => [t.k, i]));
   const TH_MONTHS = ['มค', 'กพ', 'มีค', 'เมย', 'พค', 'มิย', 'กค', 'สค', 'กย', 'ตค', 'พย', 'ธค'];
+  // POS platform from a device / package / status text (Wongnai POS Flex, Dual Screen, Lite, Single Screen are Android)
+  const IPAD_RE = /ipad|\bios\b|apple|ไอแพด/i;
+  const ANDROID_RE = /android|แอนดรอยด์|\bflex\b|dual ?screen|\blite\b|single ?screen|sunmi|imin|handheld/i;
+  const detectPlatform = (v) => { const t = String(v || ''); return IPAD_RE.test(t) ? 'ipad' : ANDROID_RE.test(t) ? 'android' : ''; };
+  const PLAT_LABEL = { android: '🤖 Android', ipad: '🍎 iPad' };
   const NOT_SOLD_RE = /(not|ไม่|ยัง|inactive|lost|^no$|^n$|^false$|^0$|prospect|churn)/i;
 
   /* ───────────────────────── State ───────────────────────── */
@@ -975,9 +1005,10 @@
     const op = { fresh: 1, m1: 1, m3: 0.82, m6: 0.62, y1: 0.42 }[age.k];
     const stroke = age.k === 'y1' ? '#455a64' : '#fff';
     const dash = age.k === 'm6' || age.k === 'y1' ? ' stroke-dasharray="3 2"' : '';
-    const inner = r.status === 'sold'
-      ? `<circle cx="15" cy="15" r="6.5" fill="#fff"/><path d="M11.8 15.2l2.3 2.3 4.2-4.6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
-      : `<circle cx="15" cy="15" r="5" fill="#fff"/>`;
+    const glyph = r.platform === 'android' ? 'A' : r.platform === 'ipad' ? 'i' : '';
+    const inner = r.status !== 'sold' ? `<circle cx="15" cy="15" r="5" fill="#fff"/>`
+      : glyph ? `<circle cx="15" cy="15" r="7" fill="#fff"/><text x="15" y="18.6" text-anchor="middle" font-size="10.5" font-weight="800" font-family="Sarabun,sans-serif" fill="${c}">${glyph}</text>`
+      : `<circle cx="15" cy="15" r="6.5" fill="#fff"/><path d="M11.8 15.2l2.3 2.3 4.2-4.6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
     const badge = age.badge
       ? `<rect x="17" y="-6" width="18" height="12" rx="6" fill="${age.color}" stroke="#fff" stroke-width="1.5"/><text x="26" y="3.2" text-anchor="middle" font-size="8.5" font-weight="800" font-family="Sarabun,sans-serif" fill="${age.k === 'm1' ? '#3d2e00' : '#fff'}">${age.badge}</text>`
       : '';
@@ -1094,7 +1125,7 @@
       const [n, s] = cnt[id] || [0, 0];
       const pen = n ? `<span class="pen">${Math.round(s / n * 100)}%</span>` : '';
       const href = id.startsWith('sales:') ? '#sales=' + id.slice(6) : '#zone=' + (id || 'all');
-      return `<a class="ztab ${cls}${state.zone === id ? ' on' : ''}" href="${href}" data-zone="${esc(id)}" title="${esc(title || label)} · ${n} ร้าน · ใช้ POS ${s}">${label}<span class="cnt">${n.toLocaleString()}</span>${pen}</a>`;
+      return `<a class="ztab ${cls}${state.zone === id ? ' on' : ''}" href="${href}" data-zone="${esc(id)}" title="${esc(title || label)} · ${n} ร้าน · ใช้ Wongnai POS ${s}">${label}<span class="cnt">${n.toLocaleString()}</span>${pen}</a>`;
     };
     const mode = `<span class="zmode" role="tablist" aria-label="เลือกดูตาม"><button data-mode="area" class="${sales ? '' : 'on'}">📍 พื้นที่</button><button data-mode="sales" class="${sales ? 'on' : ''}">👤 เซลส์</button></span>`;
     const chips = sales
@@ -1250,7 +1281,10 @@
 
   const markers = new Map();
   function passFilter(r, ignoreStatus = false) {
-    if (!ignoreStatus && state.filter !== 'all' && r.status !== state.filter) return false;
+    if (!ignoreStatus && state.filter !== 'all') {
+      if (state.filter === 'android' || state.filter === 'ipad') { if (r.status !== 'sold' || r.platform !== state.filter) return false; }
+      else if (r.status !== state.filter) return false;
+    }
     if (state.owner && (r.owner || '') !== state.owner) return false;
     if (state.zone) {
       const z = zoneOf(r);
@@ -1314,7 +1348,16 @@
     $('pUnsold').textContent = base.length ? (100 - pct) + '%' : '–';
     $('penBar').style.width = pct + '%';
     $('penTxt').textContent = pct + '%';
-    document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter));
+    document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter
+      || (b.dataset.filter === 'sold' && (state.filter === 'android' || state.filter === 'ipad'))));
+    const soldList = base.filter(r => r.status === 'sold');
+    const nA = soldList.filter(r => r.platform === 'android').length, nI = soldList.filter(r => r.platform === 'ipad').length;
+    const sp = (n) => (soldList.length ? Math.round(n / soldList.length * 100) + '%' : '');
+    $('platRow').innerHTML = soldList.length
+      ? `<button class="plat-btn${state.filter === 'android' ? ' active' : ''}" data-plat-filter="android" title="ร้านที่ใช้ Wongnai POS บน Android">🤖 Android <b>${nA}</b><span>${sp(nA)}</span></button>`
+        + `<button class="plat-btn${state.filter === 'ipad' ? ' active' : ''}" data-plat-filter="ipad" title="ร้านที่ใช้ Wongnai POS บน iPad">🍎 iPad <b>${nI}</b><span>${sp(nI)}</span></button>`
+        + (soldList.length - nA - nI ? `<span>ไม่ระบุ ${soldList.length - nA - nI}</span>` : '')
+      : '';
     const staleBase = state.records.filter(r => (state.filter === 'all' || r.status === state.filter) && (!state.owner || (r.owner || '') === state.owner));
     $('nStale').textContent = staleBase.filter(r => ageTier(r).k !== 'fresh').length.toLocaleString();
     $('staleBtn').classList.toggle('on', state.age === 'm1');
@@ -1408,6 +1451,8 @@
     $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th + (tb ? ` · ${zid === 'bang-phlat' ? 'แขวง' : 'ต.'}${tb.th}` : '') : '📍 นอกพื้นที่ Focus',
       zid && (sm ? `👤 ดูแลโดย ${sm.nick}` : '👤 ยังไม่มีผู้ดูแลพื้นที่'), r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
     document.querySelectorAll('.status-toggle button').forEach(b => b.classList.toggle('on', b.dataset.status === r.status));
+    $('platPick').hidden = r.status !== 'sold';
+    $('platPick').querySelectorAll('[data-plat]').forEach(b => b.classList.toggle('on', b.dataset.plat === (r.platform || '')));
     $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
     $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
     $('fLat').value = hasCoord(r) ? r.lat : ''; $('fLng').value = hasCoord(r) ? r.lng : '';
@@ -1454,10 +1499,12 @@
   function setStatus(status) {
     const r = current(); if (!r || r.status === status) return;
     const old = r.status, oldLu = r.lastUpdate;
+    const oldPlat = r.platform;
     r.status = status; r.manual = Object.assign({}, r.manual, { status: true }); touch(r); freshen(r);
+    if (status !== 'sold') r.platform = '';
     save(); renderAll(); openEditor(r.id, false);
-    toast(status === 'sold' ? '🎉 ปิดการขายแล้ว! เปลี่ยนเป็นหมุดเขียว' : '🔴 เปลี่ยนเป็นยังไม่ขาย', 3500, {
-      label: 'เลิกทำ', fn: () => { r.status = old; r.lastUpdate = oldLu; touch(r); save(); renderAll(); openEditor(r.id, false); },
+    toast(status === 'sold' ? '🎉 ปิดการขายแล้ว! ร้านนี้ใช้ Wongnai POS — เลือก Android / iPad ด้านล่าง' : '🔴 เปลี่ยนเป็นไม่ใช้ Wongnai POS', 3500, {
+      label: 'เลิกทำ', fn: () => { r.status = old; r.platform = oldPlat; r.lastUpdate = oldLu; touch(r); save(); renderAll(); openEditor(r.id, false); },
     });
   }
   function saveEditor() {
@@ -1623,7 +1670,7 @@
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'visit', 'updated', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'visit', 'updated', 'platform', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
         const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)) && !(f === 'visit' && /(last|ล่าสุด|modified|\bby\b)/i.test(h)));
@@ -1693,7 +1740,9 @@
       if (p) [lat, lng] = p; else { lat = null; lng = null; }
     }
     const raw = get('status');
+    const sold = m.status && soldSet.has(raw);
     return {
+      platform: sold ? (detectPlatform(get('platform')) || detectPlatform(raw)) : '',
       sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
       address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'),
       status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
@@ -1706,11 +1755,12 @@
     if (!pending) return;
     const m = getMapping(), sold = getSoldSet();
     let s = 0, noGeo = 0;
+    const plat = { android: 0, ipad: 0 };
     const ages = Object.fromEntries(AGE_TIERS.map(t => [t.k, 0]));
     let noDate = 0;
     for (const row of pending.rows) {
       const r = rowToRecord(row, m, sold, pending.source);
-      if (r.status === 'sold') s++;
+      if (r.status === 'sold') { s++; if (r.platform) plat[r.platform]++; }
       if (!hasCoord(r)) noGeo++;
       if (m.updated) { if (!r.fileDate) noDate++; ages[ageTier({ lastUpdate: r.fileDate }).k]++; }
     }
@@ -1725,6 +1775,7 @@
       $('pvAge').innerHTML = '';
     }
     $('pvSold').textContent = s.toLocaleString();
+    $('pvPlat').textContent = s ? `(Android ${plat.android} · iPad ${plat.ipad}${s - plat.android - plat.ipad ? ` · ไม่ระบุ ${s - plat.android - plat.ipad}` : ''})` : '';
     $('pvUnsold').textContent = (pending.rows.length - s).toLocaleString();
     $('pvNoGeo').textContent = noGeo.toLocaleString();
   }
@@ -1762,6 +1813,8 @@
           sfId: inc.sfId || ex.sfId, name: inc.name, address: inc.address || ex.address, phone: inc.phone || ex.phone,
           owner: inc.owner || ex.owner, type: inc.type || ex.type, rawStatus: inc.rawStatus,
           status: man.status ? ex.status : inc.status,
+          platform: (man.status ? ex.status : inc.status) !== 'sold' ? ''
+            : man.platform ? ex.platform : (inc.platform || ex.platform || ''),
           lat: keepPos ? ex.lat : inc.lat, lng: keepPos ? ex.lng : inc.lng,
           geoApprox: keepPos ? ex.geoApprox : false,
           source: ex.source === 'manual' ? 'manual' : source,
@@ -2030,7 +2083,8 @@
     if (!state.records.length) { toast('ยังไม่มีข้อมูลให้ Export'); return; }
     const rows = state.records.map(r => ({
       Id: r.sfId || '', Name: r.name, Wongnai_POS_Status: r.status === 'sold' ? 'Sold' : 'Not Sold',
-      Status_TH: r.status === 'sold' ? 'ขายแล้ว' : 'ยังไม่ขาย', Original_SF_Status: r.rawStatus || '',
+      Status_TH: r.status === 'sold' ? 'ใช้ Wongnai POS' : 'ไม่ใช้',
+      POS_Platform: r.status === 'sold' ? ({ android: 'Android', ipad: 'iPad' }[r.platform] || '') : '', Original_SF_Status: r.rawStatus || '',
       Latitude: hasCoord(r) ? r.lat : '', Longitude: hasCoord(r) ? r.lng : '',
       Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: r.note || '',
       Status_Changed_Manually: r.manual && r.manual.status ? 'Y' : '', Pin_Moved_Manually: r.manual && r.manual.pos ? 'Y' : '',
@@ -2047,9 +2101,9 @@
   }
   function downloadTemplate() {
     download('area-map-template.csv', Papa.unparse([
-      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'Last Activity Date': '28/09/2026' },
-      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'Last Activity Date': '15/05/2026' },
-      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'Last Activity Date': '02/08/2025' },
+      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'POS Platform': 'Android (Wongnai POS Flex)', 'Last Activity Date': '28/09/2026' },
+      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '15/05/2026' },
+      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '02/08/2025' },
     ]));
   }
   function loadSample() {
@@ -2089,6 +2143,7 @@
           address: a.n, phone: '08' + Math.floor(10000000 + rnd() * 89999999),
           owner: owners[ai % owners.length], type: types[Math.floor(rnd() * types.length)],
           status: sold ? 'sold' : 'unsold', rawStatus: sold ? 'Closed Won' : 'Prospect',
+          platform: sold ? (rnd() < 0.6 ? 'android' : 'ipad') : '',
           note: sold ? '' : notes[Math.floor(rnd() * notes.length)], visits, source: 'sample', manual: {}, updatedAt: Date.now(),
           lastUpdate: Math.max(Date.now() - ageDays * DAY, visits[visits.length - 1] || 0),
         });
@@ -2174,6 +2229,10 @@
   $('listToggle').onclick = () => { $('sidebar').classList.toggle('open'); $('editor').classList.remove('open'); };
 
   $('q').addEventListener('input', (e) => { state.q = e.target.value.trim(); renderMarkers(); renderStats(); renderList(); });
+  $('platRow').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-plat-filter]'); if (!b) return;
+    state.filter = state.filter === b.dataset.platFilter ? 'all' : b.dataset.platFilter; renderAll();
+  });
   document.querySelectorAll('.stat').forEach(b => b.addEventListener('click', () => {
     state.filter = state.filter === b.dataset.filter ? 'all' : b.dataset.filter; renderAll();
   }));
@@ -2189,6 +2248,12 @@
   $('edClose').onclick = closeEditor;
   document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListener('click', () => setStatus(b.dataset.status)));
   $('edSave').onclick = saveEditor;
+  $('platPick').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-plat]'); const r = current(); if (!b || !r) return;
+    r.platform = b.dataset.plat; r.manual = Object.assign({}, r.manual, { platform: true });
+    touch(r); freshen(r); save(); renderAll(); openEditor(r.id, false);
+    toast(r.platform ? `บันทึกแล้ว: ${PLAT_LABEL[r.platform]}` : 'บันทึกแล้ว: ไม่ระบุระบบ');
+  });
   $('btnCheckin').onclick = () => {
     const r = current(); if (!r) return;
     r.visits = (r.visits || []).concat(Date.now()); touch(r); freshen(r); save(); renderAll(); openEditor(r.id, false);

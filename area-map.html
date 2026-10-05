@@ -28,6 +28,7 @@
       --radius: 14px;
       --shadow: 0 4px 24px rgba(0,0,0,0.12);
       --header-h: 58px;
+      --zone-h: 48px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -80,7 +81,35 @@
     .menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
 
     /* ── Layout ── */
-    #app { position: absolute; top: var(--header-h); left: 0; right: 0; bottom: 0; display: flex; }
+    #app { position: absolute; top: calc(var(--header-h) + var(--zone-h)); left: 0; right: 0; bottom: 0; display: flex; }
+
+    /* ── Focus-zone tabs ── */
+    #zoneBar {
+      position: absolute; top: var(--header-h); left: 0; right: 0; height: var(--zone-h); z-index: 990;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px; padding: 0 12px; overflow-x: auto; scrollbar-width: none;
+    }
+    #zoneBar::-webkit-scrollbar { display: none; }
+    .ztab {
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+      border: 1.5px solid var(--border); background: var(--surface); border-radius: 999px;
+      padding: 5px 12px; font-weight: 700; font-size: 13px; color: var(--text); text-decoration: none;
+    }
+    .ztab:hover { border-color: var(--brand); }
+    .ztab .cnt { font-size: 11px; background: var(--surface-2); color: var(--text-2); border-radius: 999px; padding: 1px 7px; }
+    .ztab .pen { font-size: 11px; color: var(--ok); }
+    .ztab.on { background: var(--text); border-color: var(--text); color: #fff; }
+    .ztab.on .cnt { background: rgba(255,255,255,0.18); color: #fff; }
+    .ztab.on .pen { color: #7ff0c3; }
+    .ztab.focus.on { background: var(--brand); border-color: var(--brand); }
+    .zsep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+    .zone-label {
+      background: rgba(255,255,255,0.92); border: 1.5px solid var(--brand); color: var(--brand-dark);
+      font-family: inherit; font-weight: 800; font-size: 12px; border-radius: 8px; padding: 2px 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .zone-label::before { display: none; }
+    #map.far .zone-label { display: none; }
+    .tag.zone { background: var(--brand-light); color: var(--brand-dark); }
     #sidebar {
       width: 340px; flex-shrink: 0; background: var(--surface);
       border-right: 1px solid var(--border);
@@ -383,6 +412,8 @@
   </div>
 </header>
 
+<nav id="zoneBar" aria-label="เลือกพื้นที่ Focus"></nav>
+
 <div id="app">
   <aside id="sidebar">
     <div class="side-top">
@@ -582,6 +613,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="area-map-zones.js"></script>
 <script>
 (() => {
   'use strict';
@@ -639,7 +671,7 @@
       soldValues: {}, // per source: [values]
       lastSync: null, // last upload time
     },
-    filter: 'all', owner: '', age: '', q: '', sort: 'near',
+    filter: 'all', owner: '', age: '', zone: '', q: '', sort: 'near',
     me: null, selectedId: null, dragId: null, addMode: false,
   };
 
@@ -759,10 +791,118 @@
     });
   }
 
+  /* ───────────────────────── Focus zones (area-map-zones.js) ───────────────────────── */
+  const ZONES = (window.AREA_ZONES || []).map(z => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    z.polygons.forEach(p => p[0].forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }));
+    return { ...z, bbox: [x0, y0, x1, y1], latlngs: z.polygons.map(p => p.map(r => r.map(([x, y]) => [y, x]))) };
+  });
+  const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
+  function ringContains(ring, x, y) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function zoneContains(z, lat, lng) {
+    const b = z.bbox;
+    if (lng < b[0] || lng > b[2] || lat < b[1] || lat > b[3]) return false;
+    return z.polygons.some(p => ringContains(p[0], lng, lat) && !p.slice(1).some(h => ringContains(h, lng, lat)));
+  }
+  const zoneCache = new Map();
+  // Zone id for a record: by pin position; shops without coordinates fall back to district names in the address
+  function zoneOf(r) {
+    if (hasCoord(r)) {
+      const k = r.lat + ',' + r.lng;
+      if (!zoneCache.has(k)) { const z = ZONES.find(z => zoneContains(z, r.lat, r.lng)); zoneCache.set(k, z ? z.id : ''); }
+      return zoneCache.get(k);
+    }
+    const a = (r.address || '').toLowerCase();
+    if (!a) return '';
+    const z = ZONES.find(z => z.keywords.some(k => a.includes(k.toLowerCase())));
+    return z ? z.id : '';
+  }
+  const zoneName = (id) => (id === 'focus' ? 'Focus ทั้งหมด' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : 'ทุกพื้นที่');
+
+  const zoneLayer = L.layerGroup().addTo(map);
+  // zone name labels pile up when Bangkok and Phuket are both in view
+  const syncLabelZoom = () => $('map').classList.toggle('far', map.getZoom() < 10);
+  map.on('zoomend', syncLabelZoom); syncLabelZoom();
+  function renderZones() {
+    zoneLayer.clearLayers();
+    const single = state.zone && state.zone !== 'focus' ? ZONE_BY_ID[state.zone] : null;
+    for (const z of ZONES) {
+      if (single && z !== single) {
+        // other focus zones stay visible as faint dashed outlines
+        L.polygon(z.latlngs, { color: '#f25533', weight: 1, opacity: 0.4, dashArray: '4 4', fill: false, interactive: false }).addTo(zoneLayer);
+        continue;
+      }
+      const pg = L.polygon(z.latlngs, {
+        color: '#f25533', weight: single ? 3 : 2, opacity: 0.9,
+        fillColor: '#f25533', fillOpacity: single ? 0 : 0.05, interactive: !single,
+      }).addTo(zoneLayer);
+      if (!single) {
+        pg.bindTooltip(z.th, { permanent: true, direction: 'center', className: 'zone-label' });
+        pg.on('click', () => { if (!state.addMode) setZone(z.id); });
+      }
+    }
+    if (state.zone) {
+      // dim everything outside the selected zone(s)
+      const holes = (single ? [single] : ZONES).flatMap(z => z.latlngs.map(p => p[0]));
+      L.polygon([[[-85, -180], [-85, 180], [85, 180], [85, -180]], ...holes], {
+        stroke: false, fillColor: '#1a1a2e', fillOpacity: 0.32, interactive: false,
+      }).addTo(zoneLayer);
+    }
+  }
+  function renderZoneBar() {
+    if (!ZONES.length) { $('zoneBar').style.display = 'none'; return; }
+    const cnt = { '': [0, 0], focus: [0, 0] };
+    ZONES.forEach(z => { cnt[z.id] = [0, 0]; });
+    for (const r of state.records) {
+      if (state.owner && (r.owner || '') !== state.owner) continue;
+      const z = zoneOf(r), sold = r.status === 'sold' ? 1 : 0;
+      cnt[''][0]++; cnt[''][1] += sold;
+      if (z) { cnt.focus[0]++; cnt.focus[1] += sold; cnt[z][0]++; cnt[z][1] += sold; }
+    }
+    const tab = (id, label, cls = '') => {
+      const [n, s] = cnt[id];
+      const pen = n ? `<span class="pen">${Math.round(s / n * 100)}%</span>` : '';
+      return `<a class="ztab ${cls}${state.zone === id ? ' on' : ''}" href="#zone=${id || 'all'}" data-zone="${id}" title="${esc(label)} · ${n} ร้าน · ขายแล้ว ${s}">${label}<span class="cnt">${n.toLocaleString()}</span>${pen}</a>`;
+    };
+    $('zoneBar').innerHTML = tab('', '🗺️ ทุกพื้นที่') + tab('focus', `⭐ Focus ${ZONES.length} เขต`, 'focus') + '<span class="zsep"></span>'
+      + ZONES.map(z => tab(z.id, esc(z.th))).join('')
+      + '<span class="zsep"></span><button class="ztab" id="zoneLink" title="คัดลอกลิงก์ของพื้นที่นี้">🔗 คัดลอกลิงก์</button>';
+    const on = $('zoneBar').querySelector('.ztab.on');
+    if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  function fitZone() {
+    const single = ZONE_BY_ID[state.zone];
+    if (single) { map.fitBounds(L.polygon(single.latlngs).getBounds(), { padding: [24, 24] }); return; }
+    const pts = state.records.filter(r => hasCoord(r) && passFilter(r)).map(r => [r.lat, r.lng]);
+    if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+    else if (state.zone === 'focus') map.fitBounds(L.featureGroup(ZONES.map(z => L.polygon(z.latlngs))).getBounds(), { padding: [24, 24] });
+  }
+  function setZone(id, fit = true) {
+    if (id && id !== 'focus' && !ZONE_BY_ID[id]) id = '';
+    state.zone = id;
+    state.settings.zone = id; save();
+    const hash = '#zone=' + (id || 'all');
+    if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
+    closeEditor(); renderZones(); renderAll();
+    if (fit) fitZone();
+  }
+  const zoneFromHash = () => { const m = location.hash.match(/zone=([\w-]+)/); return m ? (m[1] === 'all' ? '' : m[1]) : null; };
+
   const markers = new Map();
   function passFilter(r, ignoreStatus = false) {
     if (!ignoreStatus && state.filter !== 'all' && r.status !== state.filter) return false;
     if (state.owner && (r.owner || '') !== state.owner) return false;
+    if (state.zone) {
+      const z = zoneOf(r);
+      if (state.zone === 'focus' ? !z : z !== state.zone) return false;
+    }
     if (state.age) {
       const i = AGE_INDEX[ageTier(r).k];
       if (state.age === 'fresh' ? i !== 0 : i < AGE_INDEX[state.age]) return false;
@@ -826,7 +966,7 @@
     sel.innerHTML = '<option value="">👤 ผู้ดูแลทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
     $('ownerList').innerHTML = owners.map(o => `<option value="${esc(o)}">`).join('');
     const sync = state.settings.lastSync ? ` · อัปโหลดล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
-    $('subline').textContent = `${state.records.length.toLocaleString()} ร้าน${sync}`;
+    $('subline').textContent = `${state.zone ? '📍 ' + zoneName(state.zone) + ' · ' : ''}${state.records.length.toLocaleString()} ร้าน${sync}`;
   }
   const LIST_LIMIT = 300;
   function renderList() {
@@ -848,11 +988,13 @@
       const d = me && hasCoord(r) ? distKm(me, r) : null;
       const right = d != null ? (d < 1 ? Math.round(d * 1000) + ' ม.' : d.toFixed(1) + ' กม.') : '';
       const age = ageTier(r);
-      const tags = (age.badge ? `<span class="tag age age-${age.k}" title="ไม่อัปเดต ${age.label}">${age.badge}</span>` : '')
+      let tags = (age.badge ? `<span class="tag age age-${age.k}" title="ไม่อัปเดต ${age.label}">${age.badge}</span>` : '')
         + (!hasCoord(r) ? '<span class="tag warn">ไม่มีพิกัด</span>' : '')
         + (r.geoApprox ? '<span class="tag warn">พิกัดประมาณ</span>' : '')
         + (r.manual && (r.manual.status || r.manual.pos) ? '<span class="tag edit">แก้ไขแล้ว</span>' : '')
         + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '');
+      const zid = zoneOf(r);
+      if (zid && state.zone !== zid) tags += `<span class="tag zone">${esc(ZONE_BY_ID[zid].th)}</span>`;
       const sub = [r.address, r.owner && '👤 ' + r.owner].filter(Boolean).join(' · ');
       const lv = `อัปเดต ${agoText(r)}`;
       return `<div class="item${r.id === state.selectedId ? ' sel' : ''}" data-id="${r.id}">
@@ -863,7 +1005,7 @@
     $('list').innerHTML = html + (rows.length > LIST_LIMIT ? `<div class="list-more">แสดง ${LIST_LIMIT} จาก ${rows.length.toLocaleString()} ร้าน · ค้นหาเพื่อกรองเพิ่ม</div>` : '');
   }
   function renderAll() {
-    renderMarkers(); renderStats(); renderList();
+    renderMarkers(); renderStats(); renderList(); renderZoneBar();
     $('welcome').classList.toggle('show', state.records.length === 0);
   }
 
@@ -899,7 +1041,8 @@
   function fillEditor(r) {
     $('edTitle').textContent = r.name || '(ไม่มีชื่อ)';
     const src = { sf: 'Salesforce', upload: 'ไฟล์อัปโหลด', manual: 'เพิ่มเอง', sample: 'ข้อมูลตัวอย่าง' }[r.source] || r.source;
-    $('edMeta').textContent = [r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
+    const zid = zoneOf(r);
+    $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th : '📍 นอกพื้นที่ Focus', r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
     document.querySelectorAll('.status-toggle button').forEach(b => b.classList.toggle('on', b.dataset.status === r.status));
     $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
     $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
@@ -1337,9 +1480,15 @@
     let seed = 7;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const areas = [
-      { n: 'สยาม', lat: 13.7457, lng: 100.5341 }, { n: 'อารีย์', lat: 13.7797, lng: 100.5447 },
-      { n: 'ทองหล่อ', lat: 13.7325, lng: 100.5800 }, { n: 'สีลม', lat: 13.7262, lng: 100.5287 },
-      { n: 'บางนา', lat: 13.6680, lng: 100.6050 }, { n: 'ลาดพร้าว', lat: 13.8160, lng: 100.5610 },
+      { n: 'อ.บางบัวทอง จ.นนทบุรี', lat: 13.915, lng: 100.405, sp: 0.03 },
+      { n: 'อ.บางกรวย จ.นนทบุรี', lat: 13.805, lng: 100.470, sp: 0.02 },
+      { n: 'อ.บางใหญ่ จ.นนทบุรี', lat: 13.865, lng: 100.380, sp: 0.025 },
+      { n: 'อ.เมืองนนทบุรี จ.นนทบุรี', lat: 13.860, lng: 100.505, sp: 0.02 },
+      { n: 'อ.ไทรน้อย จ.นนทบุรี', lat: 13.975, lng: 100.320, sp: 0.03 },
+      { n: 'เขตบางพลัด กรุงเทพฯ', lat: 13.787, lng: 100.495, sp: 0.012 },
+      { n: 'อ.เมืองภูเก็ต จ.ภูเก็ต', lat: 7.885, lng: 98.385, sp: 0.02 },
+      { n: 'ป่าตอง อ.กะทู้ จ.ภูเก็ต', lat: 7.895, lng: 98.300, sp: 0.012 },
+      { n: 'สยาม กรุงเทพฯ (นอกพื้นที่ Focus)', lat: 13.7457, lng: 100.5341, sp: 0.02 },
     ];
     const kinds = ['ก๋วยเตี๋ยว', 'ข้าวมันไก่', 'คาเฟ่', 'หมูกระทะ', 'ชาบู', 'ส้มตำ', 'ข้าวขาหมู', 'ซูชิ', 'สเต๊ก', 'ติ่มซำ', 'ขนมหวาน', 'ราเมง'];
     const names = ['เจ๊หมวย', 'บ้านสวน', 'ลุงพล', 'The Corner', 'ป้าศรี', 'Happy Bowl', 'นายหนวด', 'Mellow', 'โกอ้วน', 'Little Tree', 'ครัวคุณยาย', 'Urban'];
@@ -1349,7 +1498,7 @@
     const recs = [];
     let i = 0;
     areas.forEach((a, ai) => {
-      const count = 8 + Math.floor(rnd() * 5);
+      const count = 6 + Math.floor(rnd() * 5);
       for (let k = 0; k < count; k++, i++) {
         const sold = rnd() < 0.38;
         const visits = rnd() < 0.5 ? [Date.now() - Math.floor(rnd() * 40) * 864e5] : [];
@@ -1357,8 +1506,8 @@
         recs.push({
           id: uid() + i, sfId: '001DEMO' + String(100000 + i).padStart(11, '0'),
           name: `${kinds[Math.floor(rnd() * kinds.length)]}${names[Math.floor(rnd() * names.length)]}`,
-          lat: +(a.lat + (rnd() - 0.5) * 0.022).toFixed(6), lng: +(a.lng + (rnd() - 0.5) * 0.022).toFixed(6),
-          address: `ย่าน${a.n} กรุงเทพฯ`, phone: '08' + Math.floor(10000000 + rnd() * 89999999),
+          lat: +(a.lat + (rnd() - 0.5) * a.sp).toFixed(6), lng: +(a.lng + (rnd() - 0.5) * a.sp).toFixed(6),
+          address: a.n, phone: '08' + Math.floor(10000000 + rnd() * 89999999),
           owner: owners[ai % owners.length], type: types[Math.floor(rnd() * types.length)],
           status: sold ? 'sold' : 'unsold', rawStatus: sold ? 'Closed Won' : 'Prospect',
           note: sold ? '' : notes[Math.floor(rnd() * notes.length)], visits, source: 'sample', manual: {}, updatedAt: Date.now(),
@@ -1368,9 +1517,10 @@
     });
     state.records = state.records.filter(r => r.source !== 'sample').concat(recs);
     save(); closeEditor(); renderAll(); fitAll();
-    toast(`🧪 โหลดข้อมูลตัวอย่าง ${recs.length} ร้าน (ย่านกรุงเทพฯ)`);
+    toast(`🧪 โหลดข้อมูลตัวอย่าง ${recs.length} ร้าน ในพื้นที่ Focus`);
   }
   function fitAll() {
+    if (ZONE_BY_ID[state.zone]) { fitZone(); return; }
     const pts = state.records.filter(r => hasCoord(r) && passFilter(r)).map(r => [r.lat, r.lng]);
     if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
   }
@@ -1408,6 +1558,19 @@
       (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject()).then(() => toast('📋 คัดลอกแล้ว')).catch(() => document.execCommand('copy'));
     }
   });
+  $('zoneBar').addEventListener('click', (e) => {
+    if (e.target.closest('#zoneLink')) {
+      const url = location.origin + location.pathname + '#zone=' + (state.zone || 'all');
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+        .then(() => toast(`🔗 คัดลอกลิงก์ “${zoneName(state.zone)}” แล้ว — ส่งให้ทีมเปิดเฉพาะพื้นที่นี้ได้`, 4000))
+        .catch(() => toast(url, 8000));
+      return;
+    }
+    const a = e.target.closest('[data-zone]');
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let the browser open a new tab
+    e.preventDefault(); setZone(a.dataset.zone);
+  });
+  window.addEventListener('hashchange', () => { const z = zoneFromHash(); if (z !== null && z !== state.zone) setZone(z); });
   $('btnMenu').onclick = () => $('menu').classList.toggle('open');
   function openUpload() { $('sfUrl').value = state.settings.sfUrl || ''; openModal('uploadModal'); }
   $('btnUpload').onclick = openUpload;
@@ -1490,8 +1653,12 @@
   /* ───────────────────────── Boot ───────────────────────── */
   load();
   setLayer(state.settings.layer);
+  { const z = zoneFromHash(); state.zone = z !== null ? z : (state.settings.zone || ''); }
+  if (state.zone && state.zone !== 'focus' && !ZONE_BY_ID[state.zone]) state.zone = '';
+  renderZones();
   renderAll();
-  if (state.records.some(hasCoord)) fitAll();
+  if (state.zone) fitZone();
+  else if (state.records.some(hasCoord)) fitAll();
   // staleness tiers move with the calendar: refresh pins hourly if the page stays open
   setInterval(() => { if (!state.dragId) renderAll(); }, 3600e3);
 })();

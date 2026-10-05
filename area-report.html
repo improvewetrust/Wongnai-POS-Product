@@ -327,7 +327,9 @@
   function render() {
     fillFilters();
     const asOf = new Date();
-    $('asOf').textContent = `สรุปสำหรับผู้บริหาร · ข้อมูล ณ ${dTh(asOf)} ${yTh(asOf.getFullYear())} ${asOf.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+    const tm = (d) => d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const ls = settings.lastSync ? new Date(settings.lastSync) : null;
+    $('asOf').textContent = `สรุปสำหรับผู้บริหาร · ข้อมูล SF อัปโหลดล่าสุด ${ls ? `${dTh(ls)} ${yTh(ls.getFullYear())} ${tm(ls)}` : '—'} · ดูรายงานเมื่อ ${dTh(asOf)} ${tm(asOf)}`;
     if (!records.length) {
       $('rangeNote').textContent = '';
       $('content').innerHTML = `<div class="card empty"><h2>ยังไม่มีข้อมูลร้านในเครื่องนี้</h2>

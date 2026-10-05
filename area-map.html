@@ -194,6 +194,17 @@
     #map.far .zone-label { display: none; }
     .tag.zone { background: var(--brand-light); color: var(--brand-dark); }
     .tag.sales { background: var(--tag-edit-bg); color: var(--blue); }
+    .data-info { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-2); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; line-height: 1.4; }
+    .data-info b { color: var(--text); }
+    .data-info .old { color: var(--warn-strong); font-weight: 700; }
+    .data-info .row { display: flex; gap: 6px; align-items: baseline; }
+    .data-info .row span:last-child { margin-left: auto; white-space: nowrap; }
+    .osm-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .osm-sum div { background: var(--surface-2); border-radius: 12px; padding: 10px; }
+    .osm-sum b { display: block; font-size: 22px; }
+    .osm-sum span { font-size: 12px; color: var(--text-2); }
+    .tag.osm { background: #e3f2e1; color: #2e6b2a; }
+    :root[data-theme="dark"] .tag.osm { background: #1f3320; color: #9fd69a; }
     .zmode { position: sticky; left: -12px; z-index: 2; box-shadow: -12px 0 0 var(--surface), 6px 0 8px -4px var(--surface); display: inline-flex; flex-shrink: 0; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
     .zmode button { border: 0; background: none; padding: 4px 11px; border-radius: 999px; font-weight: 700; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
     .zmode button.on { background: var(--inverse); color: var(--on-inverse); }
@@ -527,6 +538,8 @@
       <button data-act="sample">🧪 โหลดข้อมูลตัวอย่าง (Demo)</button>
       <hr>
       <button data-act="team">👥 ทีมเซลส์ & พื้นที่ดูแล</button>
+      <button data-act="osm">🍜 ดึงร้านอาหารในพื้นที่จาก OpenStreetMap</button>
+      <button data-act="revall">🏠 เติมที่อยู่จากพิกัด (ร้านที่ยังไม่มีที่อยู่)</button>
       <button data-act="fit">🗺️ ซูมให้เห็นทุกหมุด</button>
       <button data-act="clear" class="danger" style="color:var(--red)">🗑️ ล้างข้อมูลทั้งหมดในเครื่องนี้</button>
     </div>
@@ -538,6 +551,7 @@
 <div id="app">
   <aside id="sidebar">
     <div class="side-top">
+      <div class="data-info" id="dataInfo" title="วันที่ดึง/อัปโหลดข้อมูลเข้าเครื่องนี้ล่าสุด"></div>
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="ค้นหาชื่อร้าน / ที่อยู่ / เบอร์โทร" autocomplete="off">
@@ -651,6 +665,7 @@
         <button class="btn primary" id="edSave">💾 บันทึก</button>
         <button class="btn" id="edMove">✋ ย้ายหมุด</button>
         <button class="btn" id="edGeo">🔎 หาพิกัดจากที่อยู่</button>
+        <button class="btn" id="edRev" title="ใช้พิกัดของหมุดหาที่อยู่ (OpenStreetMap)">🏠 เติมที่อยู่จากพิกัด</button>
         <button class="btn" id="edCenter">🎯 ปักกลางจอ</button>
         <button class="btn danger" id="edDelete">🗑️ ลบหมุด</button>
       </div>
@@ -715,6 +730,21 @@
     <div class="modal-foot">
       <button class="btn" data-close>ยกเลิก</button>
       <button class="btn primary" id="mapImport">นำเข้าและปักหมุด</button>
+    </div>
+  </div>
+</div>
+
+<!-- OpenStreetMap import modal -->
+<div class="modal" id="osmModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>🍜 ดึงร้านอาหารจาก OpenStreetMap<p id="osmScope"></p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body" id="osmBody"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close>ยกเลิก</button>
+      <button class="btn primary" id="osmGo" disabled>เพิ่มเป็นหมุดแดง</button>
     </div>
   </div>
 </div>
@@ -809,6 +839,8 @@
       mappings: {},   // per source: { field: column }
       soldValues: {}, // per source: [values]
       lastSync: null, // last upload time
+      lastFile: '',   // name of the last uploaded file
+      lastOsm: null,  // last OpenStreetMap import
     },
     filter: 'all', owner: '', age: '', zone: '', q: '', sort: 'near',
     me: null, selectedId: null, dragId: null, addMode: false,
@@ -878,6 +910,7 @@
   const map = L.map('map', { zoomControl: false, maxZoom: 21 }).setView([13.7563, 100.5018], 12);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
+  map.attributionControl.addAttribution('ร้าน/ที่อยู่บางส่วน &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>');
   const gTile = (lyrs) => L.tileLayer(`https://{s}.google.com/vt/lyrs=${lyrs}&hl=th&x={x}&y={y}&z={z}`, {
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 21, attribution: 'Map data &copy; Google',
   });
@@ -1291,7 +1324,8 @@
     const sel = $('ownerSel');
     sel.innerHTML = '<option value="">SF Owner ทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
     $('ownerList').innerHTML = owners.map(o => `<option value="${esc(o)}">`).join('');
-    const sync = state.settings.lastSync ? ` · อัปโหลดล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
+    const sync = '';
+    renderDataInfo();
     $('subline').textContent = `${state.zone ? '📍 ' + zoneName(state.zone) + ' · ' : ''}${state.records.length.toLocaleString()} ร้าน${sync}`;
   }
   const LIST_LIMIT = 300;
@@ -1318,7 +1352,8 @@
         + (!hasCoord(r) ? '<span class="tag warn">ไม่มีพิกัด</span>' : '')
         + (r.geoApprox ? '<span class="tag warn">พิกัดประมาณ</span>' : '')
         + (r.manual && (r.manual.status || r.manual.pos) ? '<span class="tag edit">แก้ไขแล้ว</span>' : '')
-        + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '');
+        + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '')
+        + (r.source === 'osm' ? '<span class="tag osm" title="จาก OpenStreetMap">OSM</span>' : '');
       const zid = zoneOf(r);
       if (zid && state.zone !== zid && !isSalesView()) tags += `<span class="tag zone">${esc(ZONE_BY_ID[zid].th)}</span>`;
       const sid = zid ? salesOf(r) : '';
@@ -1367,7 +1402,7 @@
   }
   function fillEditor(r) {
     $('edTitle').textContent = r.name || '(ไม่มีชื่อ)';
-    const src = { sf: 'Salesforce', upload: 'ไฟล์อัปโหลด', manual: 'เพิ่มเอง', sample: 'ข้อมูลตัวอย่าง' }[r.source] || r.source;
+    const src = { sf: 'Salesforce', upload: 'ไฟล์อัปโหลด', manual: 'เพิ่มเอง', sample: 'ข้อมูลตัวอย่าง', osm: 'OpenStreetMap' }[r.source] || r.source;
     const zid = zoneOf(r);
     const tb = TAMBON_BY_CODE[tambonOf(r)], sm = memberById(salesOf(r));
     $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th + (tb ? ` · ${zid === 'bang-phlat' ? 'แขวง' : 'ต.'}${tb.th}` : '') : '📍 นอกพื้นที่ Focus',
@@ -1602,7 +1637,7 @@
     const saved = state.settings.mappings[source];
     const savedOk = saved && Object.values(saved).every(c => !c || headers.includes(c));
     const mapping = savedOk ? { ...saved } : guessColumns(headers);
-    pending = { rows, source, headers };
+    pending = { rows, source, headers, label };
     $('mapSummary').textContent = `${label} · พบ ${rows.length.toLocaleString()} แถว · ${headers.length} คอลัมน์`;
     const opts = (sel) => '<option value="">— ไม่ใช้ —</option>' + headers.map(h => `<option${h === sel ? ' selected' : ''} value="${esc(h)}">${esc(h)}</option>`).join('');
     $('mapFields').innerHTML = MAP_FIELDS.map(([k, label, sub]) =>
@@ -1752,6 +1787,7 @@
       removed = before - state.records.length;
     }
     state.settings.lastSync = Date.now();
+    state.settings.lastFile = pending.label || '';
     save(); closeModal('mapModal'); pending = null;
     closeEditor(); renderAll(); fitAll();
     toast(`✅ นำเข้าแล้ว: เพิ่ม ${added} · อัปเดต ${updated}${removed ? ` · ลบ ${removed}` : ''} ร้าน${visitsAdded ? ` · บันทึกการเข้าพบ ${visitsAdded} ครั้ง` : ''}`, 4500);
@@ -1785,6 +1821,167 @@
     toast(`📍 หาพิกัดได้ ${ok} จาก ${list.length} ร้าน${ok < list.length ? ' · ร้านที่เหลือปักหมุดเองได้' : ''}`, 5000);
   }
 
+  /* ───────────────────────── Data freshness line ───────────────────────── */
+  const fmtDateTime = (t) => `${fmtDate(t)} ${new Date(t).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+  function renderDataInfo() {
+    const st = state.settings, rows = [];
+    if (st.lastSync) {
+      const days = Math.floor((Date.now() - st.lastSync) / DAY);
+      rows.push(`<div class="row"><span>📅 ข้อมูล SF ล่าสุด</span><span><b>${fmtDateTime(st.lastSync)}</b> <span class="${days > 7 ? 'old' : ''}">(${days === 0 ? 'วันนี้' : days + ' วันก่อน'})</span></span></div>`
+        + (st.lastFile ? `<div class="row"><span>ไฟล์</span><span title="${esc(st.lastFile)}">${esc(st.lastFile.length > 32 ? st.lastFile.slice(0, 30) + '…' : st.lastFile)}</span></div>` : ''));
+    } else rows.push('<div class="row"><span>📅 ยังไม่ได้อัปโหลดข้อมูลจาก Salesforce</span></div>');
+    if (st.lastOsm) rows.push(`<div class="row"><span>🍜 OpenStreetMap ล่าสุด</span><span>${fmtDateTime(st.lastOsm)}</span></div>`);
+    $('dataInfo').innerHTML = rows.join('');
+  }
+
+  /* ───────────────────────── Address from coordinates (Nominatim reverse) ───────────────────────── */
+  const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+  async function reverseOne(r) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=th&lat=${r.lat}&lon=${r.lng}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json(), a = j.address || {};
+    const street = [a.house_number, a.road].filter(Boolean).join(' ');
+    const parts = [street, a.suburb || a.quarter || a.village || a.neighbourhood, a.city_district || a.county || a.town || a.municipality,
+      a.state || a.province || a.city, a.postcode].filter(Boolean);
+    const addr = [...new Set(parts)].join(' ') || (j.display_name || '').replace(/,?\s*(ประเทศไทย|Thailand)$/, '');
+    if (!addr) return false;
+    r.address = addr; r.addrFromGeo = true; touch(r);
+    return true;
+  }
+  async function reverseAll() {
+    const list = state.records.filter(r => hasCoord(r) && !r.address && passFilter(r));
+    if (!list.length) { toast('ร้านในมุมมองนี้มีที่อยู่ครบแล้ว 👍'); return; }
+    const MAX = 300; // keep within the free OpenStreetMap service's fair-use policy
+    const todo = list.slice(0, MAX);
+    if (!confirm(`เติมที่อยู่ให้ ${todo.length} ร้านที่มีพิกัดแต่ยังไม่มีที่อยู่?\nใช้เวลาประมาณ ${Math.ceil(todo.length * 1.1 / 60)} นาที (1 ร้าน/วินาที)${list.length > MAX ? `\n(ครั้งนี้ทำ ${MAX} ร้านแรก จากทั้งหมด ${list.length})` : ''}`)) return;
+    let stop = false, ok = 0;
+    for (let i = 0; i < todo.length && !stop; i++) {
+      toast(`🏠 กำลังเติมที่อยู่ ${i + 1}/${todo.length} (สำเร็จ ${ok})`, 0, { label: 'หยุด', fn: () => { stop = true; } });
+      try { if (await reverseOne(todo[i])) ok++; } catch (e) { /* skip this shop */ }
+      if (i % 10 === 9) { save(); renderList(); }
+      await sleep(1100); // Nominatim usage policy: max 1 request/sec
+    }
+    save(); renderAll();
+    toast(`🏠 เติมที่อยู่แล้ว ${ok} จาก ${todo.length} ร้าน (ข้อมูลจาก OpenStreetMap)`, 5000);
+  }
+
+  /* ───────────────────────── Restaurants from OpenStreetMap (Overpass API) ───────────────────────── */
+  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+  const OSM_TYPES = { restaurant: 'ร้านอาหาร', cafe: 'คาเฟ่', fast_food: 'QSR / ฟาสต์ฟู้ด', food_court: 'ศูนย์อาหาร', bar: 'บาร์', pub: 'ผับ',
+    ice_cream: 'ไอศกรีม', biergarten: 'บาร์', bakery: 'เบเกอรี่', coffee: 'ร้านกาแฟ', tea: 'ร้านชา', deli: 'เดลี่' };
+  let osmPending = null;
+  // Areas the import covers: the selected zone(s), or the selected salesperson's sub-districts
+  function osmAreas() {
+    if (isSalesView()) {
+      const sel = salesSel();
+      const ts = sel === 'all' ? TAMBONS : salesTambons();
+      return { label: sel === 'all' ? 'ทุกตำบลใน Focus' : `พื้นที่ของ ${zoneName(state.zone)} (${ts.length} ตำบล)`, areas: ts };
+    }
+    if (ZONE_BY_ID[state.zone]) return { label: `เขต ${ZONE_BY_ID[state.zone].th}`, areas: [ZONE_BY_ID[state.zone]] };
+    return { label: `Focus ${ZONES.length} เขต`, areas: ZONES };
+  }
+  const normName = (s) => String(s || '').toLowerCase().replace(/[\s\-_.,'"()&@!]/g, '').replace(/^(ร้าน|ครัว)/, '');
+  function distM(a, b) { return distKm(a, b) * 1000; }
+  async function overpass(q) {
+    let lastErr;
+    for (const url of OVERPASS) {
+      try {
+        const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: q }) });
+        if (res.ok) return await res.json();
+        lastErr = new Error('HTTP ' + res.status);
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
+  }
+  async function openOsm() {
+    const { label, areas } = osmAreas();
+    if (!areas.length) { toast('ยังไม่ได้กำหนดตำบลให้เซลส์คนนี้ — ไปที่ ⚙️ จัดการทีม ก่อน', 5000); return; }
+    osmPending = null;
+    $('osmScope').textContent = `พื้นที่: ${label} · ร้านอาหาร คาเฟ่ ฟาสต์ฟู้ด เบเกอรี่ ที่มีชื่อ`;
+    $('osmBody').innerHTML = '<div class="hint">⏳ กำลังดึงข้อมูลจาก OpenStreetMap… (ประมาณ 5–30 วินาที)</div>';
+    $('osmGo').disabled = true;
+    openModal('osmModal');
+    // group nearby areas into one bounding box per zone to keep queries small
+    const byZone = {};
+    areas.forEach(a => { const k = a.zone || a.id; (byZone[k] = byZone[k] || []).push(a); });
+    const found = new Map();
+    try {
+      for (const group of Object.values(byZone)) {
+        const b = group.reduce((m, a) => [Math.min(m[0], a.bbox[0]), Math.min(m[1], a.bbox[1]), Math.max(m[2], a.bbox[2]), Math.max(m[3], a.bbox[3])], [180, 90, -180, -90]);
+        const bb = `${b[1]},${b[0]},${b[3]},${b[2]}`;
+        const q = `[out:json][timeout:60];(nwr["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|ice_cream|biergarten)$"]["name"](${bb});`
+          + `nwr["shop"~"^(bakery|coffee|tea|deli)$"]["name"](${bb}););out center tags;`;
+        const j = await overpass(q);
+        for (const el of j.elements || []) {
+          const lat = el.lat ?? (el.center && el.center.lat), lng = el.lon ?? (el.center && el.center.lon);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+          if (!group.some(a => window.AreaGeo.contains(a, lat, lng))) continue;
+          const t = el.tags || {};
+          const addr = [t['addr:housenumber'], t['addr:street'], t['addr:subdistrict'], t['addr:district'], t['addr:province'] || t['addr:city'], t['addr:postcode']].filter(Boolean).join(' ');
+          found.set(el.type + '/' + el.id, {
+            osmId: el.type + '/' + el.id, name: t['name:th'] || t.name || t['name:en'], lat: +lat.toFixed(6), lng: +lng.toFixed(6),
+            phone: (t.phone || t['contact:phone'] || t['contact:mobile'] || '').split(';')[0].trim(),
+            address: addr, type: OSM_TYPES[t.amenity] || OSM_TYPES[t.shop] || 'ร้านอาหาร',
+          });
+        }
+      }
+    } catch (e) {
+      $('osmBody').innerHTML = `<div class="hint">⚠️ ดึงข้อมูลไม่สำเร็จ (${esc(e.message || e)}) — เซิร์ฟเวอร์ OpenStreetMap อาจคิวเต็ม ลองใหม่อีกครั้งในอีกสักครู่</div>`;
+      return;
+    }
+    // skip shops already on the map: same OSM id, or a similar name within 60 m, or anything within 12 m
+    const existing = state.records.filter(hasCoord);
+    const fresh = [], dup = [];
+    for (const c of found.values()) {
+      const n = normName(c.name);
+      const same = existing.find(r => r.osmId === c.osmId || (() => {
+        const d = distM(r, c);
+        if (d < 12) return true;
+        if (d > 60) return false;
+        const m = normName(r.name);
+        return m && n && (m.includes(n) || n.includes(m));
+      })());
+      (same ? dup : fresh).push(c);
+    }
+    osmPending = fresh;
+    const withPhone = fresh.filter(c => c.phone).length, withAddr = fresh.filter(c => c.address).length;
+    $('osmBody').innerHTML = `<div class="osm-sum"><div><b>${found.size}</b><span>พบใน OpenStreetMap</span></div>
+        <div><b>${dup.length}</b><span>มีบนแผนที่แล้ว (ข้าม)</span></div><div><b style="color:var(--red)">${fresh.length}</b><span>ร้านใหม่ที่จะเพิ่ม</span></div></div>
+      <div class="hint">ร้านใหม่: มีเบอร์โทร ${withPhone} ร้าน · มีที่อยู่ ${withAddr} ร้าน — จะเพิ่มเป็น <b style="color:var(--red)">หมุดแดง (ยังไม่ใช้ POS)</b> ติดป้าย “OSM”</div>
+      ${fresh.length ? `<div class="vals">${fresh.slice(0, 60).map(c => `<label style="cursor:default"><span>${esc(c.name)}</span><span class="c">${esc(c.type)}${c.phone ? ' · ☎' : ''}</span></label>`).join('')}</div>
+        ${fresh.length > 60 ? `<div class="hint">…และอีก ${fresh.length - 60} ร้าน</div>` : ''}` : ''}
+      ${withAddr < fresh.length ? `<label class="opt"><input type="checkbox" id="osmRev"${fresh.length - withAddr <= 300 ? ' checked' : ''}><span><b>เติมที่อยู่จากพิกัด</b> ให้ ${fresh.length - withAddr} ร้านที่ไม่มีที่อยู่ (ทำต่อหลังเพิ่มหมุด ~1 ร้าน/วินาที)</span></label>` : ''}
+      <div class="hint">ข้อมูล © OpenStreetMap contributors (ODbL) — ข้อมูลเปิด อาจไม่ครบ/ไม่อัปเดตเท่าข้อมูลจริงหน้าร้าน</div>`;
+    $('osmGo').disabled = !fresh.length;
+    $('osmGo').textContent = fresh.length ? `เพิ่ม ${fresh.length} ร้านเป็นหมุดแดง` : 'ไม่มีร้านใหม่';
+  }
+  $('osmGo').onclick = () => {
+    if (!osmPending || !osmPending.length) return;
+    const doRev = $('osmRev') && $('osmRev').checked;
+    const now = Date.now();
+    const added = osmPending.map(c => ({
+      id: uid(), sfId: '', osmId: c.osmId, name: c.name, lat: c.lat, lng: c.lng, address: c.address, phone: c.phone,
+      owner: '', type: c.type, status: 'unsold', note: '', visits: [], source: 'osm', manual: {}, createdAt: now, updatedAt: now, lastUpdate: now,
+    }));
+    state.records.push(...added);
+    state.settings.lastOsm = now;
+    save(); closeModal('osmModal'); closeEditor(); renderAll();
+    toast(`🍜 เพิ่ม ${added.length} ร้านจาก OpenStreetMap แล้ว (หมุดแดง ป้าย OSM)`, 4500);
+    const noAddr = added.filter(r => !r.address).slice(0, 300);
+    if (doRev && noAddr.length) setTimeout(async () => {
+      let stop = false, ok = 0;
+      for (let i = 0; i < noAddr.length && !stop; i++) {
+        toast(`🏠 เติมที่อยู่ร้านใหม่ ${i + 1}/${noAddr.length}`, 0, { label: 'หยุด', fn: () => { stop = true; } });
+        try { if (await reverseOne(noAddr[i])) ok++; } catch (e) { /* skip */ }
+        if (i % 10 === 9) { save(); renderList(); }
+        await sleep(1100);
+      }
+      save(); renderAll(); toast(`🏠 เติมที่อยู่ได้ ${ok} จาก ${noAddr.length} ร้าน`, 4000);
+    }, 1500);
+    osmPending = null;
+  };
+
   /* ───────────────────────── Export / template / sample ───────────────────────── */
   function download(name, text) {
     const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
@@ -1806,7 +2003,7 @@
       Days_Since_Update: r.lastUpdate ? daysSince(r) : '', Staleness: ageTier(r).badge || 'Fresh',
       Visit_Count: (r.visits || []).length,
       Last_Visit: r.visits && r.visits.length ? new Date(r.visits[r.visits.length - 1]).toISOString().slice(0, 10) : '',
-      Source: r.source, Updated_At: r.updatedAt ? new Date(r.updatedAt).toISOString() : '',
+      Source: r.source, OSM_ID: r.osmId || '', Updated_At: r.updatedAt ? new Date(r.updatedAt).toISOString() : '',
     }));
     const d = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     download(`area-map-export-${d}.csv`, Papa.unparse(rows));
@@ -1888,9 +2085,11 @@
     else if (act === 'fit') fitAll();
     else if (act === 'upload') openUpload();
     else if (act === 'team') openTeam();
+    else if (act === 'osm') openOsm();
+    else if (act === 'revall') reverseAll();
     else if (act === 'clear') {
       if (confirm('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้? (ข้อมูลใน Salesforce ไม่ถูกลบ)\nแนะนำ Export CSV เก็บไว้ก่อน')) {
-        state.records = []; state.settings.lastSync = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
+        state.records = []; state.settings.lastSync = null; state.settings.lastFile = ''; state.settings.lastOsm = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
       }
     }
   }
@@ -1977,6 +2176,16 @@
       if (await geocodeOne(r)) { save(); renderAll(); openEditor(r.id); toast('📍 เจอพิกัดแล้ว (ค่าประมาณ) ถ้าไม่ตรงให้กด ย้ายหมุด'); }
       else toast('ไม่พบพิกัดจากที่อยู่นี้ ลอง “ปักกลางจอ” แทน', 4000);
     } catch (e) { toast('⚠️ ค้นหาพิกัดไม่สำเร็จ', 4000); }
+  };
+  $('edRev').onclick = async () => {
+    const r = current(); if (!r) return;
+    if (!hasCoord(r)) { toast('ร้านนี้ยังไม่มีพิกัด — ปักหมุดก่อน'); return; }
+    if (r.address && !confirm(`แทนที่อยู่เดิม “${r.address}” ด้วยที่อยู่จากพิกัด?`)) return;
+    toast('🏠 กำลังหาที่อยู่จากพิกัด…', 0);
+    try {
+      if (await reverseOne(r)) { save(); renderAll(); openEditor(r.id, false); toast('🏠 เติมที่อยู่แล้ว (OpenStreetMap) — แก้ได้ในช่องที่อยู่'); }
+      else toast('ไม่พบที่อยู่ของพิกัดนี้', 4000);
+    } catch (e) { toast('⚠️ หาที่อยู่ไม่สำเร็จ ลองใหม่อีกครั้ง', 4000); }
   };
   $('edDelete').onclick = () => {
     const r = current(); if (!r) return;

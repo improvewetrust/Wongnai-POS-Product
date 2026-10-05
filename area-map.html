@@ -142,6 +142,7 @@
       transition: background .15s, border-color .15s;
     }
     .btn:hover { background: var(--surface-2); }
+    a.btn { text-decoration: none; color: var(--text); }
     .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
     .btn.primary:hover { background: var(--brand-dark); }
     .btn.sf { background: #0176d3; border-color: #0176d3; color: #fff; }
@@ -215,6 +216,7 @@
       background: var(--surface); text-align: left; line-height: 1.2;
     }
     .stat .n { font-size: 19px; font-weight: 800; }
+    .stat .p { font-size: 12px; font-weight: 800; color: var(--text-2); margin-top: 1px; }
     .stat .l { font-size: 11px; color: var(--text-2); display: flex; align-items: center; gap: 4px; }
     .stat.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--text) inset; }
     .stat.sold .n { color: var(--ok); }
@@ -465,6 +467,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
     <span class="hide-m">อัปโหลดข้อมูล SF</span>
   </button>
+  <a class="btn" id="btnReport" href="area-report.html" title="รายงานสำหรับผู้บริหาร">📊 <span class="hide-m">รายงาน</span></a>
   <button class="btn" id="btnAdd" title="เพิ่มหมุดร้านใหม่">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     <span class="hide-m">เพิ่มหมุด</span>
@@ -497,8 +500,8 @@
       </div>
       <div class="stats">
         <button class="stat active" data-filter="all"><div class="n" id="nAll">0</div><div class="l">ทั้งหมด</div></button>
-        <button class="stat sold" data-filter="sold"><div class="n" id="nSold">0</div><div class="l"><span class="dot sold"></span>ขายแล้ว</div></button>
-        <button class="stat unsold" data-filter="unsold"><div class="n" id="nUnsold">0</div><div class="l"><span class="dot unsold"></span>ยังไม่ขาย</div></button>
+        <button class="stat sold" data-filter="sold"><div class="n" id="nSold">0</div><div class="l"><span class="dot sold"></span>ใช้ POS แล้ว</div><div class="p" id="pSold">0%</div></button>
+        <button class="stat unsold" data-filter="unsold"><div class="n" id="nUnsold">0</div><div class="l"><span class="dot unsold"></span>ยังไม่ใช้</div><div class="p" id="pUnsold">0%</div></button>
       </div>
       <div>
         <div class="bar"><div id="penBar" style="width:0%"></div></div>
@@ -690,6 +693,7 @@
     ['name',    'ชื่อร้าน',            'จำเป็น'],
     ['status',  'สถานะ Wongnai POS',  'คอลัมน์ที่บอกว่าขายแล้วหรือยัง'],
     ['updated', 'วันที่อัปเดตล่าสุด',     'เช่น Last Activity / Last Modified Date'],
+    ['visit',   'วันที่เข้าพบ (สำหรับรายงาน)', 'Report กิจกรรม: 1 แถว = เข้าพบ 1 ครั้ง'],
     ['lat',     'Latitude',          ''],
     ['lng',     'Longitude',         ''],
     ['gmap',    'ลิงก์ Google Maps / "lat,lng"', 'ใช้แทน Lat/Lng ได้'],
@@ -709,6 +713,7 @@
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
+    visit:   [/visit ?date/i, /วันที่เข้าพบ/, /เข้าพบ/, /^(activity ?)?date$/i, /^due ?date$/i, /^start/i, /visit/i],
     updated: [/last ?activity/i, /last ?modified/i, /last ?(update|visit)/i, /อัปเดต/, /แก้ไขล่าสุด/, /เยี่ยมล่าสุด/, /modified/i, /(update|date)/i, /วันที่/],
     status:  [/wongnai ?pos/i, /has.?pos/i, /pos.?status/i, /สถานะ/, /^status$/i, /stage/i, /status/i, /ขาย/, /customer/i],
   };
@@ -1055,6 +1060,8 @@
     $('nSold').textContent = sold.toLocaleString();
     $('nUnsold').textContent = (base.length - sold).toLocaleString();
     const pct = base.length ? Math.round(sold / base.length * 100) : 0;
+    $('pSold').textContent = base.length ? pct + '%' : '–';
+    $('pUnsold').textContent = base.length ? (100 - pct) + '%' : '–';
     $('penBar').style.width = pct + '%';
     $('penTxt').textContent = pct + '%';
     document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter));
@@ -1360,10 +1367,10 @@
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'updated', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'visit', 'updated', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
-        const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)));
+        const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)) && !(f === 'visit' && /(last|ล่าสุด|modified|\bby\b)/i.test(h)));
         if (h) { out[f] = h; used.add(h); break; }
       }
     }
@@ -1382,7 +1389,7 @@
     ).join('');
     $('mapFields').querySelectorAll('select').forEach(s => s.addEventListener('change', () => {
       if (s.dataset.field === 'status') renderStatusValues();
-      else { if (s.dataset.field === 'updated') pending.dateOrder = null; updatePreview(); }
+      else updatePreview();
     }));
     $('optReplace').checked = false;
     $('optGeo').checked = false;
@@ -1417,8 +1424,9 @@
     return new Set([...$('statusVals').querySelectorAll('input:checked')].map(i => i.value));
   }
   function dateOrderFor(col) {
-    if (!pending.dateOrder) pending.dateOrder = detectDateOrder(pending.rows.slice(0, 500).map(r => r[col]));
-    return pending.dateOrder;
+    pending.dateOrders = pending.dateOrders || {};
+    if (!pending.dateOrders[col]) pending.dateOrders[col] = detectDateOrder(pending.rows.slice(0, 500).map(r => r[col]));
+    return pending.dateOrders[col];
   }
   function rowToRecord(row, m, soldSet, source) {
     const get = (k) => (m[k] ? String(row[m[k]] ?? '').trim() : '');
@@ -1435,6 +1443,7 @@
       status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
       // undefined = no date column mapped; null = column mapped but blank/unreadable
       fileDate: m.updated ? parseDate(row[m.updated], dateOrderFor(m.updated)) : undefined,
+      visitDate: m.visit ? parseDate(row[m.visit], dateOrderFor(m.visit)) : null,
     };
   }
   function updatePreview() {
@@ -1450,7 +1459,7 @@
       if (m.updated) { if (!r.fileDate) noDate++; ages[ageTier({ lastUpdate: r.fileDate }).k]++; }
     }
     if (m.updated) {
-      $('ageHint').innerHTML = `อ่านวันที่จากคอลัมน์ <b>${esc(m.updated)}</b> (รูปแบบ ${pending.dateOrder === 'mdy' ? 'เดือน/วัน/ปี' : 'วัน/เดือน/ปี'})`
+      $('ageHint').innerHTML = `อ่านวันที่จากคอลัมน์ <b>${esc(m.updated)}</b> (รูปแบบ ${dateOrderFor(m.updated) === 'mdy' ? 'เดือน/วัน/ปี' : 'วัน/เดือน/ปี'})`
         + (noDate ? ` · ${noDate.toLocaleString()} ร้านไม่มีวันที่ → นับเป็น “เกิน 1 ปี”` : '')
         + ' · ถ้าร้านเดิมเคยเช็คอิน/แก้ไขในแอปล่าสุดกว่า จะใช้วันที่ล่าสุดเสมอ';
       $('pvAge').innerHTML = AGE_TIERS.map(t =>
@@ -1475,10 +1484,19 @@
     const incoming = rows.map(row => rowToRecord(row, m, soldSet, source));
     const idx = new Map(state.records.map(r => [keyOf(r), r]));
     const seen = new Set();
-    let added = 0, updated = 0;
+    let added = 0, updated = 0, visitsAdded = 0;
+    // one visit per shop per day; a visit also counts as the shop being updated
+    const addVisit = (r, t) => {
+      if (!r || !t) return;
+      r.visits = r.visits || [];
+      const day = new Date(t).toDateString();
+      if (r.visits.some(v => new Date(v).toDateString() === day)) return;
+      r.visits.push(t); r.visits.sort((a, b) => a - b); visitsAdded++;
+      r.lastUpdate = Math.max(r.lastUpdate || 0, t);
+    };
     for (const inc of incoming) {
       const k = keyOf(inc);
-      if (seen.has(k)) continue; // duplicate rows in the same file
+      if (seen.has(k)) { addVisit(idx.get(k), inc.visitDate); continue; } // activity reports repeat the shop once per visit
       seen.add(k);
       const ex = idx.get(k);
       if (ex) {
@@ -1495,11 +1513,14 @@
           // newest of: date in the file, or the last check-in/edit made in the app
           lastUpdate: Math.max(inc.fileDate || 0, ex.lastUpdate || 0) || (inc.fileDate === undefined ? ex.lastUpdate : null),
         });
-        delete ex.fileDate;
+        delete ex.fileDate; delete ex.visitDate;
+        addVisit(ex, inc.visitDate);
         touch(ex); updated++;
       } else {
-        const r = { id: uid(), note: '', visits: [], manual: {}, ...inc, lastUpdate: inc.fileDate === undefined ? Date.now() : inc.fileDate };
-        delete r.fileDate;
+        const r = { id: uid(), note: '', visits: [], manual: {}, ...inc,
+          lastUpdate: inc.fileDate !== undefined ? inc.fileDate : (m.visit ? null : Date.now()) };
+        delete r.fileDate; delete r.visitDate;
+        addVisit(r, inc.visitDate);
         touch(r); state.records.push(r); idx.set(k, r); added++;
       }
     }
@@ -1512,7 +1533,7 @@
     state.settings.lastSync = Date.now();
     save(); closeModal('mapModal'); pending = null;
     closeEditor(); renderAll(); fitAll();
-    toast(`✅ นำเข้าแล้ว: เพิ่ม ${added} · อัปเดต ${updated}${removed ? ` · ลบ ${removed}` : ''} ร้าน`, 4000);
+    toast(`✅ นำเข้าแล้ว: เพิ่ม ${added} · อัปเดต ${updated}${removed ? ` · ลบ ${removed}` : ''} ร้าน${visitsAdded ? ` · บันทึกการเข้าพบ ${visitsAdded} ครั้ง` : ''}`, 4500);
     if (geo) {
       const todo = state.records.filter(r => !hasCoord(r) && (r.address || r.name) && seen.has(keyOf(r)));
       if (todo.length) setTimeout(() => runGeocode(todo), 1200);
@@ -1602,7 +1623,10 @@
       const count = 6 + Math.floor(rnd() * 5);
       for (let k = 0; k < count; k++, i++) {
         const sold = rnd() < 0.38;
-        const visits = rnd() < 0.5 ? [Date.now() - Math.floor(rnd() * 40) * 864e5] : [];
+        const nv = Math.floor(rnd() * 9);
+        const visits = [...new Set(Array.from({ length: nv }, () => Math.floor(Math.pow(rnd(), 1.7) * 700)))]
+          .map(d => { const t = new Date(); t.setHours(9 + Math.floor(rnd() * 9), Math.floor(rnd() * 60), 0, 0); return t.getTime() - d * DAY; })
+          .filter(t => t <= Date.now()).sort((a, b) => a - b);
         const ageDays = [2, 8, 15, 25, 40, 70, 100, 150, 200, 290, 400, 520][Math.floor(rnd() * 12)];
         recs.push({
           id: uid() + i, sfId: '001DEMO' + String(100000 + i).padStart(11, '0'),
@@ -1612,7 +1636,7 @@
           owner: owners[ai % owners.length], type: types[Math.floor(rnd() * types.length)],
           status: sold ? 'sold' : 'unsold', rawStatus: sold ? 'Closed Won' : 'Prospect',
           note: sold ? '' : notes[Math.floor(rnd() * notes.length)], visits, source: 'sample', manual: {}, updatedAt: Date.now(),
-          lastUpdate: Math.max(Date.now() - ageDays * DAY, visits[0] || 0),
+          lastUpdate: Math.max(Date.now() - ageDays * DAY, visits[visits.length - 1] || 0),
         });
       }
     });

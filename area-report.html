@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Area Sales Report — Wongnai POS</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="area-map-icon.svg">
+  <link rel="icon" type="image/png" sizes="180x180" href="area-map-icon.png">
+  <link rel="apple-touch-icon" href="area-map-icon.png">
+  <meta name="theme-color" content="#f25533">
+  <script>
+    // same saved light/dark choice as the map, applied before first paint
+    try { const t = (JSON.parse(localStorage.getItem('wpos-areamap-v1') || '{}').settings || {}).theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --brand: #f25533;
+      --ok: #00a86b; --ok-ink: #00794d; --ok-light: rgba(0,168,107,0.12);
+      --red: #e53935; --red-ink: #c62828; --red-light: rgba(229,57,53,0.10);
+      --surface: #ffffff; --surface-2: #f4f6fb; --bg: #eef1f7;
+      --border: rgba(0,0,0,0.09); --grid: rgba(0,0,0,0.08);
+      --text: #1a1a2e; --text-2: #5f6673; --text-3: #8a909c;
+      --bar: #c9ced8; --bar-hover: #aeb4c0;
+      --inverse: #1a1a2e; --on-inverse: #ffffff;
+      --shadow: 0 2px 14px rgba(0,0,0,0.06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --ok: #1fc489; --ok-ink: #5fe0ad; --ok-light: rgba(31,196,137,0.18);
+        --red: #f0524f; --red-ink: #ff9a97; --red-light: rgba(240,82,79,0.18);
+        --surface: #1b1e27; --surface-2: #262a36; --bg: #12141b;
+        --border: rgba(255,255,255,0.11); --grid: rgba(255,255,255,0.09);
+        --text: #e8eaf0; --text-2: #a7afbd; --text-3: #7d8594;
+        --bar: #474d5c; --bar-hover: #5c6375;
+        --inverse: #e8eaf0; --on-inverse: #12141b;
+        --shadow: 0 2px 14px rgba(0,0,0,0.4);
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ok: #1fc489; --ok-ink: #5fe0ad; --ok-light: rgba(31,196,137,0.18);
+      --red: #f0524f; --red-ink: #ff9a97; --red-light: rgba(240,82,79,0.18);
+      --surface: #1b1e27; --surface-2: #262a36; --bg: #12141b;
+      --border: rgba(255,255,255,0.11); --grid: rgba(255,255,255,0.09);
+      --text: #e8eaf0; --text-2: #a7afbd; --text-3: #7d8594;
+      --bar: #474d5c; --bar-hover: #5c6375;
+      --inverse: #e8eaf0; --on-inverse: #12141b;
+      --shadow: 0 2px 14px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; }
+    button, select { font-family: inherit; font-size: inherit; color: inherit; }
+    a { color: inherit; }
+
+    header {
+      position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    }
+    .logo-title { font-size: 16px; font-weight: 800; }
+    .logo-sub { font-size: 11.5px; color: var(--text-2); }
+    .spacer { flex: 1; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface);
+      padding: 8px 12px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+    main { max-width: 1120px; margin: 0 auto; padding: 16px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+    .seg button { border: 0; background: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; color: var(--text-2); }
+    .seg button.on { background: var(--inverse); color: var(--on-inverse); }
+    .filters select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .range-note { font-size: 12.5px; color: var(--text-2); }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow); }
+    .card h2 { font-size: 15px; font-weight: 800; }
+    .card .sub { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+    .section-t { font-size: 17px; font-weight: 800; margin-top: 6px; }
+    .section-t small { font-size: 12.5px; font-weight: 500; color: var(--text-2); margin-left: 6px; }
+
+    .top { display: grid; grid-template-columns: 1.1fr 2fr; gap: 16px; }
+    .hero .label { font-size: 13px; color: var(--text-2); font-weight: 600; }
+    .hero .value { font-size: 56px; font-weight: 800; line-height: 1.05; margin: 4px 0 2px; letter-spacing: -.02em; }
+    .hero .of { font-size: 13px; color: var(--text-2); }
+    .meter { display: flex; gap: 2px; height: 12px; margin-top: 14px; border-radius: 6px; overflow: hidden; background: var(--surface); }
+    .meter > div { height: 100%; }
+    .meter .m-sold { background: var(--ok); }
+    .meter .m-unsold { background: var(--red); opacity: .85; }
+    .meter-key { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
+    .key { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .top .kpis { grid-template-columns: repeat(2, 1fr); }
+    .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .tile .label { font-size: 12.5px; color: var(--text-2); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tile .value { font-size: 28px; font-weight: 800; margin-top: 2px; }
+    .tile .value small { font-size: 14px; font-weight: 700; color: var(--text-2); margin-left: 4px; }
+    .tile .delta { font-size: 12.5px; font-weight: 700; margin-top: 2px; }
+    .up { color: var(--ok-ink); } .down { color: var(--red-ink); } .flat { color: var(--text-3); }
+    .delta .vs { color: var(--text-3); font-weight: 500; }
+
+    .chart-wrap { position: relative; margin-top: 10px; }
+    .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+    .chart-wrap .hit { cursor: pointer; outline: none; }
+    .chart-wrap .hit:focus-visible + .bar, .chart-wrap .hit:hover + .bar { fill: var(--bar-hover); }
+    .chart-wrap .hit:focus-visible + .bar.cur, .chart-wrap .hit:hover + .bar.cur { opacity: .85; fill: var(--brand); }
+    .axis text { fill: var(--text-3); font-size: 11px; font-family: inherit; }
+    .vlabel { fill: var(--text); font-size: 11.5px; font-weight: 700; font-family: inherit; }
+    .tip {
+      position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 7px 10px; box-shadow: var(--shadow); font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%); display: none; z-index: 5;
+    }
+    .tip b { font-size: 15px; display: block; }
+    .tip span { color: var(--text-2); }
+    details { margin-top: 10px; }
+    details summary { cursor: pointer; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th { text-align: left; font-size: 12px; color: var(--text-2); font-weight: 700; padding: 8px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 9px 8px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+    th.n, td.n { text-align: right; }
+    tr:last-child td { border-bottom: 0; }
+    tr.total td { font-weight: 800; background: var(--surface-2); }
+    .mini { display: inline-flex; width: 70px; height: 7px; gap: 1px; border-radius: 4px; overflow: hidden; vertical-align: middle; margin-right: 8px; background: var(--surface); }
+    .mini i { display: block; height: 100%; }
+    .table-scroll { overflow-x: auto; }
+    td:nth-child(4) { white-space: nowrap; }
+
+    .empty { text-align: center; padding: 48px 16px; }
+    .empty h2 { font-size: 20px; margin-bottom: 6px; }
+    .empty p { color: var(--text-2); margin-bottom: 16px; }
+    .foot { font-size: 12px; color: var(--text-3); line-height: 1.6; }
+
+    @media (max-width: 760px) {
+      .top { grid-template-columns: 1fr; }
+      .hide-m { display: none; }
+      .hero .value { font-size: 48px; }
+    }
+    @media print {
+      header .btn, .filters select, .seg, details { display: none !important; }
+      body { background: #fff; }
+      .card, .tile { box-shadow: none; break-inside: avoid; }
+      header { position: static; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true">
+    <rect width="64" height="64" rx="14" fill="#f25533"/>
+    <path d="M9 19l15-6 16 6 15-6v34l-15 6-16-6-15 6z" fill="#fff"/>
+    <path d="M40 9c-6 0-10.5 4.4-10.5 10C29.5 26.6 40 36 40 36s10.5-9.4 10.5-17C50.5 13.4 46 9 40 9z" fill="#00a86b" stroke="#fff" stroke-width="3"/>
+    <circle cx="40" cy="19" r="3.8" fill="#fff"/>
+  </svg>
+  <div>
+    <div class="logo-title">Area Sales Report</div>
+    <div class="logo-sub" id="asOf">สรุปสำหรับผู้บริหาร · Wongnai POS</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="area-map.html" title="กลับไปหน้าแผนที่">🗺️ <span class="hide-m">แผนที่</span></a>
+  <button class="btn" id="btnPrint" title="พิมพ์ / บันทึกเป็น PDF">🖨️ <span class="hide-m">พิมพ์ / PDF</span></button>
+  <button class="btn" id="btnTheme" title="สลับโหมดสว่าง/มืด" aria-label="สลับโหมดสว่าง/มืด">🌓</button>
+</header>
+
+<main id="main">
+  <div class="filters">
+    <div class="seg" role="tablist" aria-label="ช่วงเวลา">
+      <button data-period="day">รายวัน</button>
+      <button data-period="month">รายเดือน</button>
+      <button data-period="year">รายปี</button>
+    </div>
+    <select id="zoneSel" aria-label="พื้นที่"></select>
+    <select id="ownerSel" aria-label="เซลส์ผู้ดูแล"></select>
+    <span class="range-note" id="rangeNote"></span>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<script src="area-map-zones.js"></script>
+<script>
+(() => {
+  'use strict';
+  const LS_KEY = 'wpos-areamap-v1';
+  const UI_KEY = 'wpos-areareport-ui';
+  const DAY = 864e5;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (n) => Number(n).toLocaleString('th-TH');
+  const TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const dTh = (d) => `${d.getDate()} ${TH_M[d.getMonth()]}`;
+  const yTh = (y) => String(y + 543);
+
+  /* ── data from the map (same browser storage) ── */
+  let store = { records: [], settings: {} };
+  try { store = Object.assign(store, JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) { /* no data */ }
+  const records = Array.isArray(store.records) ? store.records : [];
+  const settings = store.settings || {};
+  const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
+
+  /* ── zones (same logic as the map) ── */
+  const ZONES = (window.AREA_ZONES || []).map(z => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    z.polygons.forEach(p => p[0].forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }));
+    return { ...z, bbox: [x0, y0, x1, y1] };
+  });
+  const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
+  function ringContains(ring, x, y) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function zoneOf(r) {
+    if (r._z !== undefined) return r._z;
+    let id = '';
+    if (hasCoord(r)) {
+      const z = ZONES.find(z => { const b = z.bbox; return r.lng >= b[0] && r.lng <= b[2] && r.lat >= b[1] && r.lat <= b[3]
+        && z.polygons.some(p => ringContains(p[0], r.lng, r.lat) && !p.slice(1).some(h => ringContains(h, r.lng, r.lat))); });
+      id = z ? z.id : '';
+    } else if (r.address) {
+      const a = r.address.toLowerCase();
+      const z = ZONES.find(z => z.keywords.some(k => a.includes(k.toLowerCase())));
+      id = z ? z.id : '';
+    }
+    return (r._z = id);
+  }
+  const OUTSIDE = '__outside';
+  const zoneLabel = (id) => (id === OUTSIDE ? 'นอกพื้นที่ Focus' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : id);
+
+  /* ── UI state ── */
+  let ui = { period: 'month', zone: ZONES.length ? 'focus' : '', owner: '' };
+  try { ui = Object.assign(ui, JSON.parse(localStorage.getItem(UI_KEY) || '{}')); } catch (e) { /* defaults */ }
+  const saveUi = () => { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ignore */ } };
+
+  function inScope(r) {
+    if (ui.owner && (r.owner || '(ไม่ระบุ)') !== ui.owner) return false;
+    const z = zoneOf(r);
+    if (ui.zone === 'focus') return !!z;
+    if (ui.zone === OUTSIDE) return !z;
+    if (ui.zone) return z === ui.zone;
+    return true;
+  }
+
+  /* ── periods: current period-to-date vs the same span of the previous period ── */
+  const sod = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  function periods(kind, now = new Date()) {
+    const today = sod(now), tomorrow = new Date(today.getTime() + DAY);
+    if (kind === 'day') {
+      const y = new Date(today.getTime() - DAY);
+      return { cur: [today, tomorrow], prev: [y, today], curLabel: `วันนี้ (${dTh(today)})`, prevLabel: `เมื่อวาน (${dTh(y)})`, short: 'เมื่อวาน' };
+    }
+    if (kind === 'month') {
+      const s = new Date(today.getFullYear(), today.getMonth(), 1);
+      const ps = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastPrev = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+      const pe = new Date(ps.getFullYear(), ps.getMonth(), Math.min(today.getDate(), lastPrev) + 1);
+      const span = (a, b) => (a.getDate() === b.getDate() ? dTh(a) : `${a.getDate()}–${dTh(b)}`);
+      return { cur: [s, tomorrow], prev: [ps, pe], curLabel: `เดือนนี้ (${span(s, today)})`, prevLabel: `ช่วงเดียวกันเดือนก่อน (${span(ps, new Date(pe - DAY))})`, short: 'เดือนก่อน' };
+    }
+    const s = new Date(today.getFullYear(), 0, 1);
+    const ps = new Date(today.getFullYear() - 1, 0, 1);
+    const pe = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate() + 1);
+    return { cur: [s, tomorrow], prev: [ps, pe], curLabel: `ปีนี้ (1 ม.ค.–${dTh(today)} ${yTh(today.getFullYear())})`, prevLabel: `ช่วงเดียวกันปีก่อน (ถึง ${dTh(new Date(pe - DAY))} ${yTh(ps.getFullYear())})`, short: 'ปีก่อน' };
+  }
+  function buckets(kind, now = new Date()) {
+    const today = sod(now), out = [];
+    if (kind === 'day') {
+      for (let i = 29; i >= 0; i--) {
+        const a = new Date(today.getTime() - i * DAY), b = new Date(a.getTime() + DAY);
+        out.push({ a, b, label: String(a.getDate()), long: `${dTh(a)} ${yTh(a.getFullYear())}`, tick: i % 5 === 0 || a.getDate() === 1 });
+      }
+    } else if (kind === 'month') {
+      for (let i = 11; i >= 0; i--) {
+        const a = new Date(today.getFullYear(), today.getMonth() - i, 1), b = new Date(a.getFullYear(), a.getMonth() + 1, 1);
+        out.push({ a, b, label: TH_M[a.getMonth()], long: `${TH_M[a.getMonth()]} ${yTh(a.getFullYear())}${i === 0 ? ' (ถึงวันนี้)' : ''}`, tick: true });
+      }
+    } else {
+      for (let i = 4; i >= 0; i--) {
+        const y = today.getFullYear() - i;
+        out.push({ a: new Date(y, 0, 1), b: new Date(y + 1, 0, 1), label: yTh(y), long: `ปี ${yTh(y)}${i === 0 ? ' (ถึงวันนี้)' : ''}`, tick: true });
+      }
+    }
+    return out;
+  }
+  const visitsIn = (rs, [a, b]) => {
+    let n = 0; const shops = new Set();
+    for (const r of rs) for (const v of r.visits || []) if (v >= +a && v < +b) { n++; shops.add(r.id); }
+    return { n, shops: shops.size };
+  };
+  function delta(cur, prev) {
+    if (!prev && !cur) return { cls: 'flat', txt: '—' };
+    if (!prev) return { cls: 'up', txt: `▲ +${fmt(cur)} (ใหม่)` };
+    const d = cur - prev, pct = Math.round(d / prev * 100);
+    if (d === 0) return { cls: 'flat', txt: '● เท่าเดิม' };
+    return d > 0 ? { cls: 'up', txt: `▲ +${pct}% (+${fmt(d)})` } : { cls: 'down', txt: `▼ ${pct}% (${fmt(d)})` };
+  }
+
+  /* ── filters ── */
+  function fillFilters() {
+    const zs = ['<option value="">🗺️ ทุกพื้นที่</option>'];
+    if (ZONES.length) zs.push(`<option value="focus">⭐ Focus ${ZONES.length} เขต</option>`);
+    ZONES.forEach(z => zs.push(`<option value="${z.id}">📍 ${esc(z.th)}</option>`));
+    if (ZONES.length) zs.push(`<option value="${OUTSIDE}">นอกพื้นที่ Focus</option>`);
+    $('zoneSel').innerHTML = zs.join('');
+    $('zoneSel').value = ui.zone;
+    if ($('zoneSel').value !== ui.zone) { ui.zone = ''; $('zoneSel').value = ''; }
+    const owners = [...new Set(records.map(r => r.owner || '(ไม่ระบุ)'))].sort((a, b) => a.localeCompare(b, 'th'));
+    $('ownerSel').innerHTML = '<option value="">👤 เซลส์ทุกคน</option>' + owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    $('ownerSel').value = ui.owner;
+    if ($('ownerSel').value !== ui.owner) { ui.owner = ''; $('ownerSel').value = ''; }
+    document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.period === ui.period));
+  }
+
+  /* ── render ── */
+  function tile(label, value, extra = '', d = null, vs = '') {
+    return `<div class="tile"><div class="label">${label}</div><div class="value">${value}${extra}</div>`
+      + (d ? `<div class="delta ${d.cls}">${d.txt} <span class="vs">เทียบ${esc(vs)}</span></div>` : '') + '</div>';
+  }
+  function render() {
+    fillFilters();
+    const asOf = new Date();
+    $('asOf').textContent = `สรุปสำหรับผู้บริหาร · ข้อมูล ณ ${dTh(asOf)} ${yTh(asOf.getFullYear())} ${asOf.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+    if (!records.length) {
+      $('rangeNote').textContent = '';
+      $('content').innerHTML = `<div class="card empty"><h2>ยังไม่มีข้อมูลร้านในเครื่องนี้</h2>
+        <p>รายงานนี้ใช้ข้อมูลเดียวกับหน้าแผนที่ — อัปโหลดข้อมูลจาก Salesforce ที่หน้าแผนที่ก่อน แล้วกลับมาที่หน้านี้</p>
+        <a class="btn primary" href="area-map.html">🗺️ ไปหน้าแผนที่</a></div>`;
+      return;
+    }
+    const rs = records.filter(inScope);
+    const P = periods(ui.period);
+    $('rangeNote').textContent = `${P.curLabel} เทียบ ${P.prevLabel}`;
+
+    const total = rs.length, sold = rs.filter(r => r.status === 'sold').length, unsold = total - sold;
+    const pct = (n) => (total ? Math.round(n / total * 100) : 0);
+    const cur = visitsIn(rs, P.cur), prev = visitsIn(rs, P.prev);
+    const lastVisit = (r) => (r.visits && r.visits.length ? Math.max(...r.visits) : 0);
+    const notVisited90 = rs.filter(r => lastVisit(r) < Date.now() - 90 * DAY).length;
+    const covCur = total ? Math.round(cur.shops / total * 100) : 0;
+    const covPrev = total ? Math.round(prev.shops / total * 100) : 0;
+    const covD = covCur === covPrev ? { cls: 'flat', txt: '● เท่าเดิม' }
+      : { cls: covCur > covPrev ? 'up' : 'down', txt: `${covCur > covPrev ? '▲ +' : '▼ '}${covCur - covPrev} จุด` };
+
+    const scopeName = ui.zone === 'focus' ? `Focus ${ZONES.length} เขต` : ui.zone ? zoneLabel(ui.zone) : 'ทุกพื้นที่';
+    let html = `
+      <div class="top">
+        <div class="card hero">
+          <div class="label">ร้านที่ใช้ Wongnai POS แล้ว · ${esc(scopeName)}${ui.owner ? ' · ' + esc(ui.owner) : ''}</div>
+          <div class="value">${pct(sold)}%</div>
+          <div class="of">${fmt(sold)} จาก ${fmt(total)} ร้าน</div>
+          <div class="meter" role="img" aria-label="ใช้ POS ${pct(sold)}% ยังไม่ใช้ ${pct(unsold)}%">
+            ${sold ? `<div class="m-sold" style="flex:${sold}"></div>` : ''}${unsold ? `<div class="m-unsold" style="flex:${unsold}"></div>` : ''}
+          </div>
+          <div class="meter-key"><span class="key"><i class="sw" style="background:var(--ok)"></i>ใช้ POS แล้ว ${fmt(sold)} ร้าน (${pct(sold)}%)</span>
+            <span class="key"><i class="sw" style="background:var(--red)"></i>ยังไม่ใช้ ${fmt(unsold)} ร้าน (${pct(unsold)}%)</span></div>
+        </div>
+        <div class="kpis">
+          ${tile('ร้านทั้งหมด', fmt(total), '<small>ร้าน</small>')}
+          ${tile('<i class="sw" style="background:var(--ok)"></i>ใช้ POS แล้ว', fmt(sold), `<small>${pct(sold)}%</small>`)}
+          ${tile('<i class="sw" style="background:var(--red)"></i>ยังไม่ใช้ POS', fmt(unsold), `<small>${pct(unsold)}%</small>`)}
+          ${tile('ไม่ได้เข้าพบเกิน 90 วัน', fmt(notVisited90), `<small>${pct(notVisited90)}%</small>`)}
+        </div>
+      </div>
+
+      <div class="section-t">การเข้าพบร้าน<small>${esc(P.curLabel)}</small></div>
+      <div class="kpis">
+        ${tile('จำนวนครั้งที่เข้าพบ', fmt(cur.n), '<small>ครั้ง</small>', delta(cur.n, prev.n), P.short)}
+        ${tile('จำนวนร้านที่เข้าพบ', fmt(cur.shops), '<small>ร้าน</small>', delta(cur.shops, prev.shops), P.short)}
+        ${tile('ครอบคลุม (ร้านที่เข้าพบ / ทั้งหมด)', covCur + '%', '', covD, P.short)}
+      </div>`;
+
+    // trend chart
+    const B = buckets(ui.period).map(b => ({ ...b, ...visitsIn(rs, [b.a, b.b]) }));
+    const chartTitle = { day: 'จำนวนครั้งที่เข้าพบ · 30 วันล่าสุด', month: 'จำนวนครั้งที่เข้าพบ · 12 เดือนล่าสุด', year: 'จำนวนครั้งที่เข้าพบ · 5 ปีล่าสุด' }[ui.period];
+    html += `<div class="card"><h2>${chartTitle}</h2><div class="sub">แท่งสีส้ม = ช่วงปัจจุบัน · ชี้ที่แท่งเพื่อดูตัวเลข</div>
+      <div class="chart-wrap" id="chart"></div>
+      <details><summary>ดูเป็นตาราง</summary><div class="table-scroll"><table><thead><tr><th>ช่วง</th><th class="n">เข้าพบ (ครั้ง)</th><th class="n">ร้านที่เข้าพบ</th></tr></thead><tbody>
+      ${B.map(b => `<tr><td>${esc(b.long)}</td><td class="n">${fmt(b.n)}</td><td class="n">${fmt(b.shops)}</td></tr>`).join('')}
+      </tbody></table></div></details></div>`;
+
+    // by zone
+    const zoneIds = ui.zone === 'focus' ? ZONES.map(z => z.id) : ui.zone ? [ui.zone] : [...ZONES.map(z => z.id), OUTSIDE];
+    const groupRow = (name, list) => {
+      const t = list.length, s = list.filter(r => r.status === 'sold').length;
+      const c = visitsIn(list, P.cur), p = visitsIn(list, P.prev), d = delta(c.n, p.n);
+      const sp = t ? Math.round(s / t * 100) : 0;
+      return { t, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td>
+        <td><span class="mini">${s ? `<i style="flex:${s};background:var(--ok)"></i>` : ''}${t - s ? `<i style="flex:${t - s};background:var(--red);opacity:.85"></i>` : ''}</span>${sp}%</td>
+        <td class="n">${fmt(t - s)}</td><td class="n">${fmt(c.n)}</td><td class="n">${fmt(p.n)}</td><td class="n ${d.cls}">${d.txt}</td>` };
+    };
+    const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ POS</th><th>% ใช้ POS</th><th class="n">ยังไม่ใช้</th>
+      <th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
+    const zRows = zoneIds.map(id => groupRow(zoneLabel(id), rs.filter(r => (id === OUTSIDE ? !zoneOf(r) : zoneOf(r) === id)))).filter(x => x.t || ui.zone);
+    const totalRow = groupRow('รวม', rs);
+    html += `<div class="card"><h2>แยกตามพื้นที่</h2><div class="sub">เข้าพบ: ${esc(P.curLabel)} เทียบ ${esc(P.prevLabel)}</div>
+      <div class="table-scroll"><table>${head('พื้นที่')}<tbody>${zRows.map(r => `<tr>${r.html}</tr>`).join('')}${zRows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : ''}</tbody></table></div></div>`;
+
+    // by salesperson
+    const owners = [...new Set(rs.map(r => r.owner || '(ไม่ระบุ)'))];
+    const oRows = owners.map(o => ({ o, list: rs.filter(r => (r.owner || '(ไม่ระบุ)') === o) }))
+      .map(x => ({ ...groupRow(x.o, x.list), c: visitsIn(x.list, P.cur).n }))
+      .sort((a, b) => b.c - a.c || b.t - a.t);
+    html += `<div class="card"><h2>แยกตามเซลส์ผู้ดูแล</h2><div class="sub">เรียงจากเข้าพบมากที่สุดในช่วงนี้</div>
+      <div class="table-scroll"><table>${head('เซลส์')}<tbody>${oRows.map(r => `<tr>${r.html}</tr>`).join('')}${oRows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : ''}</tbody></table></div></div>`;
+
+    html += `<p class="foot">ที่มาของข้อมูล: รายชื่อร้านและสถานะ POS จากไฟล์ Salesforce ที่อัปโหลดในหน้าแผนที่ · การเข้าพบ = การกด “เช็คอินวันนี้” ในแอป
+      และคอลัมน์ “วันที่เข้าพบ” จาก Report กิจกรรมที่อัปโหลด (นับร้านละไม่เกิน 1 ครั้งต่อวัน) · การเปรียบเทียบใช้ช่วงเวลาเท่ากัน เช่น 1–5 ต.ค. เทียบ 1–5 ก.ย.
+      · ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้ ${settings.lastSync ? `· อัปโหลดล่าสุด ${dTh(new Date(settings.lastSync))} ${yTh(new Date(settings.lastSync).getFullYear())}` : ''}</p>`;
+    $('content').innerHTML = html;
+    drawChart(B);
+  }
+
+  /* ── column chart (single series: current bucket emphasised) ── */
+  // whole-number tick step (1, 2, 5 × 10^k) giving about 4 gridlines
+  function niceStep(v) {
+    const raw = Math.max(1, v / 4), p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
+    return Math.max(1, (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p);
+  }
+  function drawChart(B) {
+    const wrap = $('chart');
+    if (!wrap) return;
+    const W = Math.max(280, wrap.clientWidth), H = 230, ml = 34, mr = 8, mt = 20, mb = 26;
+    const iw = W - ml - mr, ih = H - mt - mb;
+    const step = niceStep(Math.max(1, ...B.map(b => b.n)));
+    const max = step * Math.max(1, Math.ceil(Math.max(1, ...B.map(b => b.n)) / step));
+    const band = iw / B.length, bw = Math.min(24, Math.max(4, band - 4));
+    const y = (v) => mt + ih - (v / max) * ih;
+    const ticks = [];
+    for (let t = 0; t <= max; t += step) ticks.push(t);
+    const narrow = W < 520;
+    const maxIdx = B.reduce((m, b, i) => (b.n > B[m].n ? i : m), 0);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="กราฟจำนวนครั้งที่เข้าพบ">`;
+    svg += '<g class="axis">' + ticks.map(t => `<line x1="${ml}" x2="${W - mr}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)" stroke-width="1"/>`
+      + `<text x="${ml - 6}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`).join('') + '</g>';
+    B.forEach((b, i) => {
+      const cx = ml + band * i + band / 2, x = cx - bw / 2, top = y(b.n), base = mt + ih, h = base - top;
+      const isCur = i === B.length - 1, r = Math.min(4, h, bw / 2);
+      const path = h > 0 ? `M${x},${base}V${top + r}Q${x},${top} ${x + r},${top}H${x + bw - r}Q${x + bw},${top} ${x + bw},${top + r}V${base}Z` : '';
+      svg += `<rect class="hit" data-i="${i}" x="${ml + band * i}" y="${mt}" width="${band}" height="${ih}" fill="transparent" tabindex="0" aria-label="${esc(b.long)}: เข้าพบ ${b.n} ครั้ง ${b.shops} ร้าน"/>`;
+      svg += path ? `<path class="bar${isCur ? ' cur' : ''}" d="${path}" fill="${isCur ? 'var(--brand)' : 'var(--bar)'}" pointer-events="none"/>` : '<path class="bar" d="" />';
+      if ((isCur || (i === maxIdx && b.n > 0)) && (!narrow || isCur || ui.period !== 'day'))
+        svg += `<text class="vlabel" x="${cx}" y="${top - 6}" text-anchor="middle">${fmt(b.n)}</text>`;
+      const showTick = ui.period === 'day' ? b.tick : (!narrow || i % 2 === (B.length - 1) % 2);
+      if (showTick) svg += `<text class="axis-l" x="${cx}" y="${H - 8}" text-anchor="middle" fill="var(--text-3)" font-size="11" font-family="inherit">${esc(b.label)}</text>`;
+    });
+    svg += `<line x1="${ml}" x2="${W - mr}" y1="${mt + ih}" y2="${mt + ih}" stroke="var(--grid)" stroke-width="1"/></svg>`;
+    wrap.innerHTML = svg + '<div class="tip" id="tip"></div>';
+    const tip = $('tip');
+    const show = (el) => {
+      const b = B[+el.dataset.i], bb = el.getBBox();
+      tip.textContent = '';
+      const strong = document.createElement('b'); strong.textContent = `${fmt(b.n)} ครั้ง`;
+      const shops = document.createElement('div'); shops.textContent = `${fmt(b.shops)} ร้าน`;
+      const lbl = document.createElement('span'); lbl.textContent = b.long;
+      tip.append(strong, shops, lbl);
+      const scale = wrap.clientWidth / W;
+      tip.style.left = ((bb.x + bb.width / 2) * scale) + 'px';
+      tip.style.top = (Math.max(y(b.n) - 8, 30) * scale) + 'px';
+      tip.style.display = 'block';
+    };
+    wrap.querySelectorAll('.hit').forEach(el => {
+      el.addEventListener('pointerenter', () => show(el));
+      el.addEventListener('focus', () => show(el));
+      el.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+      el.addEventListener('blur', () => { tip.style.display = 'none'; });
+    });
+  }
+
+  /* ── wiring ── */
+  document.querySelector('.seg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-period]'); if (!b) return;
+    ui.period = b.dataset.period; saveUi(); render();
+  });
+  $('zoneSel').addEventListener('change', (e) => { ui.zone = e.target.value; saveUi(); render(); });
+  $('ownerSel').addEventListener('change', (e) => { ui.owner = e.target.value; saveUi(); render(); });
+  $('btnPrint').onclick = () => window.print();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+
+  // theme: shares the map's saved setting
+  const THEMES = { auto: '🌓', light: '☀️', dark: '🌙' };
+  const applyTheme = () => {
+    const t = THEMES[settings.theme] ? settings.theme : 'auto';
+    if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+    $('btnTheme').textContent = THEMES[t];
+  };
+  $('btnTheme').onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    settings.theme = order[(order.indexOf(settings.theme || 'auto') + 1) % 3];
+    try {
+      const d = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      d.settings = Object.assign(d.settings || {}, { theme: settings.theme });
+      localStorage.setItem(LS_KEY, JSON.stringify(d));
+    } catch (e) { /* ignore */ }
+    applyTheme();
+  };
+  applyTheme();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Wongnai POS Area Map — แผนที่ร้านสำหรับ Area Sales</title>
   <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="area-map-icon.svg">
+  <link rel="icon" type="image/png" sizes="180x180" href="area-map-icon.png">
+  <link rel="apple-touch-icon" href="area-map-icon.png">
+  <meta name="theme-color" content="#f25533">
   <script>
     // apply the saved light/dark choice before first paint
     try { const t = (JSON.parse(localStorage.getItem('wpos-areamap-v1') || '{}').settings || {}).theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}

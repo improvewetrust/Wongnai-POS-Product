@@ -1867,7 +1867,12 @@
   }
 
   /* ───────────────────────── Restaurants from OpenStreetMap (Overpass API) ───────────────────────── */
-  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+  const OVERPASS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  ];
   const OSM_TYPES = { restaurant: 'ร้านอาหาร', cafe: 'คาเฟ่', fast_food: 'QSR / ฟาสต์ฟู้ด', food_court: 'ศูนย์อาหาร', bar: 'บาร์', pub: 'ผับ',
     ice_cream: 'ไอศกรีม', biergarten: 'บาร์', bakery: 'เบเกอรี่', coffee: 'ร้านกาแฟ', tea: 'ร้านชา', deli: 'เดลี่' };
   let osmPending = null;
@@ -1883,16 +1888,28 @@
   }
   const normName = (s) => String(s || '').toLowerCase().replace(/[\s\-_.,'"()&@!]/g, '').replace(/^(ร้าน|ครัว)/, '');
   function distM(a, b) { return distKm(a, b) * 1000; }
-  async function overpass(q) {
-    let lastErr;
+  // Public Overpass servers are often busy: they may answer 429/504, or 200 with a "remark" saying the
+  // query timed out and an empty result. Treat both as failures and try the next server.
+  async function overpass(q, onTry) {
+    const errors = [];
     for (const url of OVERPASS) {
+      const host = new URL(url).host;
+      if (onTry) onTry(host);
       try {
-        const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: q }) });
-        if (res.ok) return await res.json();
-        lastErr = new Error('HTTP ' + res.status);
-      } catch (e) { lastErr = e; }
+        const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 70000);
+        const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: q }), signal: ctrl.signal });
+        clearTimeout(timer);
+        if (!res.ok) { errors.push(`${host}: HTTP ${res.status}`); continue; }
+        const j = await res.json();
+        if (j.remark && /error|timed out|rate|memory/i.test(j.remark) && !(j.elements || []).length) { errors.push(`${host}: ${j.remark.slice(0, 80)}`); continue; }
+        return { ...j, server: host };
+      } catch (e) {
+        errors.push(`${host}: ${e.name === 'AbortError' ? 'หมดเวลา' : 'เชื่อมต่อไม่ได้ (เครือข่ายอาจบล็อก)'}`);
+      }
     }
-    throw lastErr;
+    const err = new Error('ทุกเซิร์ฟเวอร์ไม่ตอบ');
+    err.details = errors;
+    throw err;
   }
   async function openOsm() {
     const { label, areas } = osmAreas();
@@ -1905,29 +1922,40 @@
     // group nearby areas into one bounding box per zone to keep queries small
     const byZone = {};
     areas.forEach(a => { const k = a.zone || a.id; (byZone[k] = byZone[k] || []).push(a); });
-    const found = new Map();
+    const found = new Map(), perZone = [];
+    let server = '';
     try {
-      for (const group of Object.values(byZone)) {
+      for (const [zid, group] of Object.entries(byZone)) {
         const b = group.reduce((m, a) => [Math.min(m[0], a.bbox[0]), Math.min(m[1], a.bbox[1]), Math.max(m[2], a.bbox[2]), Math.max(m[3], a.bbox[3])], [180, 90, -180, -90]);
         const bb = `${b[1]},${b[0]},${b[3]},${b[2]}`;
-        const q = `[out:json][timeout:60];(nwr["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|ice_cream|biergarten)$"]["name"](${bb});`
-          + `nwr["shop"~"^(bakery|coffee|tea|deli)$"]["name"](${bb}););out center tags;`;
-        const j = await overpass(q);
+        // no ["name"] filter: many Thai places only carry name:th or brand
+        const q = `[out:json][timeout:60];(nwr["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|ice_cream|biergarten)$"](${bb});`
+          + `nwr["shop"~"^(bakery|coffee|tea|deli|pastry|confectionery)$"](${bb}););out center tags;`;
+        const zLabel = ZONE_BY_ID[zid] ? ZONE_BY_ID[zid].th : zid;
+        const j = await overpass(q, (host) => { $('osmBody').innerHTML = `<div class="hint">⏳ กำลังดึง ${esc(zLabel)} จาก ${esc(host)}… (5–60 วินาที)</div>`; });
+        server = j.server;
+        let inArea = 0, unnamed = 0;
         for (const el of j.elements || []) {
           const lat = el.lat ?? (el.center && el.center.lat), lng = el.lon ?? (el.center && el.center.lon);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
           if (!group.some(a => window.AreaGeo.contains(a, lat, lng))) continue;
           const t = el.tags || {};
+          inArea++;
+          const nm = t['name:th'] || t.name || t['name:en'] || t.brand || t['brand:th'] || t.operator;
+          if (!nm) { unnamed++; continue; }
           const addr = [t['addr:housenumber'], t['addr:street'], t['addr:subdistrict'], t['addr:district'], t['addr:province'] || t['addr:city'], t['addr:postcode']].filter(Boolean).join(' ');
           found.set(el.type + '/' + el.id, {
-            osmId: el.type + '/' + el.id, name: t['name:th'] || t.name || t['name:en'], lat: +lat.toFixed(6), lng: +lng.toFixed(6),
+            osmId: el.type + '/' + el.id, name: nm, lat: +lat.toFixed(6), lng: +lng.toFixed(6),
             phone: (t.phone || t['contact:phone'] || t['contact:mobile'] || '').split(';')[0].trim(),
             address: addr, type: OSM_TYPES[t.amenity] || OSM_TYPES[t.shop] || 'ร้านอาหาร',
           });
         }
+        perZone.push({ label: zLabel, n: inArea - unnamed, unnamed });
       }
     } catch (e) {
-      $('osmBody').innerHTML = `<div class="hint">⚠️ ดึงข้อมูลไม่สำเร็จ (${esc(e.message || e)}) — เซิร์ฟเวอร์ OpenStreetMap อาจคิวเต็ม ลองใหม่อีกครั้งในอีกสักครู่</div>`;
+      $('osmBody').innerHTML = `<div class="hint">⚠️ ดึงข้อมูลไม่สำเร็จ — เซิร์ฟเวอร์ OpenStreetMap ฟรีไม่ตอบ หรือเครือข่ายบริษัทบล็อกไว้</div>
+        ${e.details ? `<div class="hint">${e.details.map(esc).join('<br>')}</div>` : ''}
+        <div class="hint">ลองใหม่อีกครั้งใน 1–2 นาที · ถ้ายังไม่ได้ ลองเปิดจากมือถือ (เน็ตมือถือ) แทนเครือข่ายบริษัท</div>`;
       return;
     }
     // skip shops already on the map: same OSM id, or a similar name within 60 m, or anything within 12 m
@@ -1946,7 +1974,15 @@
     }
     osmPending = fresh;
     const withPhone = fresh.filter(c => c.phone).length, withAddr = fresh.filter(c => c.address).length;
-    $('osmBody').innerHTML = `<div class="osm-sum"><div><b>${found.size}</b><span>พบใน OpenStreetMap</span></div>
+    const zoneLine = perZone.length > 1 || !found.size
+      ? `<div class="hint">แยกตามเขต: ${perZone.map(z => `${esc(z.label)} ${z.n}${z.unnamed ? ` (+${z.unnamed} ไม่มีชื่อ)` : ''}`).join(' · ')} · จาก ${esc(server)}</div>` : '';
+    if (!found.size) {
+      $('osmBody').innerHTML = `${zoneLine}<div class="hint">😕 OpenStreetMap ยังไม่มีข้อมูลร้านอาหารที่มีชื่อในพื้นที่นี้ — ข้อมูลเปิดของไทยในเขตชานเมืองยังมีคนลงไว้น้อย
+        ลองเลือกเขตอื่น หรือใช้ข้อมูลร้านจาก Salesforce / ฐานข้อมูลร้านของ Wongnai แทน</div>`;
+      $('osmGo').disabled = true; $('osmGo').textContent = 'ไม่มีร้านใหม่';
+      return;
+    }
+    $('osmBody').innerHTML = zoneLine + `<div class="osm-sum"><div><b>${found.size}</b><span>พบใน OpenStreetMap</span></div>
         <div><b>${dup.length}</b><span>มีบนแผนที่แล้ว (ข้าม)</span></div><div><b style="color:var(--red)">${fresh.length}</b><span>ร้านใหม่ที่จะเพิ่ม</span></div></div>
       <div class="hint">ร้านใหม่: มีเบอร์โทร ${withPhone} ร้าน · มีที่อยู่ ${withAddr} ร้าน — จะเพิ่มเป็น <b style="color:var(--red)">หมุดแดง (ยังไม่ใช้ POS)</b> ติดป้าย “OSM”</div>
       ${fresh.length ? `<div class="vals">${fresh.slice(0, 60).map(c => `<label style="cursor:default"><span>${esc(c.name)}</span><span class="c">${esc(c.type)}${c.phone ? ' · ☎' : ''}</span></label>`).join('')}</div>

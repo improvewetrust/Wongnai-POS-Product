@@ -133,6 +133,19 @@
     .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); margin-left: 4px; vertical-align: 1px; }
     .tag.warn { background: #fff4d6; color: #a16207; }
     .tag.edit { background: #e8f0fe; color: var(--blue); }
+    .tag.age { color: #fff; }
+    .age-m1 { background: #f5b400 !important; color: #3d2e00 !important; }
+    .age-m3 { background: #f57c00 !important; }
+    .age-m6 { background: #8e24aa !important; }
+    .age-y1 { background: #37474f !important; }
+    .stale-alert {
+      display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+      border: 1px solid #f5d27a; background: #fff8e1; color: #7a5a00; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-weight: 600;
+    }
+    .stale-alert.on { border-color: #a16207; box-shadow: 0 0 0 1px #a16207 inset; }
+    .stale-alert b { margin-left: auto; font-size: 14px; }
+    .age-dist { display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+    .age-dist span { padding: 2px 8px; border-radius: 6px; background: var(--surface-2); font-weight: 700; }
     .list-empty { padding: 24px 16px; text-align: center; color: var(--text-2); }
     .list-more { padding: 10px; text-align: center; font-size: 12px; color: var(--text-2); }
 
@@ -155,9 +168,11 @@
     .legend {
       position: absolute; left: 12px; bottom: 22px; z-index: 800;
       background: rgba(255,255,255,0.95); border-radius: 10px; padding: 7px 11px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-size: 12px; display: flex; gap: 12px; align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-size: 12px; display: flex; flex-direction: column; gap: 5px;
     }
+    .legend .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .legend span { display: flex; align-items: center; gap: 5px; }
+    .legend .b { color: #fff; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 5px; }
     #addBanner {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 850;
       background: var(--text); color: #fff; padding: 9px 14px; border-radius: 12px; display: none;
@@ -169,6 +184,7 @@
 
     /* ── Pins ── */
     .pin { background: none; border: none; }
+    .pin svg { overflow: visible; }
     .pin svg { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); transition: transform .15s; transform-origin: 50% 100%; }
     .pin.sel svg { transform: scale(1.35); }
     .pin.drag svg { transform: scale(1.35); animation: bob .8s ease-in-out infinite alternate; }
@@ -218,7 +234,9 @@
     .field textarea { resize: vertical; min-height: 70px; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .visit-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
-    .visit-box .txt { flex: 1; font-size: 12.5px; line-height: 1.4; }
+    .visit-box .txt { flex: 1; font-size: 12.5px; line-height: 1.45; }
+    .visit-box.m1 { background: #fff8e1; } .visit-box.m3 { background: #fff0e0; }
+    .visit-box.m6 { background: #f6e9f8; } .visit-box.y1 { background: #eceff1; }
     .hint { font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
     .ed-foot { padding: 12px 16px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .ed-foot .btn.primary { grid-column: 1 / -1; padding: 11px; }
@@ -341,15 +359,11 @@
     </div>
   </div>
   <div class="spacer"></div>
-  <button class="btn sf" id="btnSf" title="Sync ข้อมูลจาก Salesforce">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
-    <span class="hide-m">Sync Salesforce</span>
-  </button>
-  <button class="btn" id="btnUpload" title="อัปโหลดไฟล์ CSV / Excel">
+  <button class="btn sf" id="btnUpload" title="อัปโหลดไฟล์จาก Salesforce (CSV / Excel)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-    <span class="hide-m">อัปโหลด</span>
+    <span class="hide-m">อัปโหลดข้อมูล SF</span>
   </button>
-  <button class="btn primary" id="btnAdd" title="เพิ่มหมุดร้านใหม่">
+  <button class="btn" id="btnAdd" title="เพิ่มหมุดร้านใหม่">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     <span class="hide-m">เพิ่มหมุด</span>
   </button>
@@ -358,6 +372,7 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
     </button>
     <div class="menu" id="menu">
+      <button data-act="upload">⬆️ อัปโหลดข้อมูลจาก Salesforce</button>
       <button data-act="export">⬇️ Export CSV (ส่งกลับเข้า Salesforce)</button>
       <button data-act="template">📄 ดาวน์โหลดไฟล์ตัวอย่าง (Template)</button>
       <button data-act="sample">🧪 โหลดข้อมูลตัวอย่าง (Demo)</button>
@@ -384,12 +399,23 @@
         <div class="bar"><div id="penBar" style="width:0%"></div></div>
         <div class="bar-label"><span>สัดส่วนร้านที่มี Wongnai POS</span><b id="penTxt">0%</b></div>
       </div>
+      <button class="stale-alert" id="staleBtn" title="แสดงเฉพาะร้านที่ไม่อัปเดตเกิน 1 เดือน">⏰ ร้านที่ไม่อัปเดตเกิน 1 เดือน<b id="nStale">0</b></button>
       <div class="side-row">
         <select id="ownerSel" title="กรองตามผู้ดูแล"><option value="">👤 ผู้ดูแลทั้งหมด</option></select>
+        <select id="ageSel" title="กรองตามระยะเวลาที่ไม่ได้อัปเดต">
+          <option value="">⏱️ อัปเดตทุกช่วง</option>
+          <option value="fresh">✅ อัปเดตภายใน 1 เดือน</option>
+          <option value="m1">🟡 ไม่อัปเดต 1 เดือนขึ้นไป</option>
+          <option value="m3">🟠 ไม่อัปเดต 3 เดือนขึ้นไป</option>
+          <option value="m6">🟣 ไม่อัปเดต 6 เดือนขึ้นไป</option>
+          <option value="y1">⚫ ไม่อัปเดตเกิน 1 ปี</option>
+        </select>
+      </div>
+      <div class="side-row">
         <select id="sortSel" title="เรียงลำดับ">
           <option value="near">📍 ใกล้ฉันก่อน</option>
           <option value="name">ก-ฮ ชื่อร้าน</option>
-          <option value="visit">เยี่ยมนานสุดก่อน</option>
+          <option value="stale">ไม่อัปเดตนานสุดก่อน</option>
         </select>
       </div>
     </div>
@@ -420,16 +446,21 @@
     <div id="addBanner"><span>📍 แตะบนแผนที่ตรงตำแหน่งร้าน</span><button id="addHere">ใช้ตำแหน่งฉัน</button><button id="addCancel">ยกเลิก</button></div>
 
     <div class="legend">
-      <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#00a86b"/></svg>ขายแล้ว (มี Wongnai POS)</span>
-      <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#e53935"/></svg>ยังไม่ขาย</span>
+      <div class="row">
+        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#00a86b"/></svg>ขายแล้ว (มี Wongnai POS)</span>
+        <span><svg width="12" height="16" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="#e53935"/></svg>ยังไม่ขาย</span>
+      </div>
+      <div class="row">
+        <span>ไม่อัปเดต:</span>
+        <span class="b age-m1">1M</span><span class="b age-m3">3M</span><span class="b age-m6">6M</span><span class="b age-y1">1Y</span>
+      </div>
     </div>
 
     <div id="welcome">
       <div class="welcome-card">
         <h2>👋 เริ่มใช้ Area Map</h2>
-        <p>ดึงรายชื่อร้านมาปักหมุดบนแผนที่ <b style="color:var(--ok)">เขียว = ขายแล้ว</b> · <b style="color:var(--red)">แดง = ยังไม่ขาย</b> แล้วออกไปปิดการขายร้านสีแดงได้เลย</p>
-        <button class="btn sf" data-act="sf">🔄 Sync จาก Salesforce</button>
-        <button class="btn" data-act="upload">📂 อัปโหลดไฟล์ Report (CSV / Excel)</button>
+        <p>ดึงรายชื่อร้านมาปักหมุดบนแผนที่ <b style="color:var(--ok)">เขียว = ขายแล้ว</b> · <b style="color:var(--red)">แดง = ยังไม่ขาย</b> แล้วออกไปปิดการขายร้านสีแดงได้เลย · หมุดมีป้าย <b>1M / 3M / 6M / 1Y</b> = ไม่ได้อัปเดตนานแค่ไหน</p>
+        <button class="btn sf" data-act="upload">📂 อัปโหลดข้อมูลจาก Salesforce (CSV / Excel)</button>
         <button class="btn" data-act="sample">🧪 ลองด้วยข้อมูลตัวอย่าง</button>
       </div>
     </div>
@@ -453,9 +484,9 @@
           <a id="qGmap" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Google Maps</a>
           <a id="qSf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 17.5 7 4.5 4.5 0 0 1 18 18H7z"/></svg>Salesforce</a>
         </div>
-        <div class="visit-box">
-          <div class="txt" id="visitTxt">ยังไม่เคยบันทึกการเยี่ยม</div>
-          <button class="btn" id="btnCheckin">📌 เช็คอินวันนี้</button>
+        <div class="visit-box" id="visitBox">
+          <div class="txt" id="visitTxt">-</div>
+          <button class="btn" id="btnCheckin" title="บันทึกว่าไปเยี่ยม/อัปเดตข้อมูลร้านนี้วันนี้">📌 เช็คอินวันนี้</button>
         </div>
         <div class="field"><label for="fName">ชื่อร้าน</label><input id="fName"></div>
         <div class="grid2">
@@ -499,55 +530,15 @@
       </label>
       <ol class="steps">
         <li>ใน Salesforce เปิด <b>Report</b> รายชื่อร้าน (Account) ที่ดูแล</li>
-        <li>ให้มีคอลัมน์ <b>ชื่อร้าน</b>, <b>Latitude/Longitude</b> (หรือที่อยู่ / ลิงก์ Google Maps) และ <b>คอลัมน์ที่บอกว่ามี Wongnai POS แล้วหรือยัง</b></li>
+        <li>ให้มีคอลัมน์ <b>ชื่อร้าน</b>, <b>Latitude/Longitude</b> (หรือที่อยู่ / ลิงก์ Google Maps), <b>คอลัมน์ที่บอกว่ามี Wongnai POS แล้วหรือยัง</b> และ <b>วันที่อัปเดตล่าสุด</b> (เช่น Last Activity Date / Last Modified Date)</li>
         <li>กด <b>Export → Details Only → .csv หรือ .xlsx</b> แล้วอัปโหลดที่นี่ ระบบจะให้จับคู่คอลัมน์ก่อนนำเข้า</li>
       </ol>
       <div class="hint">ยังไม่มีไฟล์? <a href="#" data-act="template">ดาวน์โหลดไฟล์ตัวอย่าง</a> ไปลองกรอกดูได้</div>
-    </div>
-  </div>
-</div>
-
-<!-- Salesforce modal -->
-<div class="modal" id="sfModal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h3>Sync จาก Salesforce<p>ดึงร้านด้วย SOQL ผ่าน Salesforce REST API (login ด้วยบัญชี Salesforce ของคุณ)</p></h3>
-      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="conn" id="sfConn">⚪ ยังไม่ได้เชื่อมต่อ</div>
-      <div class="field"><label for="sfInstance">Salesforce URL ของบริษัท</label><input id="sfInstance" placeholder="https://yourcompany.my.salesforce.com"></div>
-      <div class="field"><label for="sfClient">Consumer Key (Client ID) ของ Connected App</label><input id="sfClient" placeholder="3MVG9..." autocomplete="off"></div>
       <div class="field">
-        <label for="sfSoql">SOQL Query (เลือกฟิลด์ที่จะดึง)</label>
-        <textarea id="sfSoql" class="mono" rows="5" spellcheck="false"></textarea>
-        <div class="hint">ควรมีฟิลด์ที่บอกว่า <b>ร้านมี Wongnai POS แล้วหรือยัง</b> (เช่น Type, Stage หรือ custom field อย่าง <code>Has_Wongnai_POS__c</code>) เพื่อใช้แยกสีเขียว/แดง</div>
+        <label for="sfUrl">Salesforce URL ของบริษัท (ไม่บังคับ)</label>
+        <input id="sfUrl" placeholder="https://yourcompany.lightning.force.com">
+        <div class="hint">ใส่ไว้เพื่อให้ปุ่ม “Salesforce” ในหน้าร้านเปิด Record นั้นใน Salesforce ได้ (ต้อง map คอลัมน์ Salesforce ID ด้วย)</div>
       </div>
-      <details>
-        <summary>🛠️ ตั้งค่าครั้งแรก (ให้ Salesforce Admin ทำครั้งเดียว)</summary>
-        <ol class="steps">
-          <li>Setup → <b>App Manager</b> → New Connected App → เปิด <b>Enable OAuth Settings</b></li>
-          <li>Callback URL ใส่ค่านี้:
-            <div class="copy-row" style="margin-top:6px"><input class="mono" id="sfCallback" readonly><button class="btn" data-copy="sfCallback">คัดลอก</button></div>
-          </li>
-          <li>OAuth Scope: <b>Manage user data via APIs (api)</b> · ติ๊ก <b>Require PKCE</b> · <b>ไม่ติ๊ก</b> Require Secret for Web Server Flow</li>
-          <li>Setup → <b>CORS</b> → New → Origin URL:
-            <div class="copy-row" style="margin-top:6px"><input class="mono" id="sfOrigin" readonly><button class="btn" data-copy="sfOrigin">คัดลอก</button></div>
-            แล้วเปิด <b>Enable CORS for OAuth endpoints</b>
-          </li>
-          <li>คัดลอก <b>Consumer Key</b> มาใส่ช่องด้านบน → กด เชื่อมต่อ</li>
-        </ol>
-      </details>
-      <details>
-        <summary>🔑 ขั้นสูง: ใช้ Access Token โดยตรง</summary>
-        <div class="hint" style="margin-bottom:8px">สำหรับ Admin/Dev ที่มี token อยู่แล้ว (เช่นจาก <code>sf org display</code>) · token เก็บแค่ในแท็บนี้ ปิดแท็บแล้วหายไป</div>
-        <div class="copy-row"><input id="sfToken" type="password" class="mono" placeholder="00D...!AQ..."><button class="btn" id="sfUseToken">ใช้ Token นี้</button></div>
-      </details>
-    </div>
-    <div class="modal-foot">
-      <button class="btn" id="sfLogout" style="margin-right:auto">ตัดการเชื่อมต่อ</button>
-      <button class="btn" data-close>ปิด</button>
-      <button class="btn sf" id="sfGo">🔄 เชื่อมต่อ &amp; Sync</button>
     </div>
   </div>
 </div>
@@ -566,6 +557,11 @@
         <div class="hint" style="margin:2px 0 8px">ติ๊กค่าที่หมายถึงร้านมี Wongnai POS แล้ว · ค่าที่ไม่ได้ติ๊กจะเป็นหมุดแดง</div>
         <div id="statusVals"></div>
         <div class="preview-bar" style="margin-top:8px"><span style="color:var(--ok)">🟢 เขียว <span id="pvSold">0</span></span><span style="color:var(--red)">🔴 แดง <span id="pvUnsold">0</span></span><span style="color:var(--text-2)">ไม่มีพิกัด <span id="pvNoGeo">0</span></span></div>
+      </div>
+      <div>
+        <div class="section-t">ความสดของข้อมูล (นับจากวันที่อัปเดตล่าสุด)</div>
+        <div class="hint" id="ageHint" style="margin:2px 0 8px"></div>
+        <div class="age-dist" id="pvAge"></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px">
         <label class="opt"><input type="checkbox" id="optKeep" checked><span><b>เก็บค่าที่แก้ด้วยมือไว้</b> — ร้านที่เคยเปลี่ยนสถานะหรือย้ายหมุดเอง จะไม่ถูกทับ (โน้ตและประวัติเยี่ยมเก็บไว้เสมอ)</span></label>
@@ -592,20 +588,11 @@
 
   /* ───────────────────────── Constants ───────────────────────── */
   const LS_KEY = 'wpos-areamap-v1';
-  const SS_TOKEN = 'wpos-areamap-sf-token';
-  const SS_PKCE = 'wpos-areamap-sf-pkce';
-  const DEFAULT_SOQL =
-`SELECT Id, Name, Type, Phone, Owner.Name,
-       BillingStreet, BillingCity, BillingState,
-       BillingLatitude, BillingLongitude
-FROM Account
-WHERE BillingLatitude != null
-ORDER BY LastModifiedDate DESC
-LIMIT 2000`;
   const COLORS = { sold: '#00a86b', unsold: '#e53935' };
   const MAP_FIELDS = [
     ['name',    'ชื่อร้าน',            'จำเป็น'],
     ['status',  'สถานะ Wongnai POS',  'คอลัมน์ที่บอกว่าขายแล้วหรือยัง'],
+    ['updated', 'วันที่อัปเดตล่าสุด',     'เช่น Last Activity / Last Modified Date'],
     ['lat',     'Latitude',          ''],
     ['lng',     'Longitude',         ''],
     ['gmap',    'ลิงก์ Google Maps / "lat,lng"', 'ใช้แทน Lat/Lng ได้'],
@@ -613,7 +600,7 @@ LIMIT 2000`;
     ['phone',   'เบอร์โทร',            ''],
     ['owner',   'ผู้ดูแล (Owner)',      ''],
     ['type',    'ประเภทร้าน',           ''],
-    ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอน Sync ซ้ำ'],
+    ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอนอัปโหลดซ้ำ'],
   ];
   const GUESS = {
     sfId:    [/^(account ?)?id$/i, /^(sf|salesforce|record|account)[ _]?id$/i, /(^|\.)id$/i],
@@ -625,9 +612,21 @@ LIMIT 2000`;
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
+    updated: [/last ?activity/i, /last ?modified/i, /last ?(update|visit)/i, /อัปเดต/, /แก้ไขล่าสุด/, /เยี่ยมล่าสุด/, /modified/i, /(update|date)/i, /วันที่/],
     status:  [/wongnai ?pos/i, /has.?pos/i, /pos.?status/i, /สถานะ/, /^status$/i, /stage/i, /status/i, /ขาย/, /customer/i],
   };
   const SOLD_RE = /(closed ?won|ขายแล้ว|ติดตั้งแล้ว|ใช้งานแล้ว|เปิดใช้งาน|มี ?wongnai|^มี$|^ใช้$|^yes$|^y$|^true$|^1$|^sold$|^won$|^active$|^live$|^customer$|onboard|installed|go ?live)/i;
+  // Staleness tiers: how long since the shop's data was last updated (file date, check-in or manual edit)
+  const DAY = 864e5;
+  const AGE_TIERS = [
+    { k: 'fresh', days: 0,   label: 'ภายใน 1 เดือน',  badge: '',   color: '' },
+    { k: 'm1',    days: 30,  label: '1 เดือน+',      badge: '1M', color: '#f5b400' },
+    { k: 'm3',    days: 90,  label: '3 เดือน+',      badge: '3M', color: '#f57c00' },
+    { k: 'm6',    days: 180, label: '6 เดือน+',      badge: '6M', color: '#8e24aa' },
+    { k: 'y1',    days: 365, label: 'เกิน 1 ปี',      badge: '1Y', color: '#37474f' },
+  ];
+  const AGE_INDEX = Object.fromEntries(AGE_TIERS.map((t, i) => [t.k, i]));
+  const TH_MONTHS = ['มค', 'กพ', 'มีค', 'เมย', 'พค', 'มิย', 'กค', 'สค', 'กย', 'ตค', 'พย', 'ธค'];
   const NOT_SOLD_RE = /(not|ไม่|ยัง|inactive|lost|^no$|^n$|^false$|^0$|prospect|churn)/i;
 
   /* ───────────────────────── State ───────────────────────── */
@@ -635,12 +634,12 @@ LIMIT 2000`;
     records: [],
     settings: {
       layer: 'gRoad',
-      sf: { instanceUrl: '', clientId: '', soql: DEFAULT_SOQL, apiVersion: 'v60.0' },
+      sfUrl: '',      // optional, for "open in Salesforce" links
       mappings: {},   // per source: { field: column }
       soldValues: {}, // per source: [values]
-      lastSync: null,
+      lastSync: null, // last upload time
     },
-    filter: 'all', owner: '', q: '', sort: 'near',
+    filter: 'all', owner: '', age: '', q: '', sort: 'near',
     me: null, selectedId: null, dragId: null, addMode: false,
   };
 
@@ -650,6 +649,27 @@ LIMIT 2000`;
   const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
   const fmtDate = (t) => new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 
+  /* ───────────────────────── Staleness ───────────────────────── */
+  // r.lastUpdate: ms timestamp, or null when the file had a date column but this row was blank (treated as oldest tier)
+  const daysSince = (r) => (r.lastUpdate ? Math.max(0, Math.floor((Date.now() - r.lastUpdate) / DAY)) : Infinity);
+  function ageTier(r) {
+    const d = daysSince(r);
+    let t = AGE_TIERS[0];
+    for (const x of AGE_TIERS) if (d >= x.days) t = x;
+    return t;
+  }
+  function agoText(r) {
+    if (!r.lastUpdate) return 'ไม่มีข้อมูลวันที่อัปเดต';
+    const d = daysSince(r);
+    if (d === 0) return 'วันนี้';
+    if (d < 30) return `${d} วันก่อน`;
+    if (d < 365) return `${Math.floor(d / 30)} เดือนก่อน`;
+    const y = Math.floor(d / 365), m = Math.floor((d % 365) / 30);
+    return `${y} ปี${m ? ` ${m} เดือน` : ''}ก่อน`;
+  }
+  // Mark a record as updated now (manual edits and check-ins reset its staleness clock)
+  function freshen(r) { r.lastUpdate = Date.now(); }
+
   function load() {
     try {
       const raw = localStorage.getItem(LS_KEY);
@@ -658,8 +678,11 @@ LIMIT 2000`;
       if (Array.isArray(d.records)) state.records = d.records;
       if (d.settings) {
         Object.assign(state.settings, d.settings);
-        state.settings.sf = Object.assign({ soql: DEFAULT_SOQL, apiVersion: 'v60.0' }, d.settings.sf || {});
+        if (!state.settings.sfUrl && d.settings.sf && d.settings.sf.instanceUrl) state.settings.sfUrl = d.settings.sf.instanceUrl;
+        delete state.settings.sf;
       }
+      // records saved before staleness tracking: start their clock from the last change we know of
+      state.records.forEach(r => { if (r.lastUpdate === undefined) r.lastUpdate = r.updatedAt || Date.now(); });
     } catch (e) { /* storage unavailable or corrupt: start fresh */ }
   }
   function save() {
@@ -719,12 +742,20 @@ LIMIT 2000`;
 
   function pinIcon(r, cls = '') {
     const c = COLORS[r.status] || COLORS.unsold;
+    const age = ageTier(r);
+    // older data → paler pin; 6M+ gets a dashed outline; 1Y+ is faded the most
+    const op = { fresh: 1, m1: 1, m3: 0.82, m6: 0.62, y1: 0.42 }[age.k];
+    const stroke = age.k === 'y1' ? '#455a64' : '#fff';
+    const dash = age.k === 'm6' || age.k === 'y1' ? ' stroke-dasharray="3 2"' : '';
     const inner = r.status === 'sold'
       ? `<circle cx="15" cy="15" r="6.5" fill="#fff"/><path d="M11.8 15.2l2.3 2.3 4.2-4.6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
       : `<circle cx="15" cy="15" r="5" fill="#fff"/>`;
+    const badge = age.badge
+      ? `<rect x="17" y="-6" width="18" height="12" rx="6" fill="${age.color}" stroke="#fff" stroke-width="1.5"/><text x="26" y="3.2" text-anchor="middle" font-size="8.5" font-weight="800" font-family="Sarabun,sans-serif" fill="${age.k === 'm1' ? '#3d2e00' : '#fff'}">${age.badge}</text>`
+      : '';
     return L.divIcon({
       className: 'pin ' + cls, iconSize: [30, 40], iconAnchor: [15, 39],
-      html: `<svg width="30" height="40" viewBox="0 0 30 40"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="${c}" stroke="#fff" stroke-width="2"/>${inner}</svg>`,
+      html: `<svg width="30" height="40" viewBox="0 0 30 40"><g opacity="${op}"><path d="M15 39s13-13.6 13-24A13 13 0 0 0 2 15c0 10.4 13 24 13 24z" fill="${c}" stroke="${stroke}" stroke-width="2"${dash}/>${inner}</g>${badge}</svg>`,
     });
   }
 
@@ -732,6 +763,10 @@ LIMIT 2000`;
   function passFilter(r, ignoreStatus = false) {
     if (!ignoreStatus && state.filter !== 'all' && r.status !== state.filter) return false;
     if (state.owner && (r.owner || '') !== state.owner) return false;
+    if (state.age) {
+      const i = AGE_INDEX[ageTier(r).k];
+      if (state.age === 'fresh' ? i !== 0 : i < AGE_INDEX[state.age]) return false;
+    }
     if (state.q) {
       const hay = [r.name, r.address, r.phone, r.sfId, r.type, r.note].join(' ').toLowerCase();
       if (!hay.includes(state.q.toLowerCase())) return false;
@@ -749,7 +784,7 @@ LIMIT 2000`;
       const p = m.getLatLng();
       r.lat = +p.lat.toFixed(6); r.lng = +p.lng.toFixed(6);
       r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false;
-      touch(r); state.dragId = null; save(); renderAll(); openEditor(r.id, false);
+      touch(r); freshen(r); state.dragId = null; save(); renderAll(); openEditor(r.id, false);
       toast('📍 ย้ายหมุดเรียบร้อย');
     });
     return m;
@@ -781,12 +816,16 @@ LIMIT 2000`;
     $('penBar').style.width = pct + '%';
     $('penTxt').textContent = pct + '%';
     document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter));
+    const staleBase = state.records.filter(r => (state.filter === 'all' || r.status === state.filter) && (!state.owner || (r.owner || '') === state.owner));
+    $('nStale').textContent = staleBase.filter(r => ageTier(r).k !== 'fresh').length.toLocaleString();
+    $('staleBtn').classList.toggle('on', state.age === 'm1');
+    $('ageSel').value = state.age;
 
     const owners = [...new Set(state.records.map(r => r.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
     const sel = $('ownerSel');
     sel.innerHTML = '<option value="">👤 ผู้ดูแลทั้งหมด</option>' + owners.map(o => `<option${o === state.owner ? ' selected' : ''}>${esc(o)}</option>`).join('');
     $('ownerList').innerHTML = owners.map(o => `<option value="${esc(o)}">`).join('');
-    const sync = state.settings.lastSync ? ` · Sync ล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
+    const sync = state.settings.lastSync ? ` · อัปโหลดล่าสุด ${fmtDate(state.settings.lastSync)} ${new Date(state.settings.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}` : '';
     $('subline').textContent = `${state.records.length.toLocaleString()} ร้าน${sync}`;
   }
   const LIST_LIMIT = 300;
@@ -796,9 +835,8 @@ LIMIT 2000`;
     if (state.sort === 'near' && me) {
       rows.forEach(r => { r._d = hasCoord(r) ? distKm(me, r) : Infinity; });
       rows.sort((a, b) => a._d - b._d);
-    } else if (state.sort === 'visit') {
-      const lv = (r) => (r.visits && r.visits.length ? r.visits[r.visits.length - 1] : 0);
-      rows.sort((a, b) => lv(a) - lv(b));
+    } else if (state.sort === 'stale') {
+      rows.sort((a, b) => (a.lastUpdate || 0) - (b.lastUpdate || 0));
     } else {
       rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
     }
@@ -809,12 +847,14 @@ LIMIT 2000`;
     const html = rows.slice(0, LIST_LIMIT).map(r => {
       const d = me && hasCoord(r) ? distKm(me, r) : null;
       const right = d != null ? (d < 1 ? Math.round(d * 1000) + ' ม.' : d.toFixed(1) + ' กม.') : '';
-      const tags = (!hasCoord(r) ? '<span class="tag warn">ไม่มีพิกัด</span>' : '')
+      const age = ageTier(r);
+      const tags = (age.badge ? `<span class="tag age age-${age.k}" title="ไม่อัปเดต ${age.label}">${age.badge}</span>` : '')
+        + (!hasCoord(r) ? '<span class="tag warn">ไม่มีพิกัด</span>' : '')
         + (r.geoApprox ? '<span class="tag warn">พิกัดประมาณ</span>' : '')
         + (r.manual && (r.manual.status || r.manual.pos) ? '<span class="tag edit">แก้ไขแล้ว</span>' : '')
         + (r.source === 'manual' ? '<span class="tag">เพิ่มเอง</span>' : '');
       const sub = [r.address, r.owner && '👤 ' + r.owner].filter(Boolean).join(' · ');
-      const lv = r.visits && r.visits.length ? `เยี่ยม ${fmtDate(r.visits[r.visits.length - 1])}` : '';
+      const lv = `อัปเดต ${agoText(r)}`;
       return `<div class="item${r.id === state.selectedId ? ' sel' : ''}" data-id="${r.id}">
         <span class="dot ${r.status}"></span>
         <div style="min-width:0"><div class="t">${esc(r.name)}${tags}</div><div class="s">${sub ? esc(sub) : '&nbsp;'}</div></div>
@@ -870,17 +910,22 @@ LIMIT 2000`;
     setLink('qGmap', geo ? `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`
       : (r.address || r.name) && `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([r.name, r.address].filter(Boolean).join(' '))}`);
     setLink('qCall', r.phone && 'tel:' + r.phone.replace(/[^\d+]/g, ''));
-    const inst = (state.settings.sf.instanceUrl || '').replace(/\/+$/, '');
+    const inst = (state.settings.sfUrl || '').trim().replace(/\/+$/, '');
     setLink('qSf', r.sfId && inst && `${inst}/${encodeURIComponent(r.sfId)}`);
 
     const v = r.visits || [];
-    $('visitTxt').innerHTML = v.length
-      ? `เยี่ยมล่าสุด <b>${fmtDate(v[v.length - 1])}</b> · รวม ${v.length} ครั้ง`
-      : 'ยังไม่เคยบันทึกการเยี่ยมร้านนี้';
+    const age = ageTier(r);
+    $('visitBox').className = 'visit-box ' + age.k;
+    $('visitTxt').innerHTML = (r.lastUpdate
+      ? `อัปเดตล่าสุด <b>${fmtDate(r.lastUpdate)}</b> (${esc(agoText(r))})`
+      : '<b>ไม่มีข้อมูลวันที่อัปเดต</b>')
+      + (age.badge ? ` <span class="tag age age-${age.k}">${age.badge}</span>` : ' ✅')
+      + `<br>${v.length ? `เช็คอินแล้ว ${v.length} ครั้ง · ล่าสุด ${fmtDate(v[v.length - 1])}` : 'ยังไม่เคยเช็คอินร้านนี้'}`;
     $('edMove').disabled = !geo;
     $('edCenter').textContent = geo ? '🎯 ย้ายมากลางจอ' : '🎯 ปักกลางจอ';
     const hints = [];
     if (!geo) hints.push('⚠️ ร้านนี้ยังไม่มีพิกัด — กด “หาพิกัดจากที่อยู่” หรือ “ปักกลางจอ” หรือกรอก Lat/Lng เอง');
+    if (age.badge) hints.push(`⏰ ข้อมูลร้านนี้ไม่อัปเดตมา ${age.label} — แวะไปเยี่ยมแล้วกด “เช็คอินวันนี้” หรือแก้ไขข้อมูล ป้าย ${age.badge} จะหายไป`);
     if (r.geoApprox) hints.push('📍 พิกัดได้จากการค้นหาที่อยู่ (ค่าประมาณ) — ถ้าไม่ตรงให้กด “ย้ายหมุด” แล้วลากไปที่ร้านจริง');
     if (r.manual && (r.manual.status || r.manual.pos)) hints.push('✏️ ร้านนี้ถูกแก้ด้วยมือ (' + [r.manual.status && 'สถานะ', r.manual.pos && 'ตำแหน่ง'].filter(Boolean).join(', ') + ') — ตอน Sync ครั้งถัดไปจะไม่ถูกทับถ้าติ๊ก “เก็บค่าที่แก้ด้วยมือไว้”');
     hints.push('💡 Export CSV จากเมนู ⋮ เพื่อส่งการแก้ไขกลับเข้า Salesforce (Data Loader / Data Import Wizard)');
@@ -901,11 +946,11 @@ LIMIT 2000`;
   }
   function setStatus(status) {
     const r = current(); if (!r || r.status === status) return;
-    const old = r.status;
-    r.status = status; r.manual = Object.assign({}, r.manual, { status: true }); touch(r);
+    const old = r.status, oldLu = r.lastUpdate;
+    r.status = status; r.manual = Object.assign({}, r.manual, { status: true }); touch(r); freshen(r);
     save(); renderAll(); openEditor(r.id, false);
     toast(status === 'sold' ? '🎉 ปิดการขายแล้ว! เปลี่ยนเป็นหมุดเขียว' : '🔴 เปลี่ยนเป็นยังไม่ขาย', 3500, {
-      label: 'เลิกทำ', fn: () => { r.status = old; touch(r); save(); renderAll(); openEditor(r.id, false); },
+      label: 'เลิกทำ', fn: () => { r.status = old; r.lastUpdate = oldLu; touch(r); save(); renderAll(); openEditor(r.id, false); },
     });
   }
   function saveEditor() {
@@ -919,13 +964,13 @@ LIMIT 2000`;
     if (latStr && lngStr) {
       if (r.lat !== lat || r.lng !== lng) { r.lat = lat; r.lng = lng; r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false; }
     } else if (!latStr && !lngStr) { r.lat = null; r.lng = null; }
-    touch(r); save(); renderAll(); openEditor(r.id, false);
+    touch(r); freshen(r); save(); renderAll(); openEditor(r.id, false);
     toast('💾 บันทึกแล้ว');
   }
   function placeRecordAt(r, latlng) {
     r.lat = +latlng.lat.toFixed(6); r.lng = +latlng.lng.toFixed(6);
     r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false;
-    touch(r); save(); renderAll(); openEditor(r.id);
+    touch(r); freshen(r); save(); renderAll(); openEditor(r.id);
   }
 
   /* ───────────────────────── Add mode ───────────────────────── */
@@ -939,7 +984,7 @@ LIMIT 2000`;
   function createAt(latlng) {
     const r = {
       id: uid(), sfId: '', name: 'ร้านใหม่', status: 'unsold', lat: +latlng.lat.toFixed(6), lng: +latlng.lng.toFixed(6),
-      address: '', phone: '', owner: '', type: '', note: '', visits: [], source: 'manual', manual: {}, createdAt: Date.now(),
+      address: '', phone: '', owner: '', type: '', note: '', visits: [], source: 'manual', manual: {}, createdAt: Date.now(), lastUpdate: Date.now(),
     };
     touch(r); state.records.push(r); setAddMode(false); save(); renderAll(); openEditor(r.id);
     setTimeout(() => { $('fName').focus(); $('fName').select(); }, 250);
@@ -992,14 +1037,47 @@ LIMIT 2000`;
     }
     return null;
   }
-  function flattenSf(rec, prefix = '', out = {}) {
-    for (const [k, v] of Object.entries(rec)) {
-      if (k === 'attributes') continue;
-      const key = prefix ? prefix + '.' + k : k;
-      if (v && typeof v === 'object' && !Array.isArray(v)) flattenSf(v, key, out);
-      else out[key] = v == null ? '' : v;
+  function fixYear(y) {
+    y = +y;
+    if (y < 100) y = y >= 40 ? y + 2500 - 543 : 2000 + y; // 2-digit: 69 → พ.ศ. 2569, 25 → ค.ศ. 2025
+    if (y > 2400) y -= 543;                                // พ.ศ. → ค.ศ.
+    return y;
+  }
+  // Guess day/month order for a date column: Thai reports are usually d/m/y, US exports m/d/y
+  function detectDateOrder(values) {
+    let dmy = 0, mdy = 0;
+    for (const v of values) {
+      const m = String(v ?? '').trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-]\d{2,4}/);
+      if (!m) continue;
+      if (+m[1] > 12) dmy++; else if (+m[2] > 12) mdy++;
     }
-    return out;
+    return mdy > dmy ? 'mdy' : 'dmy';
+  }
+  function parseDate(v, order = 'dmy') {
+    if (v == null || v === '') return null;
+    let t = null;
+    if (v instanceof Date) t = v.getTime();
+    else if (typeof v === 'number') {
+      if (v > 20000 && v < 80000) t = Math.round((v - 25569) * DAY);   // Excel serial date
+      else if (v > 1e11) t = v;                                        // epoch ms
+    } else {
+      const s = String(v).trim();
+      let m;
+      if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) t = new Date(fixYear(m[1]), m[2] - 1, +m[3]).getTime();
+      else if ((m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/))) {
+        const [d, mo] = order === 'mdy' ? [+m[2], +m[1]] : [+m[1], +m[2]];
+        if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) t = new Date(fixYear(m[3]), mo - 1, d).getTime();
+      } else if ((m = s.match(/^(\d{1,2})\s*([ก-๙.]+)\s*(\d{2,4})/))) {
+        const mi = TH_MONTHS.indexOf(m[2].replace(/\./g, ''));
+        if (mi >= 0) t = new Date(fixYear(m[3]), mi, +m[1]).getTime();
+      } else {
+        const p = Date.parse(s);
+        if (!Number.isNaN(p)) t = p;
+      }
+    }
+    if (t == null || Number.isNaN(t)) return null;
+    if (t < Date.UTC(2000, 0, 1) || t > Date.now() + 2 * DAY) return null;
+    return t;
   }
   const normKey = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
   function keyOf(r) {
@@ -1038,10 +1116,10 @@ LIMIT 2000`;
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'updated', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
-        const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)));
+        const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)));
         if (h) { out[f] = h; used.add(h); break; }
       }
     }
@@ -1059,7 +1137,8 @@ LIMIT 2000`;
       `<label for="mf_${k}">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</label><select id="mf_${k}" data-field="${k}">${opts(mapping[k])}</select>`
     ).join('');
     $('mapFields').querySelectorAll('select').forEach(s => s.addEventListener('change', () => {
-      if (s.dataset.field === 'status') renderStatusValues(); else updatePreview();
+      if (s.dataset.field === 'status') renderStatusValues();
+      else { if (s.dataset.field === 'updated') pending.dateOrder = null; updatePreview(); }
     }));
     $('optReplace').checked = false;
     $('optGeo').checked = false;
@@ -1093,6 +1172,10 @@ LIMIT 2000`;
   function getSoldSet() {
     return new Set([...$('statusVals').querySelectorAll('input:checked')].map(i => i.value));
   }
+  function dateOrderFor(col) {
+    if (!pending.dateOrder) pending.dateOrder = detectDateOrder(pending.rows.slice(0, 500).map(r => r[col]));
+    return pending.dateOrder;
+  }
   function rowToRecord(row, m, soldSet, source) {
     const get = (k) => (m[k] ? String(row[m[k]] ?? '').trim() : '');
     let lat = parseNum(m.lat ? row[m.lat] : ''), lng = parseNum(m.lng ? row[m.lng] : '');
@@ -1106,16 +1189,31 @@ LIMIT 2000`;
       sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
       address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'),
       status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
+      // undefined = no date column mapped; null = column mapped but blank/unreadable
+      fileDate: m.updated ? parseDate(row[m.updated], dateOrderFor(m.updated)) : undefined,
     };
   }
   function updatePreview() {
     if (!pending) return;
     const m = getMapping(), sold = getSoldSet();
     let s = 0, noGeo = 0;
+    const ages = Object.fromEntries(AGE_TIERS.map(t => [t.k, 0]));
+    let noDate = 0;
     for (const row of pending.rows) {
       const r = rowToRecord(row, m, sold, pending.source);
       if (r.status === 'sold') s++;
       if (!hasCoord(r)) noGeo++;
+      if (m.updated) { if (!r.fileDate) noDate++; ages[ageTier({ lastUpdate: r.fileDate }).k]++; }
+    }
+    if (m.updated) {
+      $('ageHint').innerHTML = `อ่านวันที่จากคอลัมน์ <b>${esc(m.updated)}</b> (รูปแบบ ${pending.dateOrder === 'mdy' ? 'เดือน/วัน/ปี' : 'วัน/เดือน/ปี'})`
+        + (noDate ? ` · ${noDate.toLocaleString()} ร้านไม่มีวันที่ → นับเป็น “เกิน 1 ปี”` : '')
+        + ' · ถ้าร้านเดิมเคยเช็คอิน/แก้ไขในแอปล่าสุดกว่า จะใช้วันที่ล่าสุดเสมอ';
+      $('pvAge').innerHTML = AGE_TIERS.map(t =>
+        `<span class="${t.badge ? 'age-' + t.k : ''}" style="${t.badge ? 'color:#fff' : 'color:var(--ok)'}">${t.badge || '✅'} ${esc(t.label)}: ${ages[t.k].toLocaleString()}</span>`).join('');
+    } else {
+      $('ageHint').innerHTML = '⚠️ ไม่ได้เลือกคอลัมน์วันที่ → ร้านใหม่จะนับวันอัปเดตเป็น <b>วันนี้</b> (ร้านเดิมใช้วันที่เดิม) · แนะนำให้ใส่ Last Activity Date / Last Modified Date ใน Report';
+      $('pvAge').innerHTML = '';
     }
     $('pvSold').textContent = s.toLocaleString();
     $('pvUnsold').textContent = (pending.rows.length - s).toLocaleString();
@@ -1150,10 +1248,14 @@ LIMIT 2000`;
           geoApprox: keepPos ? ex.geoApprox : false,
           source: ex.source === 'manual' ? 'manual' : source,
           manual: keep ? ex.manual : {},
+          // newest of: date in the file, or the last check-in/edit made in the app
+          lastUpdate: Math.max(inc.fileDate || 0, ex.lastUpdate || 0) || (inc.fileDate === undefined ? ex.lastUpdate : null),
         });
+        delete ex.fileDate;
         touch(ex); updated++;
       } else {
-        const r = { id: uid(), note: '', visits: [], manual: {}, ...inc };
+        const r = { id: uid(), note: '', visits: [], manual: {}, ...inc, lastUpdate: inc.fileDate === undefined ? Date.now() : inc.fileDate };
+        delete r.fileDate;
         touch(r); state.records.push(r); idx.set(k, r); added++;
       }
     }
@@ -1163,7 +1265,7 @@ LIMIT 2000`;
       state.records = state.records.filter(r => r.source === 'manual' || seen.has(keyOf(r)));
       removed = before - state.records.length;
     }
-    if (source === 'sf') state.settings.lastSync = Date.now();
+    state.settings.lastSync = Date.now();
     save(); closeModal('mapModal'); pending = null;
     closeEditor(); renderAll(); fitAll();
     toast(`✅ นำเข้าแล้ว: เพิ่ม ${added} · อัปเดต ${updated}${removed ? ` · ลบ ${removed}` : ''} ร้าน`, 4000);
@@ -1197,114 +1299,6 @@ LIMIT 2000`;
     toast(`📍 หาพิกัดได้ ${ok} จาก ${list.length} ร้าน${ok < list.length ? ' · ร้านที่เหลือปักหมุดเองได้' : ''}`, 5000);
   }
 
-  /* ───────────────────────── Salesforce (OAuth 2.0 PKCE + REST) ───────────────────────── */
-  const redirectUri = () => location.origin + location.pathname;
-  const instBase = () => (state.settings.sf.instanceUrl || '').trim().replace(/\/+$/, '');
-  function getToken() { try { return JSON.parse(sessionStorage.getItem(SS_TOKEN) || 'null'); } catch (e) { return null; } }
-  function setToken(t) { try { t ? sessionStorage.setItem(SS_TOKEN, JSON.stringify(t)) : sessionStorage.removeItem(SS_TOKEN); } catch (e) { /* ignore */ } }
-  const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const randStr = (n) => b64url(crypto.getRandomValues(new Uint8Array(n))).slice(0, n);
-
-  function readSfForm() {
-    const sf = state.settings.sf;
-    sf.instanceUrl = $('sfInstance').value.trim().replace(/\/+$/, '');
-    sf.clientId = $('sfClient').value.trim();
-    sf.soql = $('sfSoql').value.trim() || DEFAULT_SOQL;
-    save();
-  }
-  function openSfModal() {
-    const sf = state.settings.sf;
-    $('sfInstance').value = sf.instanceUrl || '';
-    $('sfClient').value = sf.clientId || '';
-    $('sfSoql').value = sf.soql || DEFAULT_SOQL;
-    $('sfCallback').value = redirectUri();
-    $('sfOrigin').value = location.origin;
-    const t = getToken();
-    $('sfConn').className = 'conn' + (t ? ' ok' : '');
-    $('sfConn').textContent = t ? `🟢 เชื่อมต่อแล้ว · ${t.instance_url}` : '⚪ ยังไม่ได้เชื่อมต่อ — กด “เชื่อมต่อ & Sync” เพื่อ Login Salesforce';
-    $('sfGo').textContent = t ? '🔄 Sync ตอนนี้' : '🔄 เชื่อมต่อ & Sync';
-    $('sfLogout').style.visibility = t ? 'visible' : 'hidden';
-    openModal('sfModal');
-  }
-  async function sfConnect() {
-    readSfForm();
-    const inst = instBase(), sf = state.settings.sf;
-    if (!/^https:\/\//i.test(inst)) { toast('⚠️ ใส่ Salesforce URL ให้ถูกต้อง (ขึ้นต้นด้วย https://)'); return; }
-    if (!sf.clientId) { toast('⚠️ ใส่ Consumer Key ก่อน (ดูวิธีตั้งค่าครั้งแรกด้านล่าง)'); return; }
-    if (!window.crypto || !crypto.subtle) { toast('⚠️ ต้องเปิดหน้านี้ผ่าน https เพื่อเชื่อมต่อ Salesforce'); return; }
-    const verifier = randStr(64);
-    const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
-    const st = randStr(20);
-    try { sessionStorage.setItem(SS_PKCE, JSON.stringify({ verifier, state: st, inst, autoSync: true })); }
-    catch (e) { toast('⚠️ เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูลชั่วคราว'); return; }
-    const p = new URLSearchParams({
-      response_type: 'code', client_id: sf.clientId, redirect_uri: redirectUri(),
-      code_challenge: challenge, code_challenge_method: 'S256', state: st, scope: 'api',
-    });
-    location.href = `${inst}/services/oauth2/authorize?${p}`;
-  }
-  async function handleOAuthReturn() {
-    const p = new URLSearchParams(location.search);
-    if (!p.has('code') && !p.has('error')) return;
-    history.replaceState(null, '', redirectUri() + location.hash);
-    if (p.get('error')) { toast('⚠️ Salesforce: ' + (p.get('error_description') || p.get('error')), 6000); return; }
-    let saved = null;
-    try { saved = JSON.parse(sessionStorage.getItem(SS_PKCE) || 'null'); sessionStorage.removeItem(SS_PKCE); } catch (e) { /* ignore */ }
-    if (!saved || saved.state !== p.get('state')) { toast('⚠️ การเชื่อมต่อไม่ถูกต้อง (state ไม่ตรง) ลองใหม่อีกครั้ง', 5000); return; }
-    toast('🔐 กำลังยืนยันตัวตนกับ Salesforce…', 0);
-    try {
-      const res = await fetch(`${saved.inst}/services/oauth2/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code', code: p.get('code'), client_id: state.settings.sf.clientId,
-          redirect_uri: redirectUri(), code_verifier: saved.verifier,
-        }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.access_token) throw new Error(j.error_description || j.error || 'HTTP ' + res.status);
-      setToken({ access_token: j.access_token, instance_url: (j.instance_url || saved.inst).replace(/\/+$/, '') });
-      toast('🟢 เชื่อมต่อ Salesforce สำเร็จ');
-      if (saved.autoSync) sfSync();
-    } catch (e) {
-      toast(e instanceof TypeError
-        ? '⚠️ เชื่อมต่อไม่ได้: ให้ Admin เพิ่ม URL นี้ใน Salesforce CORS และเปิด “Enable CORS for OAuth endpoints”'
-        : '⚠️ Salesforce: ' + e.message, 8000);
-    }
-  }
-  async function sfSync() {
-    const t = getToken();
-    if (!t) return sfConnect();
-    const soql = state.settings.sf.soql || DEFAULT_SOQL;
-    const v = state.settings.sf.apiVersion || 'v60.0';
-    let url = `${t.instance_url}/services/data/${v}/query?q=${encodeURIComponent(soql)}`;
-    const all = [];
-    closeModal('sfModal');
-    try {
-      while (url) {
-        toast(`🔄 กำลังดึงข้อมูลจาก Salesforce… ${all.length.toLocaleString()} ร้าน`, 0);
-        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t.access_token, Accept: 'application/json' } });
-        if (res.status === 401) {
-          setToken(null);
-          toast('🔐 Session Salesforce หมดอายุ', 8000, { label: 'Login ใหม่', fn: sfConnect });
-          return;
-        }
-        const j = await res.json().catch(() => null);
-        if (!res.ok) throw new Error((Array.isArray(j) && j[0] && j[0].message) || 'HTTP ' + res.status);
-        all.push(...j.records.map(r => flattenSf(r)));
-        url = j.done ? null : t.instance_url + j.nextRecordsUrl;
-      }
-    } catch (e) {
-      toast(e instanceof TypeError
-        ? '⚠️ ดึงข้อมูลไม่ได้: ให้ Admin เพิ่ม URL นี้ใน Salesforce → Setup → CORS'
-        : '⚠️ Salesforce: ' + e.message, 8000);
-      return;
-    }
-    hideToast();
-    if (!all.length) { toast('ไม่พบข้อมูลจาก Query นี้', 4000); return; }
-    openMapping(all, 'sf', 'Salesforce');
-  }
-
   /* ───────────────────────── Export / template / sample ───────────────────────── */
   function download(name, text) {
     const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
@@ -1321,7 +1315,10 @@ LIMIT 2000`;
       Latitude: hasCoord(r) ? r.lat : '', Longitude: hasCoord(r) ? r.lng : '',
       Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: r.note || '',
       Status_Changed_Manually: r.manual && r.manual.status ? 'Y' : '', Pin_Moved_Manually: r.manual && r.manual.pos ? 'Y' : '',
-      Approx_Location: r.geoApprox ? 'Y' : '', Visit_Count: (r.visits || []).length,
+      Approx_Location: r.geoApprox ? 'Y' : '',
+      Last_Update: r.lastUpdate ? new Date(r.lastUpdate).toISOString().slice(0, 10) : '',
+      Days_Since_Update: r.lastUpdate ? daysSince(r) : '', Staleness: ageTier(r).badge || 'Fresh',
+      Visit_Count: (r.visits || []).length,
       Last_Visit: r.visits && r.visits.length ? new Date(r.visits[r.visits.length - 1]).toISOString().slice(0, 10) : '',
       Source: r.source, Updated_At: r.updatedAt ? new Date(r.updatedAt).toISOString() : '',
     }));
@@ -1331,9 +1328,9 @@ LIMIT 2000`;
   }
   function downloadTemplate() {
     download('area-map-template.csv', Papa.unparse([
-      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว' },
-      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย' },
-      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย' },
+      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'Last Activity Date': '28/09/2026' },
+      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'Last Activity Date': '15/05/2026' },
+      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'Last Activity Date': '02/08/2025' },
     ]));
   }
   function loadSample() {
@@ -1356,6 +1353,7 @@ LIMIT 2000`;
       for (let k = 0; k < count; k++, i++) {
         const sold = rnd() < 0.38;
         const visits = rnd() < 0.5 ? [Date.now() - Math.floor(rnd() * 40) * 864e5] : [];
+        const ageDays = [2, 8, 15, 25, 40, 70, 100, 150, 200, 290, 400, 520][Math.floor(rnd() * 12)];
         recs.push({
           id: uid() + i, sfId: '001DEMO' + String(100000 + i).padStart(11, '0'),
           name: `${kinds[Math.floor(rnd() * kinds.length)]}${names[Math.floor(rnd() * names.length)]}`,
@@ -1364,6 +1362,7 @@ LIMIT 2000`;
           owner: owners[ai % owners.length], type: types[Math.floor(rnd() * types.length)],
           status: sold ? 'sold' : 'unsold', rawStatus: sold ? 'Closed Won' : 'Prospect',
           note: sold ? '' : notes[Math.floor(rnd() * notes.length)], visits, source: 'sample', manual: {}, updatedAt: Date.now(),
+          lastUpdate: Math.max(Date.now() - ageDays * DAY, visits[0] || 0),
         });
       }
     });
@@ -1391,8 +1390,7 @@ LIMIT 2000`;
     else if (act === 'template') downloadTemplate();
     else if (act === 'sample') loadSample();
     else if (act === 'fit') fitAll();
-    else if (act === 'sf') openSfModal();
-    else if (act === 'upload') openModal('uploadModal');
+    else if (act === 'upload') openUpload();
     else if (act === 'clear') {
       if (confirm('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้? (ข้อมูลใน Salesforce ไม่ถูกลบ)\nแนะนำ Export CSV เก็บไว้ก่อน')) {
         state.records = []; state.settings.lastSync = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
@@ -1411,8 +1409,11 @@ LIMIT 2000`;
     }
   });
   $('btnMenu').onclick = () => $('menu').classList.toggle('open');
-  $('btnSf').onclick = openSfModal;
-  $('btnUpload').onclick = () => openModal('uploadModal');
+  function openUpload() { $('sfUrl').value = state.settings.sfUrl || ''; openModal('uploadModal'); }
+  $('btnUpload').onclick = openUpload;
+  $('sfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim(); save(); });
+  $('staleBtn').onclick = () => { state.age = state.age === 'm1' ? '' : 'm1'; renderAll(); };
+  $('ageSel').addEventListener('change', (e) => { state.age = e.target.value; renderAll(); });
   $('btnAdd').onclick = () => setAddMode(!state.addMode);
   $('addCancel').onclick = () => setAddMode(false);
   $('addHere').onclick = () => locate((p) => { map.setView([p.lat, p.lng], 17); createAt(L.latLng(p.lat, p.lng)); });
@@ -1442,8 +1443,8 @@ LIMIT 2000`;
   $('edSave').onclick = saveEditor;
   $('btnCheckin').onclick = () => {
     const r = current(); if (!r) return;
-    r.visits = (r.visits || []).concat(Date.now()); touch(r); save(); renderList(); fillEditor(r);
-    toast('📌 บันทึกการเยี่ยมร้านวันนี้แล้ว');
+    r.visits = (r.visits || []).concat(Date.now()); touch(r); freshen(r); save(); renderAll(); openEditor(r.id, false);
+    toast('📌 เช็คอินแล้ว — นับเป็นอัปเดตวันนี้');
   };
   $('edMove').onclick = () => {
     const r = current(); if (!r || !hasCoord(r)) return;
@@ -1479,15 +1480,6 @@ LIMIT 2000`;
   drop.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
   $('mapImport').onclick = doImport;
 
-  $('sfGo').onclick = () => { readSfForm(); getToken() ? sfSync() : sfConnect(); };
-  $('sfLogout').onclick = () => { setToken(null); openSfModal(); toast('ตัดการเชื่อมต่อ Salesforce แล้ว'); };
-  $('sfUseToken').onclick = () => {
-    readSfForm();
-    const tok = $('sfToken').value.trim(), inst = instBase();
-    if (!tok || !/^https:\/\//i.test(inst)) { toast('⚠️ ใส่ Salesforce URL และ Access Token'); return; }
-    setToken({ access_token: tok, instance_url: inst }); $('sfToken').value = ''; sfSync();
-  };
-
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (state.addMode) setAddMode(false);
@@ -1500,7 +1492,8 @@ LIMIT 2000`;
   setLayer(state.settings.layer);
   renderAll();
   if (state.records.some(hasCoord)) fitAll();
-  handleOAuthReturn();
+  // staleness tiers move with the calendar: refresh pins hourly if the page stays open
+  setInterval(() => { if (!state.dragId) renderAll(); }, 3600e3);
 })();
 </script>
 </body>

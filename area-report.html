@@ -194,6 +194,7 @@
 <script src="area-map-zones.js"></script>
 <script src="area-map-tambons.js"></script>
 <script src="area-sales-team.js"></script>
+<script src="area-market.js"></script>
 <script src="area-geo.js"></script>
 <script>
 (() => {
@@ -223,6 +224,14 @@
   const NONE = '__none';
   const salesOf = (r) => { const t = tambonOf(r); return (t && TAMBON_OWNER[t]) || NONE; };
   const salesLabel = (id) => (id === NONE ? 'ยังไม่มีผู้ดูแล' : MEMBER[id] ? `${MEMBER[id].nick} · ${MEMBER[id].name}` : id);
+  // market size (restaurants in the area) entered in ⚙️ ตั้งค่า → จำนวนร้านอาหาร
+  const MARKET = settings.market || window.AREA_MARKET || { tambons: {}, zones: {} };
+  const mNum = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
+  const sumOrNull = (vals) => { let s = 0, any = false; vals.forEach(v => { if (v !== null) { s += v; any = true; } }); return any ? s : null; };
+  const mTambon = (code) => mNum((MARKET.tambons || {})[code]);
+  const mZone = (zid) => { const z = mNum((MARKET.zones || {})[zid]); return z !== null ? z : sumOrNull(TAMBONS.filter(t => t.zone === zid).map(t => mTambon(t.code))); };
+  const mSales = (id) => sumOrNull((id === NONE ? TAMBONS.filter(t => !TAMBON_OWNER[t.code]).map(t => t.code) : (MEMBER[id] ? MEMBER[id].tambons : [])).map(mTambon));
+  const HAS_MARKET = Object.keys(MARKET.tambons || {}).length + Object.keys(MARKET.zones || {}).length > 0;
   const tambonLabel = (code) => { const t = TAMBON_BY_CODE[code]; return t ? `${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${t.th} (${t.amphoe})` : 'ไม่ทราบตำบล'; };
   const OUTSIDE = '__outside';
   const zoneLabel = (id) => (id === OUTSIDE ? 'นอกพื้นที่ Focus' : ZONE_BY_ID[id] ? ZONE_BY_ID[id].th : id);
@@ -348,6 +357,10 @@
     const soldRs = rs.filter(r => r.status === 'sold');
     const nAnd = soldRs.filter(r => r.platform === 'android').length, nIpad = soldRs.filter(r => r.platform === 'ipad').length, nUnk = sold - nAnd - nIpad;
     const sp = (n) => (sold ? Math.round(n / sold * 100) + '%' : '–');
+    const mPct = (n, d) => (d ? (n / d * 100).toFixed(n / d < 0.1 ? 1 : 0) + '%' : '–');
+    const scopeMarket = ui.by === 'sales'
+      ? (ui.sales === 'all' ? sumOrNull(ZONES.map(z => mZone(z.id))) : mSales(ui.sales))
+      : ZONE_BY_ID[ui.zone] ? mZone(ui.zone) : ui.zone === OUTSIDE ? null : sumOrNull(ZONES.map(z => mZone(z.id)));
     const platLine = sold ? `ร้านที่ใช้ Wongnai POS: <b>🤖 Android ${fmt(nAnd)}</b> (${sp(nAnd)}) · <b>🍎 iPad ${fmt(nIpad)}</b> (${sp(nIpad)})${nUnk ? ` · ไม่ระบุ ${fmt(nUnk)}` : ''}` : '';
     const cur = visitsIn(rs, P.cur), prev = visitsIn(rs, P.prev);
     const lastVisit = (r) => (r.visits && r.visits.length ? Math.max(...r.visits) : 0);
@@ -371,6 +384,7 @@
           <div class="meter-key"><span class="key"><i class="sw" style="background:var(--ok)"></i>ใช้ Wongnai POS ${fmt(sold)} ร้าน (${pct(sold)}%)</span>
             <span class="key"><i class="sw" style="background:var(--red)"></i>ไม่ใช้ ${fmt(unsold)} ร้าน (${pct(unsold)}%)</span></div>
           <div class="plat-split">${platLine}</div>
+          ${scopeMarket !== null ? `<div class="plat-split">🍽️ ร้านอาหารในพื้นที่ <b>${fmt(scopeMarket)}</b> ร้าน · ส่วนแบ่งตลาด Wongnai POS <b>${mPct(sold, scopeMarket)}</b> · อยู่ในข้อมูล ${mPct(total, scopeMarket)}</div>` : ''}
         </div>
         <div class="kpis">
           ${tile('ร้านทั้งหมด', fmt(total), '<small>ร้าน</small>')}
@@ -398,17 +412,17 @@
 
     // breakdown tables (all scoped by the filters above)
     const head = (first) => `<thead><tr><th>${first}</th><th class="n">ร้าน</th><th class="n">ใช้ Wongnai POS</th><th class="n">🤖 Android</th><th class="n">🍎 iPad</th><th>% ใช้</th><th class="n">ไม่ใช้</th>
-      <th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
-    const groupRow = (name, list) => {
+      ${HAS_MARKET ? '<th class="n">ร้านอาหาร (ตลาด)</th><th class="n">ส่วนแบ่งตลาด</th>' : ''}<th class="n">เข้าพบ (ช่วงนี้)</th><th class="n">ช่วงก่อน</th><th class="n">เปลี่ยนแปลง</th></tr></thead>`;
+    const groupRow = (name, list, mk = null) => {
       const t = list.length, s = list.filter(r => r.status === 'sold').length;
       const c = visitsIn(list, P.cur), p = visitsIn(list, P.prev), d = delta(c.n, p.n);
       const sp = t ? Math.round(s / t * 100) : 0;
       const a = list.filter(r => r.status === 'sold' && r.platform === 'android').length, ip = list.filter(r => r.status === 'sold' && r.platform === 'ipad').length;
       return { t, c: c.n, html: `<td>${esc(name)}</td><td class="n">${fmt(t)}</td><td class="n">${fmt(s)}</td><td class="n">${fmt(a)}</td><td class="n">${fmt(ip)}</td>
         <td><span class="mini">${s ? `<i style="flex:${s};background:var(--ok)"></i>` : ''}${t - s ? `<i style="flex:${t - s};background:var(--red);opacity:.85"></i>` : ''}</span>${sp}%</td>
-        <td class="n">${fmt(t - s)}</td><td class="n">${fmt(c.n)}</td><td class="n">${fmt(p.n)}</td><td class="n ${d.cls}">${d.txt}</td>` };
+        <td class="n">${fmt(t - s)}</td>${HAS_MARKET ? `<td class="n">${mk === null ? '–' : fmt(mk)}</td><td class="n">${mk ? mPct(s, mk) : '–'}</td>` : ''}<td class="n">${fmt(c.n)}</td><td class="n">${fmt(p.n)}</td><td class="n ${d.cls}">${d.txt}</td>` };
     };
-    const totalRow = groupRow('รวม', rs);
+    const totalRow = groupRow('รวม', rs, scopeMarket);
     const table = (title, sub, first, rows, keepEmpty = false) => {
       rows = rows.filter(r => r.t || keepEmpty);
       if (!rows.length) return '';
@@ -416,31 +430,31 @@
         + rows.map(r => `<tr>${r.html}</tr>`).join('') + (rows.length > 1 ? `<tr class="total">${totalRow.html}</tr>` : '') + '</tbody></table></div></div>';
     };
     const vsNote = `เข้าพบ: ${esc(P.curLabel)} เทียบ ${esc(P.prevLabel)}`;
-    const groupBy = (keyFn, ids, labelFn) => ids.map(id => groupRow(labelFn(id), rs.filter(r => keyFn(r) === id)));
+    const groupBy = (keyFn, ids, labelFn, mkFn = () => null) => ids.map(id => groupRow(labelFn(id), rs.filter(r => keyFn(r) === id), mkFn(id)));
 
     // by salesperson (territory = sub-districts assigned in the team editor)
     const salesIds = ui.by === 'sales' && ui.sales !== 'all' ? [ui.sales] : [...TEAM.map(m => m.id), NONE];
     const inFocus = rs.filter(r => zoneOf(r));
     if (inFocus.length && !(ui.by === 'sales' && ui.sales !== 'all')) {
-      const rows = groupBy(salesOf, salesIds, salesLabel).sort((a, b) => b.c - a.c || b.t - a.t);
+      const rows = groupBy(salesOf, salesIds, salesLabel, mSales).sort((a, b) => b.c - a.c || b.t - a.t);
       html += table('แยกตามเซลส์ (พื้นที่ที่ดูแล)', `${vsNote} · เรียงจากเข้าพบมากที่สุด`, 'เซลส์', rows, true);
     }
     // by zone
     if (!(ui.by === 'area' && ui.zone && ui.zone !== 'focus')) {
       const zoneIds = ui.by === 'area' && ui.zone === 'focus' ? ZONES.map(z => z.id) : [...ZONES.map(z => z.id), OUTSIDE];
-      html += table('แยกตามพื้นที่', vsNote, 'พื้นที่', groupBy(r => zoneOf(r) || OUTSIDE, zoneIds, zoneLabel));
+      html += table('แยกตามพื้นที่', vsNote, 'พื้นที่', groupBy(r => zoneOf(r) || OUTSIDE, zoneIds, zoneLabel, (id) => (id === OUTSIDE ? null : mZone(id))));
     }
     // by sub-district when one zone or one salesperson is selected
     if ((ui.by === 'area' && ZONE_BY_ID[ui.zone]) || (ui.by === 'sales' && ui.sales !== 'all')) {
       const codes = ui.by === 'area' ? TAMBONS.filter(t => t.zone === ui.zone).map(t => t.code)
         : ui.sales === NONE ? TAMBONS.filter(t => !TAMBON_OWNER[t.code]).map(t => t.code)
         : (MEMBER[ui.sales] ? MEMBER[ui.sales].tambons : []);
-      const rows = groupBy(tambonOf, codes, (c) => tambonLabel(c) + (ui.by === 'area' && TAMBON_OWNER[c] ? ` · 👤 ${MEMBER[TAMBON_OWNER[c]].nick}` : ''))
+      const rows = groupBy(tambonOf, codes, (c) => tambonLabel(c) + (ui.by === 'area' && TAMBON_OWNER[c] ? ` · 👤 ${MEMBER[TAMBON_OWNER[c]].nick}` : ''), mTambon)
         .sort((a, b) => b.t - a.t);
       const title = ui.by === 'area' ? `แยกตามตำบล · ${esc(zoneLabel(ui.zone))}` : `ตำบลที่ ${esc(MEMBER[ui.sales] ? MEMBER[ui.sales].nick : 'ยังไม่มีผู้ดูแล')} ดูแล`;
       const empty = ui.by === 'sales' && ui.sales !== NONE && !codes.length;
       html += empty ? `<div class="card"><h2>${title}</h2><div class="sub">ยังไม่ได้กำหนดพื้นที่ — ไปที่หน้าแผนที่ → 👤 เซลส์ → ⚙️ จัดการทีม</div></div>`
-        : table(title, `${vsNote} · ตำบลที่มีร้านเท่านั้น`, 'ตำบล / แขวง', rows);
+        : table(title, `${vsNote}${HAS_MARKET ? '' : ' · ตำบลที่มีร้านเท่านั้น'}`, 'ตำบล / แขวง', rows, HAS_MARKET);
     }
 
     html += `<p class="foot">ที่มาของข้อมูล: รายชื่อร้านและสถานะ POS จากไฟล์ Salesforce ที่อัปโหลดในหน้าแผนที่ · การเข้าพบ = การกด “เช็คอินวันนี้” ในแอป

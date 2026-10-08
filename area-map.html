@@ -219,9 +219,33 @@
     .tb-pop { font-family: 'Sarabun', sans-serif; min-width: 190px; }
     .tb-pop b { font-size: 14px; }
     .tb-pop select { width: 100%; margin-top: 6px; padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; }
+    /* settings page */
+    .modal.settings .modal-card { max-width: 980px; height: calc(100vh - 32px); }
+    .modal.settings .modal-head, .modal.settings .modal-foot, .set-tabs { flex-shrink: 0; }
+    .set-tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .set-tabs button { border: 0; background: none; padding: 10px 14px; font-weight: 700; color: var(--text-2); border-bottom: 2.5px solid transparent; white-space: nowrap; }
+    .set-tabs button.on { color: var(--brand); border-bottom-color: var(--brand); }
+    .modal.settings .modal-body { padding-top: 14px; }
+    .modal.settings section { display: flex; flex-direction: column; gap: 12px; }
+    .modal.settings section[hidden] { display: none; }
+    .set-card { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .set-card.danger-zone { border-color: color-mix(in srgb, var(--red) 40%, var(--border)); }
+    .set-input { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); outline: none; }
+    .set-input:focus { border-color: var(--brand); }
+    .mk-zone { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+    .mk-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 800; }
+    .mk-head .sum { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-2); }
+    .mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 14px; margin-top: 8px; }
+    .mk-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .mk-row span { flex: 1; min-width: 0; } .mk-row small { color: var(--text-2); font-size: 11px; }
+    .mk-row input, .mk-head input { width: 86px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); text-align: right; }
+    .market-line { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+    .market-line b { color: var(--text); }
+    .market-line a { color: var(--brand); cursor: pointer; text-decoration: underline; }
+    #map:not(.mid) .zone-label { display: none; }
     /* team editor */
     .team-grid { display: grid; grid-template-columns: 220px 1fr; gap: 14px; min-height: 360px; }
-    .team-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 60vh; }
+    .team-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 62vh; }
     .tm {
       text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 12px; padding: 8px 10px; line-height: 1.3;
     }
@@ -539,6 +563,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     <span class="hide-m">เพิ่มหมุด</span>
   </button>
+  <button class="btn" id="btnSettings" title="ตั้งค่า: ทีมเซลส์ จำนวนร้านอาหาร ข้อมูล">⚙️ <span class="hide-m">ตั้งค่า</span></button>
   <button class="btn" id="btnTheme" title="ธีม: ตามเครื่อง" aria-label="สลับโหมดสว่าง/มืด">🌓</button>
   <div class="menu-wrap">
     <button class="btn" id="btnMenu" title="เมนู" aria-label="เมนู">
@@ -550,7 +575,7 @@
       <button data-act="template">📄 ดาวน์โหลดไฟล์ตัวอย่าง (Template)</button>
       <button data-act="sample">🧪 โหลดข้อมูลตัวอย่าง (Demo)</button>
       <hr>
-      <button data-act="team">👥 ทีมเซลส์ & พื้นที่ดูแล</button>
+      <button data-act="settings">⚙️ ตั้งค่า (ทีมเซลส์ · จำนวนร้านอาหาร · ข้อมูล)</button>
       <button data-act="osm">🍜 ดึงร้านอาหารในพื้นที่จาก OpenStreetMap</button>
       <button data-act="revall">🏠 เติมที่อยู่จากพิกัด (ร้านที่ยังไม่มีที่อยู่)</button>
       <button data-act="fit">🗺️ ซูมให้เห็นทุกหมุด</button>
@@ -579,6 +604,7 @@
         <div class="bar"><div id="penBar" style="width:0%"></div></div>
         <div class="bar-label"><span>สัดส่วนร้านที่ใช้ Wongnai POS</span><b id="penTxt">0%</b></div>
       </div>
+      <div class="market-line" id="marketLine"></div>
       <button class="stale-alert" id="staleBtn" title="แสดงเฉพาะร้านที่ไม่อัปเดตเกิน 1 เดือน">⏰ ร้านที่ไม่อัปเดตเกิน 1 เดือน<b id="nStale">0</b></button>
       <div class="side-row">
         <select id="ownerSel" title="กรองตาม Account Owner ใน Salesforce"><option value="">SF Owner ทั้งหมด</option></select>
@@ -772,24 +798,76 @@
   </div>
 </div>
 
-<!-- Team / territory modal -->
-<div class="modal" id="teamModal">
-  <div class="modal-card wide">
+<!-- Settings page: team & territories / restaurant counts / data & system -->
+<div class="modal settings" id="settingsModal">
+  <div class="modal-card">
     <div class="modal-head">
-      <h3>👥 ทีมเซลส์ & พื้นที่ดูแล<p>เลือกเซลส์ แล้วติ๊กตำบล/แขวงที่ดูแล · 1 ตำบลมีผู้ดูแลได้ 1 คน · ติ๊กชื่ออำเภอเพื่อเลือกทั้งอำเภอ</p></h3>
+      <h3>⚙️ ตั้งค่า<p>ทีมเซลส์และพื้นที่ดูแล · จำนวนร้านอาหารในพื้นที่ · ข้อมูลและระบบ</p></h3>
       <button class="icon-btn" data-close aria-label="ปิด">✕</button>
     </div>
+    <div class="set-tabs" role="tablist">
+      <button data-stab="team">👥 ทีมเซลส์ & พื้นที่</button>
+      <button data-stab="market">🍽️ จำนวนร้านอาหาร</button>
+      <button data-stab="data">🗂️ ข้อมูล & ระบบ</button>
+    </div>
     <div class="modal-body">
-      <div class="team-grid">
-        <div class="team-list" id="teamList"></div>
-        <div class="team-edit" id="teamEdit"></div>
-      </div>
+      <section data-spane="team">
+        <div class="hint">เลือกเซลส์ แล้วติ๊กตำบล/แขวงที่ดูแล · 1 ตำบลมีผู้ดูแลได้ 1 คน · ติ๊กชื่ออำเภอเพื่อเลือกทั้งอำเภอ</div>
+        <div class="team-grid">
+          <div class="team-list" id="teamList"></div>
+          <div class="team-edit" id="teamEdit"></div>
+        </div>
+        <div class="side-row" style="margin-top:4px">
+          <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
+          <button class="btn danger" id="teamReset" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">🔒 ↺ ใช้ค่าทีมจากไฟล์กลาง</button>
+        </div>
+      </section>
+      <section data-spane="market" hidden>
+        <div class="hint">ใส่จำนวนร้านอาหารทั้งหมดในแต่ละตำบล (ขนาดตลาด) เพื่อคำนวณ “ส่วนแบ่งตลาด” = ร้านที่ใช้ Wongnai POS ÷ ร้านอาหารทั้งหมด
+          · ถ้ารู้แค่ยอดรวมทั้งอำเภอ ใส่ที่ช่อง “รวมทั้งเขต” ได้เลย (ช่องนี้จะใช้แทนผลรวมตำบล)</div>
+        <div id="marketEdit"></div>
+        <div class="side-row" style="margin-top:4px">
+          <button class="btn" id="marketDownload" title="ดาวน์โหลด area-market.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์จำนวนร้าน (แชร์ให้ทุกคน)</button>
+          <button class="btn danger" id="marketReset">🔒 ↺ ล้างจำนวนร้าน / ใช้ค่าจากไฟล์กลาง</button>
+        </div>
+      </section>
+      <section data-spane="data" hidden>
+        <div class="set-card">
+          <b>📅 ข้อมูลในเครื่องนี้</b>
+          <div id="setDataInfo" class="hint"></div>
+          <div class="side-row"><button class="btn" data-act="upload">⬆️ อัปโหลดข้อมูลจาก Salesforce</button><button class="btn" data-act="export">⬇️ Export CSV</button></div>
+        </div>
+        <div class="set-card">
+          <b>🔗 Salesforce URL ของบริษัท</b>
+          <div class="hint">ใช้กับปุ่ม “Salesforce” ในหน้ารายละเอียดร้าน (ต้องมีคอลัมน์ Salesforce ID ตอนอัปโหลด)</div>
+          <input id="setSfUrl" class="set-input" placeholder="https://yourcompany.lightning.force.com">
+        </div>
+        <div class="set-card">
+          <b>🧰 เครื่องมือข้อมูล</b>
+          <div class="side-row" style="flex-wrap:wrap"><button class="btn" data-act="revall">🏠 เติมที่อยู่จากพิกัด</button><button class="btn" data-act="osm">🍜 ดึงร้านจาก OpenStreetMap</button><button class="btn" data-act="template">📄 ไฟล์ตัวอย่าง</button><button class="btn" data-act="sample">🧪 ข้อมูลตัวอย่าง</button></div>
+        </div>
+        <div class="set-card danger-zone">
+          <b>🔒 ล้างข้อมูล (ต้องใส่รหัสผ่าน)</b>
+          <div class="hint">การล้างข้อมูลย้อนกลับไม่ได้ — แนะนำ Export CSV เก็บไว้ก่อน · ข้อมูลใน Salesforce ไม่ถูกลบ</div>
+          <div class="side-row" style="flex-wrap:wrap"><button class="btn danger" data-act="clear">🗑️ ล้างร้านทั้งหมดในเครื่องนี้</button><button class="btn danger" id="clearVisits">🗑️ ล้างประวัติเช็คอิน/เข้าพบ</button></div>
+        </div>
+      </section>
     </div>
     <div class="modal-foot">
-      <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
-      <button class="btn" id="teamReset" style="margin-right:auto" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">↺ ใช้ค่าจากไฟล์กลาง</button>
       <button class="btn primary" data-close>เสร็จ</button>
     </div>
+  </div>
+</div>
+
+<!-- Password check before clearing anything -->
+<div class="modal" id="pwModal">
+  <div class="modal-card" style="max-width:360px">
+    <div class="modal-head"><h3>🔒 ใส่รหัสผ่าน<p id="pwWhat"></p></h3></div>
+    <div class="modal-body">
+      <input id="pwInput" class="set-input" type="password" inputmode="numeric" autocomplete="off" placeholder="รหัสผ่าน">
+      <div class="hint" id="pwErr" style="color:var(--red);min-height:18px"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" id="pwCancel">ยกเลิก</button><button class="btn primary" id="pwOk">ยืนยัน</button></div>
   </div>
 </div>
 
@@ -802,6 +880,7 @@
 <script src="area-map-zones.js"></script>
 <script src="area-map-tambons.js"></script>
 <script src="area-sales-team.js"></script>
+<script src="area-market.js"></script>
 <script src="area-geo.js"></script>
 <script>
 (() => {
@@ -1087,6 +1166,13 @@
     zoneLayer.clearLayers();
     if (isSalesView()) { renderSalesZones(); return; }
     const single = state.zone && state.zone !== 'focus' ? ZONE_BY_ID[state.zone] : null;
+    // sub-district (ตำบล / แขวง) lines inside the zones on screen; names show from zoom 12
+    const shown = new Set((single ? [single] : ZONES).map(z => z.id));
+    TAMBONS.filter(t => shown.has(t.zone)).forEach(t => {
+      L.polygon(t.latlngs, { color: '#5b6575', weight: 1, opacity: 0.6, dashArray: '4 3', fill: false, interactive: false })
+        .bindTooltip(`${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${esc(t.th)}`, { permanent: true, direction: 'center', className: 'tb-label' })
+        .addTo(zoneLayer);
+    });
     for (const z of ZONES) {
       if (single && z !== single) {
         // other focus zones stay visible as faint dashed outlines
@@ -1181,12 +1267,137 @@
   function assignTambon(code, memberId) {
     setTeam(team().map(m => ({ ...m, tambons: (m.tambons || []).filter(c => c !== code).concat(m.id === memberId ? [code] : []) })));
     renderZones(); renderAll();
-    if ($('teamModal').classList.contains('open')) renderTeam();
+    if ($('settingsModal').classList.contains('open') && settingsTab === 'team') renderTeam();
   }
 
   /* ── Team editor ── */
   let teamSel = null;
-  function openTeam(id) { teamSel = id || teamSel || (team()[0] || {}).id || null; renderTeam(); openModal('teamModal'); }
+  function openTeam(id) { openSettings('team', id); }
+
+  /* ── Settings page ── */
+  let settingsTab = 'team';
+  function openSettings(tab, memberId) {
+    if (tab) settingsTab = tab;
+    if (memberId) teamSel = memberId;
+    teamSel = teamSel || (team()[0] || {}).id || null;
+    document.querySelectorAll('[data-stab]').forEach(b => b.classList.toggle('on', b.dataset.stab === settingsTab));
+    document.querySelectorAll('[data-spane]').forEach(p => { p.hidden = p.dataset.spane !== settingsTab; });
+    if (settingsTab === 'team') renderTeam();
+    else if (settingsTab === 'market') renderMarket();
+    else renderSetData();
+    openModal('settingsModal');
+  }
+  document.querySelector('.set-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-stab]'); if (b) openSettings(b.dataset.stab); });
+  function renderSetData() {
+    $('setDataInfo').innerHTML = `<div>มีร้านในแผนที่ <b>${state.records.length.toLocaleString()}</b> ร้าน</div>` + $('dataInfo').innerHTML.replace(/<div class="row">/g, '<div>');
+    $('setSfUrl').value = state.settings.sfUrl || '';
+  }
+  $('setSfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim().replace(/\/+$/, ''); save(); toast('💾 บันทึก Salesforce URL แล้ว'); });
+
+  /* ── Password before clearing anything (shared simple code — keeps accidental clicks out, not real security) ── */
+  const CLEAR_PASSWORD = '1234';
+  function askPassword(what) {
+    return new Promise((resolve) => {
+      $('pwWhat').textContent = what;
+      $('pwInput').value = ''; $('pwErr').textContent = '';
+      openModal('pwModal');
+      setTimeout(() => $('pwInput').focus(), 50);
+      const done = (ok) => { closeModal('pwModal'); $('pwOk').onclick = $('pwCancel').onclick = $('pwInput').onkeydown = null; resolve(ok); };
+      const check = () => {
+        if ($('pwInput').value === CLEAR_PASSWORD) done(true);
+        else { $('pwErr').textContent = 'รหัสผ่านไม่ถูกต้อง'; $('pwInput').select(); }
+      };
+      $('pwOk').onclick = check;
+      $('pwCancel').onclick = () => done(false);
+      $('pwInput').onkeydown = (e) => { if (e.key === 'Enter') check(); if (e.key === 'Escape') done(false); };
+    });
+  }
+
+  /* ── Restaurant counts (market size) per sub-district / zone ── */
+  const market = () => state.settings.market || window.AREA_MARKET || { tambons: {}, zones: {} };
+  const num = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
+  function tambonsCount(codes) {
+    const m = market().tambons || {};
+    let sum = 0, any = false;
+    codes.forEach(c => { const v = num(m[c]); if (v !== null) { sum += v; any = true; } });
+    return any ? sum : null;
+  }
+  function zoneCount(zid) {
+    const z = num((market().zones || {})[zid]);
+    return z !== null ? z : tambonsCount(TAMBONS.filter(t => t.zone === zid).map(t => t.code));
+  }
+  // Restaurants in the area currently on screen (null when nobody has entered a number)
+  function marketForView() {
+    if (isSalesView()) {
+      const sel = salesSel();
+      if (sel === 'all') return marketZones(ZONES.map(z => z.id));
+      return tambonsCount(salesTambons().map(t => t.code));
+    }
+    if (ZONE_BY_ID[state.zone]) return zoneCount(state.zone);
+    return marketZones(ZONES.map(z => z.id));
+  }
+  function marketZones(ids) {
+    let sum = 0, any = false;
+    ids.forEach(id => { const v = zoneCount(id); if (v !== null) { sum += v; any = true; } });
+    return any ? sum : null;
+  }
+  function renderMarketLine(base) {
+    const n = marketForView();
+    if (n === null || !ZONES.length || (!state.zone && !isSalesView())) {
+      $('marketLine').innerHTML = state.zone || isSalesView() ? '🍽️ <a data-act="market">ตั้งค่าจำนวนร้านอาหารในพื้นที่</a> เพื่อดูส่วนแบ่งตลาด' : '';
+      return;
+    }
+    const sold = base.filter(r => r.status === 'sold').length;
+    const pct = (x) => (n ? (x / n * 100).toFixed(x / n < 0.1 ? 1 : 0) : '0');
+    $('marketLine').innerHTML = `🍽️ ร้านอาหารในพื้นที่ <b>${n.toLocaleString()}</b> ร้าน · ใช้ Wongnai POS <b>${pct(sold)}%</b> ของตลาด`
+      + ` · อยู่ในแผนที่ ${pct(base.length)}% <a data-act="market" title="แก้จำนวนร้านอาหาร">แก้</a>`;
+  }
+  function setMarket(fn) {
+    const m = JSON.parse(JSON.stringify(market()));
+    m.tambons = m.tambons || {}; m.zones = m.zones || {};
+    fn(m); state.settings.market = m; save(); renderStats();
+  }
+  function renderMarket() {
+    const m = market();
+    const inMap = {};
+    state.records.forEach(r => { const t = tambonOf(r); if (t) inMap[t] = (inMap[t] || 0) + 1; });
+    const val = (v) => (num(v) === null ? '' : v);
+    $('marketEdit').innerHTML = ZONES.map(z => {
+      const ts = TAMBONS.filter(t => t.zone === z.id);
+      const sumT = tambonsCount(ts.map(t => t.code));
+      return `<div class="mk-zone"><div class="mk-head">${esc(z.th)}
+          <label style="font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:6px">รวมทั้งเขต <input type="number" min="0" inputmode="numeric" data-mkz="${z.id}" value="${val((m.zones || {})[z.id])}" placeholder="${sumT ?? ''}"></label>
+          <span class="sum">ผลรวมตำบล ${sumT === null ? '–' : sumT.toLocaleString()} · ใช้ในการคำนวณ ${zoneCount(z.id) === null ? '–' : zoneCount(z.id).toLocaleString()}</span></div>
+        <div class="mk-grid">${ts.map(t => `<label class="mk-row"><span>${z.id === 'bang-phlat' ? 'แขวง' : 'ต.'}${esc(t.th)}${ts.some(x => x.amphoe !== t.amphoe) ? ` <small>อ.${esc(t.amphoe)}</small>` : ''}<br><small>ในแผนที่ ${inMap[t.code] || 0} ร้าน</small></span>
+          <input type="number" min="0" inputmode="numeric" data-mkt="${t.code}" value="${val((m.tambons || {})[t.code])}"></label>`).join('')}</div></div>`;
+    }).join('');
+  }
+  $('marketEdit').addEventListener('change', (e) => {
+    const i = e.target; const v = i.value === '' ? null : Math.max(0, Math.round(Number(i.value)));
+    if (i.dataset.mkt) setMarket(m => { if (v === null) delete m.tambons[i.dataset.mkt]; else m.tambons[i.dataset.mkt] = v; });
+    else if (i.dataset.mkz) setMarket(m => { if (v === null) delete m.zones[i.dataset.mkz]; else m.zones[i.dataset.mkz] = v; });
+    else return;
+    renderMarket();
+  });
+  $('marketDownload').onclick = () => {
+    const m = market();
+    const js = `/* Number of restaurants in each area (market size) — shared default for everyone.\n`
+      + ` * Exported from Area Map ${new Date().toISOString().slice(0, 10)}. Replace area-market.js in the repository with this file. */\n`
+      + `window.AREA_MARKET = ${JSON.stringify({ tambons: m.tambons || {}, zones: m.zones || {} }, null, 2)};\n`;
+    const blob = new Blob([js], { type: 'text/javascript;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'area-market.js';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-market.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
+  };
+  $('marketReset').onclick = async () => {
+    if (!(await askPassword('ล้างจำนวนร้านอาหารที่กรอกในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง'))) return;
+    delete state.settings.market; save(); renderMarket(); renderStats(); toast('↺ ใช้จำนวนร้านจากไฟล์กลางแล้ว');
+  };
+  $('clearVisits').onclick = async () => {
+    if (!(await askPassword('ล้างประวัติเช็คอิน/เข้าพบของทุกร้านในเครื่องนี้'))) return;
+    state.records.forEach(r => { r.visits = []; });
+    save(); renderAll(); renderSetData(); toast('🗑️ ล้างประวัติเข้าพบแล้ว');
+  };
   function renderTeam() {
     const t = team();
     if (teamSel && !t.some(m => m.id === teamSel)) teamSel = (t[0] || {}).id || null;
@@ -1254,14 +1465,15 @@
     renderTeam(); renderZones(); renderAll();
   });
   $('teamEdit').addEventListener('click', (e) => {
-    if (e.target.closest('#tmShow')) { closeModal('teamModal'); setZone('sales:' + teamSel); }
+    if (e.target.closest('#tmShow')) { closeModal('settingsModal'); setZone('sales:' + teamSel); }
     else if (e.target.closest('#tmDel')) {
       const m = memberById(teamSel);
-      if (m && confirm(`ลบ ${m.nick} ออกจากทีม? ตำบลที่ดูแลจะกลายเป็น “ยังไม่มีผู้ดูแล”`)) {
+      if (m) askPassword(`ลบ ${m.nick} ออกจากทีม (ตำบลที่ดูแลจะกลายเป็น “ยังไม่มีผู้ดูแล”)`).then(ok => {
+        if (!ok) return;
         setTeam(team().filter(x => x.id !== teamSel)); teamSel = null;
         if (state.zone === 'sales:' + m.id) setZone('sales:all'); else { renderZones(); renderAll(); }
         renderTeam();
-      }
+      });
     }
   });
   $('teamDownload').onclick = () => {
@@ -1274,8 +1486,8 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-sales-team.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
   };
-  $('teamReset').onclick = () => {
-    if (!confirm('ทิ้งการแก้ไขทีมในเครื่องนี้ แล้วใช้รายชื่อ/พื้นที่จากไฟล์กลาง?')) return;
+  $('teamReset').onclick = async () => {
+    if (!(await askPassword('ทิ้งการแก้ไขทีมในเครื่องนี้ แล้วใช้รายชื่อ/พื้นที่จากไฟล์กลาง'))) return;
     delete state.settings.team; save(); rebuildTeam(); renderTeam(); renderZones(); renderAll();
   };
 
@@ -1350,6 +1562,7 @@
     $('penTxt').textContent = pct + '%';
     document.querySelectorAll('.stat').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter
       || (b.dataset.filter === 'sold' && (state.filter === 'android' || state.filter === 'ipad'))));
+    renderMarketLine(base);
     const soldList = base.filter(r => r.status === 'sold');
     const nA = soldList.filter(r => r.platform === 'android').length, nI = soldList.filter(r => r.platform === 'ipad').length;
     const sp = (n) => (soldList.length ? Math.round(n / soldList.length * 100) + '%' : '');
@@ -1779,7 +1992,8 @@
     $('pvUnsold').textContent = (pending.rows.length - s).toLocaleString();
     $('pvNoGeo').textContent = noGeo.toLocaleString();
   }
-  function doImport() {
+  async function doImport() {
+    if ($('optReplace').checked && !(await askPassword('ลบร้านเดิมที่ไม่อยู่ในไฟล์ชุดนี้ออกจากแผนที่'))) return;
     const m = getMapping();
     if (!m.name) { toast('⚠️ กรุณาเลือกคอลัมน์ “ชื่อร้าน”'); return; }
     const soldSet = getSoldSet();
@@ -2163,7 +2377,7 @@
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
   document.querySelectorAll('.modal').forEach(m => {
-    m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-close]')) closeModal(m.id); });
+    m.addEventListener('click', (e) => { if (m.id !== 'pwModal' && (e.target === m || e.target.closest('[data-close]'))) closeModal(m.id); });
   });
   const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
 
@@ -2175,13 +2389,17 @@
     else if (act === 'sample') loadSample();
     else if (act === 'fit') fitAll();
     else if (act === 'upload') openUpload();
-    else if (act === 'team') openTeam();
+    else if (act === 'settings' || act === 'team') openSettings(act === 'team' ? 'team' : null);
+    else if (act === 'market') openSettings('market');
     else if (act === 'osm') openOsm();
     else if (act === 'revall') reverseAll();
     else if (act === 'clear') {
-      if (confirm('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้? (ข้อมูลใน Salesforce ไม่ถูกลบ)\nแนะนำ Export CSV เก็บไว้ก่อน')) {
-        state.records = []; state.settings.lastSync = null; state.settings.lastFile = ''; state.settings.lastOsm = null; save(); closeEditor(); renderAll(); toast('🗑️ ล้างข้อมูลแล้ว');
-      }
+      askPassword('ล้างข้อมูลร้านทั้งหมดในเครื่องนี้ (ข้อมูลใน Salesforce ไม่ถูกลบ) — แนะนำ Export CSV เก็บไว้ก่อน').then(ok => {
+        if (!ok) return;
+        state.records = []; state.settings.lastSync = null; state.settings.lastFile = ''; state.settings.lastOsm = null; save(); closeEditor(); renderAll();
+        if ($('settingsModal').classList.contains('open')) renderSetData();
+        toast('🗑️ ล้างข้อมูลแล้ว');
+      });
     }
   }
   document.addEventListener('click', (e) => {
@@ -2205,7 +2423,7 @@
     }
     const mb = e.target.closest('[data-mode]');
     if (mb) { setZone(mb.dataset.mode === 'sales' ? 'sales:all' : 'focus'); return; }
-    if (e.target.closest('#teamBtn')) { openTeam(); return; }
+    if (e.target.closest('#teamBtn')) { openSettings('team'); return; }
     const a = e.target.closest('[data-zone]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let the browser open a new tab
     e.preventDefault(); setZone(a.dataset.zone);
@@ -2214,6 +2432,7 @@
   $('btnMenu').onclick = () => $('menu').classList.toggle('open');
   function openUpload() { $('sfUrl').value = state.settings.sfUrl || ''; openModal('uploadModal'); }
   $('btnUpload').onclick = openUpload;
+  $('btnSettings').onclick = () => openSettings();
   $('sfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim(); save(); });
   $('staleBtn').onclick = () => { state.age = state.age === 'm1' ? '' : 'm1'; renderAll(); };
   $('ageSel').addEventListener('change', (e) => { state.age = e.target.value; renderAll(); });
@@ -2306,7 +2525,8 @@
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (state.addMode) setAddMode(false);
-    else if (document.querySelector('.modal.open')) document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id));
+    else if ($('pwModal').classList.contains('open')) return; // handled by the password box
+    else if (document.querySelector('.modal.open')) { const ms = document.querySelectorAll('.modal.open'); closeModal(ms[ms.length - 1].id); }
     else closeEditor();
   });
 

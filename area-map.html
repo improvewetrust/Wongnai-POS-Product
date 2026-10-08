@@ -210,7 +210,7 @@
     .zmode button.on { background: var(--inverse); color: var(--on-inverse); }
     .tb-label {
       background: var(--overlay); border: 1px solid var(--border); color: var(--text); font-family: inherit;
-      font-size: 11px; font-weight: 700; border-radius: 6px; padding: 1px 6px; box-shadow: none; text-align: center; line-height: 1.3;
+      font-size: 11.5px; font-weight: 800; border-radius: 6px; padding: 1px 6px; box-shadow: none; text-align: center; line-height: 1.3;
     }
     .tb-label::before { display: none; }
     .tb-label small { display: block; font-weight: 800; color: var(--blue); }
@@ -1123,6 +1123,14 @@
   // zone name labels pile up when Bangkok and Phuket are both in view
   const syncLabelZoom = () => { $('map').classList.toggle('far', map.getZoom() < 10); $('map').classList.toggle('mid', map.getZoom() < 12); };
   map.on('zoomend', syncLabelZoom); syncLabelZoom();
+  // pastel fills for sub-district patches — kept clear of the green/red pin colours
+  const TAMBON_COLORS = [
+    { fill: '#7ea7f2', line: '#3f6fc4' }, // blue
+    { fill: '#b293e0', line: '#7a55b8' }, // lavender
+    { fill: '#f2c14e', line: '#b8860b' }, // amber
+    { fill: '#5ec4d6', line: '#1f8fa3' }, // cyan
+    { fill: '#cfa46e', line: '#8d6435' }, // sand
+  ];
   const MASK_WORLD = [[-85, -180], [-85, 180], [85, 180], [85, -180]];
   const maskOutside = (rings) => L.polygon([MASK_WORLD, ...rings], { stroke: false, fillColor: '#1a1a2e', fillOpacity: 0.32, interactive: false }).addTo(zoneLayer);
   function salesTambons() {
@@ -1166,10 +1174,11 @@
     zoneLayer.clearLayers();
     if (isSalesView()) { renderSalesZones(); return; }
     const single = state.zone && state.zone !== 'focus' ? ZONE_BY_ID[state.zone] : null;
-    // sub-district (ตำบล / แขวง) lines inside the zones on screen; names show from zoom 12
+    // sub-districts (ตำบล / แขวง) as soft colour patches; neighbours never share a colour (see area-map-tambons.js)
     const shown = new Set((single ? [single] : ZONES).map(z => z.id));
     TAMBONS.filter(t => shown.has(t.zone)).forEach(t => {
-      L.polygon(t.latlngs, { color: '#5b6575', weight: 1, opacity: 0.6, dashArray: '4 3', fill: false, interactive: false })
+      const c = TAMBON_COLORS[(t.color || 0) % TAMBON_COLORS.length];
+      L.polygon(t.latlngs, { color: c.line, weight: 1.6, opacity: 0.9, fillColor: c.fill, fillOpacity: single ? 0.28 : 0.2, interactive: false })
         .bindTooltip(`${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${esc(t.th)}`, { permanent: true, direction: 'center', className: 'tb-label' })
         .addTo(zoneLayer);
     });
@@ -1180,8 +1189,8 @@
         continue;
       }
       const pg = L.polygon(z.latlngs, {
-        color: '#f25533', weight: single ? 3 : 2, opacity: 0.9,
-        fillColor: '#f25533', fillOpacity: single ? 0 : 0.05, interactive: !single,
+        color: '#f25533', weight: single ? 3.5 : 2.5, opacity: 0.95,
+        fillColor: '#f25533', fillOpacity: 0, interactive: !single, // fill kept (invisible) so the zone stays clickable
       }).addTo(zoneLayer);
       if (!single) {
         pg.bindTooltip(z.th, { permanent: true, direction: 'center', className: 'zone-label' });

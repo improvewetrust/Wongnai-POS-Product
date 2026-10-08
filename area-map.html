@@ -193,6 +193,10 @@
     .zone-label::before { display: none; }
     .zone-label { padding: 0; border: 0; background: none; box-shadow: none; }
     .zone-label span { display: inline-block; background: var(--overlay); border: 2px solid; border-radius: 8px; padding: 2px 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+    .amp-label { padding: 0; border: 0; background: none; box-shadow: none; }
+    .amp-label::before { display: none; }
+    .amp-label span { display: inline-block; background: var(--overlay); border: 1.5px solid; border-radius: 7px; padding: 1px 7px; font-weight: 800; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+    #map.far .amp-label { display: none; }
     .zdot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
     #map.far .zone-label { display: none; }
     .tag.zone { background: var(--brand-light); color: var(--brand-dark); }
@@ -1177,12 +1181,20 @@
     // sub-districts (ตำบล / แขวง) as soft colour patches; neighbours never share a colour (see area-map-tambons.js)
     const shown = new Set((single ? [single] : ZONES).map(z => z.id));
     TAMBONS.filter(t => shown.has(t.zone)).forEach(t => {
-      const zc = zoneColor(t.zone), op = SHADE_OPACITY[(t.color || 0) % SHADE_OPACITY.length];
+      const zc = zoneColor(t.zone);
+      // zones marked fill: 'flat' (Phuket) get one even light shade; others alternate shades per sub-district
+      const op = (ZONE_BY_ID[t.zone] || {}).fill === 'flat' ? 0.2 : SHADE_OPACITY[(t.color || 0) % SHADE_OPACITY.length];
       // borders between sub-districts: white dashed, so they read apart from the solid district outline
       L.polygon(t.latlngs, { color: '#ffffff', weight: 2, opacity: 0.95, dashArray: '6 4', lineCap: 'butt', fillColor: zc, fillOpacity: single ? op : op * 0.8, interactive: false })
         .bindTooltip(`${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${esc(t.th)}`, { permanent: true, direction: 'center', className: 'tb-label' })
         .addTo(zoneLayer);
     });
+    // อำเภอ outlines + names inside zones that carry them (Phuket): solid, thinner than the zone outline
+    (single ? [single] : ZONES).forEach(z => (z.districts || []).forEach(d => {
+      L.polygon(d.polygons.map(p => p.map(r => r.map(([x, y]) => [y, x]))), { color: zoneColor(z.id), weight: 2.4, opacity: 0.95, fill: false, interactive: false }).addTo(zoneLayer);
+      L.tooltip({ permanent: true, direction: 'center', className: 'amp-label', interactive: false })
+        .setLatLng(d.center).setContent(`<span style="border-color:${zoneColor(z.id)};color:${zoneColor(z.id)}">อ.${esc(d.th)}</span>`).addTo(zoneLayer);
+    }));
     for (const z of ZONES) {
       if (single && z !== single) {
         // other focus zones stay visible as faint dashed outlines in their own colour

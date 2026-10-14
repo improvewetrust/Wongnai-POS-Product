@@ -889,7 +889,8 @@
         <div class="side-row" style="margin-top:4px">
           <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
           <button class="btn danger" id="teamReset" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">🔒 ↺ ใช้ค่าทีมจากไฟล์กลาง</button>
-          <button class="btn primary" id="sheetOpen" title="คัดลอกตารางจากแท็บ Area Planner แล้ววางที่นี่">📋 นำเข้าจาก Google Sheet (Area Planner)</button>
+          <button class="btn primary" data-gs-update title="Login Google แล้วดึงแท็บ Area Planner + My Team ล่าสุด">🔄 อัปเดตจาก Google Sheet</button>
+          <button class="btn" id="sheetOpen" title="คัดลอกตารางจากแท็บ Area Planner แล้ววางที่นี่">📋 วางจากชีต (Area Planner)</button>
         </div>
         <div class="hint">🏠 ที่อยู่บ้านเซลส์ <b>เก็บในเครื่องนี้เท่านั้น</b> และไม่รวมในไฟล์ทีม (repo บน GitHub เปิดสาธารณะ) — ส่งให้หัวหน้าทีมแบบส่วนตัวได้ด้วยไฟล์ด้านล่าง</div>
         <div class="side-row" style="flex-wrap:wrap">
@@ -912,6 +913,23 @@
           <b>📅 ข้อมูลในเครื่องนี้</b>
           <div id="setDataInfo" class="hint"></div>
           <div class="side-row"><button class="btn" data-act="upload">⬆️ อัปโหลดข้อมูลจาก Salesforce</button><button class="btn" data-act="export">⬇️ Export CSV</button></div>
+        </div>
+        <div class="set-card">
+          <b>🔄 Google Sheet — แผนพื้นที่ + ทีม</b>
+          <div class="hint">กด “อัปเดตจาก Google Sheet” → login Google ด้วยบัญชีที่เปิดชีตได้ → ดูตัวอย่าง → นำเข้า · ดึงแท็บ Area Planner (การแบ่งเขต + Opp) และ My Team (ชื่อเล่น + บ้านเซลส์) · ชีตยังเป็นส่วนตัว ไม่ถูกเผยแพร่</div>
+          <div class="side-row" style="flex-wrap:wrap;align-items:center"><button class="btn primary" data-gs-update>🔄 อัปเดตจาก Google Sheet</button><span class="hint" id="gsLast"></span></div>
+          <div class="field"><label for="gsSheet">ลิงก์ Google Sheet</label><input id="gsSheet" class="set-input" placeholder="https://docs.google.com/spreadsheets/d/…"></div>
+          <details id="gsSetup">
+            <summary>🛠️ ตั้งค่าครั้งแรก (IT ทำครั้งเดียว): Google OAuth Client ID</summary>
+            <ol class="steps">
+              <li>เปิด <b>console.cloud.google.com</b> → เลือก/สร้างโปรเจกต์ของบริษัท</li>
+              <li>APIs &amp; Services → Library → เปิด <b>Google Sheets API</b></li>
+              <li>OAuth consent screen → User type <b>Internal</b> (เฉพาะบัญชีบริษัท) → scope <code>spreadsheets.readonly</code></li>
+              <li>Credentials → Create credentials → <b>OAuth client ID</b> → Web application → Authorized JavaScript origins: <code id="gsOrigin"></code></li>
+              <li>คัดลอก Client ID (ลงท้าย <code>.apps.googleusercontent.com</code>) มาใส่ช่องนี้ — ไม่ใช่รหัสลับ</li>
+            </ol>
+            <input id="gsClient" class="set-input mono" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off">
+          </details>
         </div>
         <div class="set-card">
           <b>🔗 Salesforce URL ของบริษัท</b>
@@ -1495,7 +1513,13 @@
   function renderSetData() {
     $('setDataInfo').innerHTML = `<div>มีร้านในแผนที่ <b>${state.records.length.toLocaleString()}</b> ร้าน</div>` + $('dataInfo').innerHTML.replace(/<div class="row">/g, '<div>');
     $('setSfUrl').value = state.settings.sfUrl || '';
+    $('gsSheet').value = state.settings.gsSheet || `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit`;
+    $('gsClient').value = state.settings.gsClientId || GOOGLE_CLIENT_ID;
+    $('gsOrigin').textContent = location.origin;
+    $('gsLast').textContent = state.settings.gsLast ? `อัปเดตล่าสุด ${fmtDateTime(state.settings.gsLast)}` : '';
   }
+  $('gsSheet').addEventListener('change', (e) => { state.settings.gsSheet = e.target.value.trim(); save(); toast('💾 บันทึกลิงก์ชีตแล้ว'); });
+  $('gsClient').addEventListener('change', (e) => { state.settings.gsClientId = e.target.value.trim(); save(); toast('💾 บันทึก Client ID แล้ว — ลองกด “อัปเดตจาก Google Sheet”'); });
   $('setSfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim().replace(/\/+$/, ''); save(); toast('💾 บันทึก Salesforce URL แล้ว'); });
 
   /* ── Password before clearing anything (shared simple code — keeps accidental clicks out, not real security) ── */
@@ -1767,6 +1791,66 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-sales-team.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
   };
+  /* ── 🔄 Update from Google Sheet: sign in with Google, read the tabs, then reuse the paste-import previews ── */
+  const GOOGLE_CLIENT_ID = ''; // OAuth client (Web) for this site's origin — set once IT creates it, or enter it in ⚙️ ตั้งค่า → ข้อมูล
+  const DEFAULT_SHEET_ID = '1oo0I3dXBlY1iltOktuArf3_uDCBAQi05nDCQE_Ok5KM'; // "Ours Team : AE-MDS (NBI,PKT)" — still private; only people with access can read it
+  const gsClientId = () => String(state.settings.gsClientId || GOOGLE_CLIENT_ID).trim();
+  const gsSheetId = () => { const v = String(state.settings.gsSheet || DEFAULT_SHEET_ID); const m = v.match(/\/d\/([\w-]+)/); return m ? m[1] : v.trim(); };
+  let gsToken = null, gsTokenExp = 0, gsQueue = null;
+  function loadGis() {
+    return new Promise((resolve, reject) => {
+      if (window.google && google.accounts && google.accounts.oauth2) return resolve();
+      const sc = document.createElement('script');
+      sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+      sc.onload = () => resolve(); sc.onerror = () => reject(new Error('โหลดระบบ login ของ Google ไม่ได้'));
+      document.head.appendChild(sc);
+    });
+  }
+  async function gsGetToken() {
+    if (gsToken && Date.now() < gsTokenExp - 60000) return gsToken;
+    await loadGis();
+    return new Promise((resolve, reject) => {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: gsClientId(), scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+        callback: (r) => {
+          if (r.error) return reject(new Error(r.error_description || r.error));
+          gsToken = r.access_token; gsTokenExp = Date.now() + (r.expires_in || 3600) * 1000; resolve(gsToken);
+        },
+        error_callback: (e) => reject(new Error(e && e.type === 'popup_closed' ? 'ปิดหน้าต่าง login ก่อนเสร็จ' : (e && (e.message || e.type)) || 'login ไม่สำเร็จ')),
+      });
+      client.requestAccessToken({ prompt: gsToken ? '' : 'select_account' });
+    });
+  }
+  async function gsValues(token, range) {
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(gsSheetId())}/values/${encodeURIComponent(range)}`, { headers: { Authorization: 'Bearer ' + token } });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์เปิดชีต — ขอสิทธิ์ดูจากเจ้าของชีต');
+    if (!r.ok) throw new Error((j.error && j.error.message) || 'HTTP ' + r.status);
+    return j.values || [];
+  }
+  const toTsv = (vals) => vals.map(row => row.map(c => { const v = String(c ?? ''); return /[\t\n"]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join('\t')).join('\n');
+  async function gsUpdate() {
+    if (!gsClientId()) {
+      openSettings('data'); $('gsSetup').open = true;
+      toast('ยังไม่ได้ตั้งค่า Google Client ID (ให้ IT ทำครั้งเดียว) — ระหว่างนี้ใช้ “📋 วางจากชีต” ในแท็บทีมเซลส์ได้', 7000);
+      return;
+    }
+    try {
+      toast('🔐 กำลัง login Google…', 0);
+      const token = await gsGetToken();
+      toast('🔄 กำลังดึงข้อมูลจาก Google Sheet…', 0);
+      const [plan, myTeam] = await Promise.all([gsValues(token, "'Area Planner'!A1:Q60"), gsValues(token, "'My Team'!A1:J40").catch(() => [])]);
+      hideToast();
+      state.settings.gsLast = Date.now(); save();
+      gsQueue = myTeam.length ? toTsv(myTeam) : null;
+      $('sheetText').value = toTsv(plan); renderSheetPreview(); openModal('sheetModal');
+      toast('ตรวจตัวอย่างการแบ่งเขต แล้วกด “นำเข้า” — ถัดไปจะเป็นชื่อเล่น + บ้านเซลส์', 5000);
+    } catch (e) { toast('⚠️ ดึงจาก Google Sheet ไม่สำเร็จ: ' + e.message, 8000); }
+  }
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-gs-update]')) gsUpdate(); });
+  // after the Area Planner step, continue with My Team (or let the user skip it)
+  function gsNext() { if (!gsQueue) return; $('mtText').value = gsQueue; gsQueue = null; renderMtPreview(); openModal('mtModal'); }
+
   /* ── Import territories from the "Area Planner" sheet (copy → paste, nothing is published) ── */
   const stripTb = (v) => String(v || '').replace(/^(ตำบล|ต\.|แขวง)\s*/, '').trim();
   function parseSheetPlan(text) {
@@ -1848,6 +1932,7 @@
     setTeam(list);
     if ($('sheetOpp').checked) setMarket(mk => { sheetParsed.plan.forEach(p => { if (p.opp) mk.zones[p.zone.id] = p.opp; }); });
     closeModal('sheetModal'); renderTeam(); renderZones(); renderAll();
+    setTimeout(gsNext, 400);
     toast(`✅ นำเข้าการแบ่งพื้นที่แล้ว ${sheetParsed.plan.length} แถว${added ? ` · เพิ่มเซลส์ใหม่ ${added} คน` : ''}`, 5000);
   };
 

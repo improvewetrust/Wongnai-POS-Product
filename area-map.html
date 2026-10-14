@@ -445,6 +445,15 @@
     .field textarea { resize: vertical; min-height: 70px; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .visit-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+    .addr-card { display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
+    .addr-card > div { flex: 1; min-width: 0; }
+    .addr-t { font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+    .addr-full { font-size: 14px; font-weight: 700; line-height: 1.45; word-break: break-word; }
+    .addr-full.empty { color: var(--text-2); font-weight: 500; font-size: 13px; }
+    .addr-form { border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .addr-form legend { font-size: 12px; font-weight: 800; color: var(--text-2); padding: 0 4px; }
+    .grid3 { display: grid; grid-template-columns: 0.9fr 0.7fr 1.4fr; gap: 8px; }
+    .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
     .visit-box .txt { flex: 1; font-size: 12.5px; line-height: 1.45; }
     .visit-box.m1 { background: var(--tier-m1); } .visit-box.m3 { background: var(--tier-m3); }
     .visit-box.m6 { background: var(--tier-m6); } .visit-box.y1 { background: var(--tier-y1); }
@@ -542,6 +551,10 @@
       .legend { bottom: 16px; }
       #toast { bottom: auto; top: calc(var(--header-h) + 10px); transform: translateX(-50%) translateY(-20px); }
       .map-table { grid-template-columns: 1fr; gap: 4px; }
+      .grid3 { grid-template-columns: 1fr 1fr; } .grid3 .field:last-child { grid-column: 1 / -1; }
+      .ed-foot { grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 12px; }
+      .ed-foot .btn { padding: 7px 4px; font-size: 12px; white-space: normal; line-height: 1.25; }
+      .ed-foot .btn.primary { padding: 10px; font-size: 14px; }
       .map-table label { margin-top: 6px; }
     }
   </style>
@@ -697,6 +710,10 @@
           <a id="qGmap" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Google Maps</a>
           <a id="qSf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 17.5 7 4.5 4.5 0 0 1 18 18H7z"/></svg>Salesforce</a>
         </div>
+        <div class="addr-card" id="addrCard">
+          <div><div class="addr-t">🏠 ที่อยู่ร้าน</div><div class="addr-full" id="addrFull">—</div></div>
+          <button class="icon-btn" id="addrCopy" title="คัดลอกที่อยู่">📋</button>
+        </div>
         <div class="visit-box" id="visitBox">
           <div class="txt" id="visitTxt">-</div>
           <button class="btn" id="btnCheckin" title="บันทึกว่าไปเยี่ยม/อัปเดตข้อมูลร้านนี้วันนี้">📌 เช็คอินวันนี้</button>
@@ -707,7 +724,33 @@
           <div class="field"><label for="fType">ประเภทร้าน</label><input id="fType" list="typeList" placeholder="เช่น QSR / FSR / Buffet"></div>
         </div>
         <datalist id="typeList"><option value="QSR (จ่ายก่อนกิน)"><option value="FSR (มีโต๊ะนั่งทาน)"><option value="Buffet"><option value="Cafe"></datalist>
-        <div class="field"><label for="fAddr">ที่อยู่</label><input id="fAddr"></div>
+        <div class="field"><label for="fSales">👤 เซลส์ผู้ดูแลร้านนี้</label><select id="fSales"></select>
+          <div class="hint" id="salesHint"></div></div>
+        <fieldset class="addr-form">
+          <legend>🏠 ที่อยู่ร้าน</legend>
+          <div class="grid3">
+            <div class="field"><label for="fA_no">บ้านเลขที่</label><input id="fA_no" data-ap="no" placeholder="12/3"></div>
+            <div class="field"><label for="fA_moo">หมู่ที่</label><input id="fA_moo" data-ap="moo" inputmode="numeric" placeholder="4"></div>
+            <div class="field"><label for="fA_village">หมู่บ้าน / อาคาร</label><input id="fA_village" data-ap="village" placeholder="หมู่บ้าน…"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="fA_soi">ซอย</label><input id="fA_soi" data-ap="soi" placeholder="รัตนาธิเบศร์ 28"></div>
+            <div class="field"><label for="fA_road">ถนน</label><input id="fA_road" data-ap="road" placeholder="รัตนาธิเบศร์"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="fA_tambon">ตำบล / แขวง</label><input id="fA_tambon" data-ap="tambon"></div>
+            <div class="field"><label for="fA_amphoe">อำเภอ / เขต</label><input id="fA_amphoe" data-ap="amphoe"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="fA_province">จังหวัด</label><input id="fA_province" data-ap="province"></div>
+            <div class="field"><label for="fA_postcode">รหัสไปรษณีย์</label><input id="fA_postcode" data-ap="postcode" inputmode="numeric" maxlength="5"></div>
+          </div>
+          <div class="side-row" style="flex-wrap:wrap">
+            <button class="btn" id="addrFromPin" title="ใช้ขอบเขตตำบลในระบบ (ไม่ต้องใช้อินเทอร์เน็ต)">📍 เติม ต./อ./จ. จากหมุด</button>
+            <button class="btn" id="addrFromOsm" title="ใช้ OpenStreetMap หาเลขที่/ถนน/รหัสไปรษณีย์">🏠 เติมถนน/รหัสไปรษณีย์ จากพิกัด</button>
+          </div>
+          <div class="field"><label for="fAddr">ที่อยู่เต็ม (ระบบเรียงให้จากช่องด้านบน · แก้เองได้)</label><textarea id="fAddr" rows="2"></textarea></div>
+        </fieldset>
         <div class="field"><label for="fOwner">Account Owner (Salesforce)</label><input id="fOwner" list="ownerList"></div>
         <datalist id="ownerList"></datalist>
         <div class="field"><label for="fNote">บันทึกการขาย / Objection ที่เจอ</label><textarea id="fNote" placeholder="เช่น เจ้าของสนใจ FSR Premium · ติดเรื่องราคา · นัดเดโมวันศุกร์"></textarea></div>
@@ -908,6 +951,7 @@
     ['address', 'ที่อยู่',              ''],
     ['phone',   'เบอร์โทร',            ''],
     ['owner',   'ผู้ดูแล (Owner)',      ''],
+    ['sales',   'เซลส์ผู้ดูแล (ชื่อเล่น / ชื่อ)', 'ไม่มีก็ได้ — ไม่ใส่จะใช้ตามพื้นที่'],
     ['type',    'ประเภทร้าน',           ''],
     ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอนอัปโหลดซ้ำ'],
   ];
@@ -921,6 +965,7 @@
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
+    sales:   [/^area ?sales/i, /^sales( ?(name|person|rep|nick))?$/i, /เซลส์/],
     platform:[/platform/i, /แพลตฟอร์ม/, /(pos ?)?device/i, /อุปกรณ์/, /hardware/i, /ระบบ ?pos/i, /^package/i, /แพ็กเกจ|แพคเกจ/],
     visit:   [/visit ?date/i, /วันที่เข้าพบ/, /เข้าพบ/, /^(activity ?)?date$/i, /^due ?date$/i, /^start/i, /visit/i],
     updated: [/last ?activity/i, /last ?modified/i, /last ?(update|visit)/i, /อัปเดต/, /แก้ไขล่าสุด/, /เยี่ยมล่าสุด/, /modified/i, /(update|date)/i, /วันที่/],
@@ -1113,7 +1158,28 @@
   const memberById = (id) => team().find(m => m.id === id);
   function rebuildTeam() { TAMBON_OWNER = window.AreaGeo.teamIndex(team()); }
   function setTeam(t) { state.settings.team = t; save(); rebuildTeam(); }
-  const salesOf = (r) => { const t = tambonOf(r); return t ? (TAMBON_OWNER[t] || '') : ''; };
+  // territory owner of the shop's sub-district; a salesperson picked on the shop itself wins
+  const territorySalesOf = (r) => { const t = tambonOf(r); return t ? (TAMBON_OWNER[t] || '') : ''; };
+  const salesOf = (r) => (r.salesId && memberById(r.salesId) ? r.salesId : territorySalesOf(r));
+
+  /* ── Structured Thai address ── */
+  const ADDR_KEYS = ['no', 'moo', 'village', 'soi', 'road', 'tambon', 'amphoe', 'province', 'postcode'];
+  const stripPfx = (v, re) => String(v || '').trim().replace(re, '').trim();
+  function composeAddress(p) {
+    const bkk = /กรุงเทพ/.test(p.province || '');
+    const tb = stripPfx(p.tambon, /^(ตำบล|ต\.|แขวง)\s*/), am = stripPfx(p.amphoe, /^(อำเภอ|อ\.|เขต)\s*/), pv = stripPfx(p.province, /^(จังหวัด|จ\.)\s*/);
+    return [
+      p.no && 'เลขที่ ' + p.no.trim(), p.moo && 'หมู่ ' + stripPfx(p.moo, /^(หมู่ที่|หมู่|ม\.)\s*/), p.village && p.village.trim(),
+      p.soi && 'ซ.' + stripPfx(p.soi, /^(ซอย|ซ\.)\s*/), p.road && 'ถ.' + stripPfx(p.road, /^(ถนน|ถ\.)\s*/),
+      tb && (bkk ? 'แขวง' : 'ต.') + tb, am && (bkk ? 'เขต' : 'อ.') + am, pv && (bkk ? 'กรุงเทพมหานคร' : 'จ.' + pv), p.postcode && p.postcode.trim(),
+    ].filter(Boolean).join(' ');
+  }
+  // sub-district / district / province from the pin, using the boundaries bundled with the app
+  function areaParts(r) {
+    const t = TAMBON_BY_CODE[tambonOf(r)], z = ZONE_BY_ID[zoneOf(r)];
+    if (!t || !z) return {};
+    return { tambon: t.th, amphoe: t.amphoe, province: z.province };
+  }
   const isSalesView = () => state.zone.startsWith('sales:');
   const salesSel = () => state.zone.slice(6); // 'all' | 'none' | member id
   rebuildTeam();
@@ -1690,6 +1756,17 @@
     $('platPick').querySelectorAll('[data-plat]').forEach(b => b.classList.toggle('on', b.dataset.plat === (r.platform || '')));
     $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
     $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
+    const ap = r.addr || {}, auto = areaParts(r);
+    ADDR_KEYS.forEach(k => { const i = $('fA_' + k); i.value = ap[k] || ''; i.placeholder = auto[k] || i.getAttribute('placeholder') || ''; });
+    $('addrFull').textContent = r.address || 'ยังไม่มีที่อยู่ — กรอกด้านล่าง หรือกด “เติม ต./อ./จ. จากหมุด”';
+    $('addrFull').classList.toggle('empty', !r.address);
+    const autoId = territorySalesOf(r), autoM = memberById(autoId);
+    $('fSales').innerHTML = `<option value="">อัตโนมัติตามพื้นที่ — ${autoM ? esc(autoM.nick) : 'ยังไม่มีผู้ดูแล'}</option>`
+      + team().map(m => `<option value="${esc(m.id)}">${esc(m.nick)} · ${esc(m.name)}</option>`).join('');
+    $('fSales').value = r.salesId && memberById(r.salesId) ? r.salesId : '';
+    $('salesHint').textContent = r.salesId && memberById(r.salesId)
+      ? `กำหนดเองสำหรับร้านนี้ (ตามพื้นที่จะเป็น ${autoM ? autoM.nick : 'ยังไม่มีผู้ดูแล'})`
+      : 'ตามตำบลที่ร้านตั้งอยู่ (ตั้งค่าใน ⚙️ ตั้งค่า → ทีมเซลส์) · เลือกชื่อเพื่อกำหนดเฉพาะร้านนี้';
     $('fLat').value = hasCoord(r) ? r.lat : ''; $('fLng').value = hasCoord(r) ? r.lng : '';
 
     const geo = hasCoord(r);
@@ -1750,6 +1827,12 @@
     r.name = $('fName').value.trim() || '(ไม่มีชื่อ)';
     r.phone = $('fPhone').value.trim(); r.type = $('fType').value.trim();
     r.address = $('fAddr').value.trim(); r.owner = $('fOwner').value.trim(); r.note = $('fNote').value.trim();
+    const ap = {};
+    ADDR_KEYS.forEach(k => { const v = $('fA_' + k).value.trim(); if (v) ap[k] = v; });
+    if (Object.keys(ap).length) r.addr = ap; else delete r.addr;
+    const sid = $('fSales').value;
+    if (sid) { r.salesId = sid; r.manual = Object.assign({}, r.manual, { sales: true }); }
+    else { delete r.salesId; if (r.manual) delete r.manual.sales; }
     if (latStr && lngStr) {
       if (r.lat !== lat || r.lng !== lng) { r.lat = lat; r.lng = lng; r.manual = Object.assign({}, r.manual, { pos: true }); r.geoApprox = false; }
     } else if (!latStr && !lngStr) { r.lat = null; r.lng = null; }
@@ -1775,9 +1858,11 @@
       id: uid(), sfId: '', name: 'ร้านใหม่', status: 'unsold', lat: +latlng.lat.toFixed(6), lng: +latlng.lng.toFixed(6),
       address: '', phone: '', owner: '', type: '', note: '', visits: [], source: 'manual', manual: {}, createdAt: Date.now(), lastUpdate: Date.now(),
     };
+    const ap = areaParts(r);
+    if (ap.tambon) { r.addr = ap; r.address = composeAddress(ap); }
     touch(r); state.records.push(r); setAddMode(false); save(); renderAll(); openEditor(r.id);
     setTimeout(() => { $('fName').focus(); $('fName').select(); }, 250);
-    toast('📍 เพิ่มหมุดแล้ว ใส่ชื่อร้านแล้วกดบันทึก');
+    toast('📍 เพิ่มหมุดแล้ว — ใส่ชื่อร้าน เบอร์ บ้านเลขที่/ซอย/ถนน แล้วกดบันทึก', 4500);
   }
   map.on('click', (e) => { if (state.addMode) createAt(e.latlng); });
 
@@ -1905,7 +1990,7 @@
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'owner', 'visit', 'updated', 'platform', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'sales', 'owner', 'visit', 'updated', 'platform', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
         const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)) && !(f === 'visit' && /(last|ล่าสุด|modified|\bby\b)/i.test(h)));
@@ -1976,7 +2061,10 @@
     }
     const raw = get('status');
     const sold = m.status && soldSet.has(raw);
+    const sv = get('sales').toLowerCase();
+    const sm = sv && team().find(x => [x.id, x.nick, x.name].some(n => n && (sv === n.toLowerCase() || sv.includes(n.toLowerCase()))));
     return {
+      salesId: sm ? sm.id : '',
       platform: sold ? (detectPlatform(get('platform')) || detectPlatform(raw)) : '',
       sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
       address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'),
@@ -2049,6 +2137,7 @@
           sfId: inc.sfId || ex.sfId, name: inc.name, address: inc.address || ex.address, phone: inc.phone || ex.phone,
           owner: inc.owner || ex.owner, type: inc.type || ex.type, rawStatus: inc.rawStatus,
           status: man.status ? ex.status : inc.status,
+          salesId: man.sales ? ex.salesId : (inc.salesId || ex.salesId || ''),
           platform: (man.status ? ex.status : inc.status) !== 'sold' ? ''
             : man.platform ? ex.platform : (inc.platform || ex.platform || ''),
           lat: keepPos ? ex.lat : inc.lat, lng: keepPos ? ex.lng : inc.lng,
@@ -2133,9 +2222,18 @@
     const street = [a.house_number, a.road].filter(Boolean).join(' ');
     const parts = [street, a.suburb || a.quarter || a.village || a.neighbourhood, a.city_district || a.county || a.town || a.municipality,
       a.state || a.province || a.city, a.postcode].filter(Boolean);
-    const addr = [...new Set(parts)].join(' ') || (j.display_name || '').replace(/,?\s*(ประเทศไทย|Thailand)$/, '');
+    const area = areaParts(r);
+    const ap = Object.assign({}, r.addr || {});
+    const put = (k, v) => { if (v && !ap[k]) ap[k] = v; };
+    put('no', a.house_number); put('road', a.road);
+    put('village', a.residential || a.hamlet);
+    put('tambon', area.tambon || stripPfx(a.suburb || a.quarter || a.village, /^(ตำบล|แขวง)\s*/));
+    put('amphoe', area.amphoe || stripPfx(a.city_district || a.county || a.town || a.municipality, /^(อำเภอ|เขต)\s*/));
+    put('province', area.province || stripPfx(a.state || a.province || a.city, /^จังหวัด\s*/));
+    put('postcode', a.postcode);
+    const addr = composeAddress(ap) || [...new Set(parts)].join(' ') || (j.display_name || '').replace(/,?\s*(ประเทศไทย|Thailand)$/, '');
     if (!addr) return false;
-    r.address = addr; r.addrFromGeo = true; touch(r);
+    r.addr = ap; r.address = addr; r.addrFromGeo = true; touch(r);
     return true;
   }
   async function reverseAll() {
@@ -2329,6 +2427,11 @@
       Days_Since_Update: r.lastUpdate ? daysSince(r) : '', Staleness: ageTier(r).badge || 'Fresh',
       Visit_Count: (r.visits || []).length,
       Last_Visit: r.visits && r.visits.length ? new Date(r.visits[r.visits.length - 1]).toISOString().slice(0, 10) : '',
+      Area_Sales: (memberById(salesOf(r)) || {}).nick || '', Area_Sales_Set_On_Shop: r.salesId ? 'Y' : '',
+      House_No: (r.addr || {}).no || '', Moo: (r.addr || {}).moo || '', Village: (r.addr || {}).village || '', Soi: (r.addr || {}).soi || '',
+      Road: (r.addr || {}).road || '', Subdistrict: (r.addr || {}).tambon || (TAMBON_BY_CODE[tambonOf(r)] || {}).th || '',
+      District: (r.addr || {}).amphoe || (TAMBON_BY_CODE[tambonOf(r)] || {}).amphoe || '', Province: (r.addr || {}).province || (ZONE_BY_ID[zoneOf(r)] || {}).province || '',
+      Postcode: (r.addr || {}).postcode || '',
       Source: r.source, OSM_ID: r.osmId || '', Updated_At: r.updatedAt ? new Date(r.updatedAt).toISOString() : '',
     }));
     const d = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -2518,6 +2621,38 @@
       if (await geocodeOne(r)) { save(); renderAll(); openEditor(r.id); toast('📍 เจอพิกัดแล้ว (ค่าประมาณ) ถ้าไม่ตรงให้กด ย้ายหมุด'); }
       else toast('ไม่พบพิกัดจากที่อยู่นี้ ลอง “ปักกลางจอ” แทน', 4000);
     } catch (e) { toast('⚠️ ค้นหาพิกัดไม่สำเร็จ', 4000); }
+  };
+  // live: structured fields → full address line
+  document.querySelector('.addr-form').addEventListener('input', (e) => {
+    if (!e.target.dataset.ap) return;
+    const ap = {};
+    ADDR_KEYS.forEach(k => { const v = $('fA_' + k).value.trim(); if (v) ap[k] = v; });
+    $('fAddr').value = composeAddress(ap);
+  });
+  $('addrFromPin').onclick = () => {
+    const r = current(); if (!r) return;
+    const ap = areaParts(r);
+    if (!ap.tambon) { toast('หมุดนี้อยู่นอกพื้นที่ Focus — กรอก ต./อ./จ. เอง หรือกด “เติมถนน/รหัสไปรษณีย์ จากพิกัด”', 5000); return; }
+    ['tambon', 'amphoe', 'province'].forEach(k => { $('fA_' + k).value = ap[k]; });
+    $('fA_tambon').dispatchEvent(new Event('input', { bubbles: true }));
+    toast('📍 เติม ต./อ./จ. แล้ว — กดบันทึกเพื่อเก็บ');
+  };
+  $('addrFromOsm').onclick = async () => {
+    const r = current(); if (!r) return;
+    if (!hasCoord(r)) { toast('ร้านนี้ยังไม่มีพิกัด — ปักหมุดก่อน'); return; }
+    // keep what was typed but not saved yet
+    const typed = {}; ADDR_KEYS.forEach(k => { const v = $('fA_' + k).value.trim(); if (v) typed[k] = v; });
+    r.addr = Object.assign({}, r.addr || {}, typed);
+    toast('🏠 กำลังหาที่อยู่จากพิกัด…', 0);
+    try {
+      if (await reverseOne(r)) { save(); renderAll(); openEditor(r.id, false); toast('🏠 เติมที่อยู่แล้ว — ตรวจ/แก้ แล้วกดบันทึก'); }
+      else toast('ไม่พบที่อยู่ของพิกัดนี้', 4000);
+    } catch (e) { toast('⚠️ หาที่อยู่ไม่สำเร็จ ลองใหม่อีกครั้ง', 4000); }
+  };
+  $('addrCopy').onclick = () => {
+    const r = current(); if (!r || !r.address) { toast('ยังไม่มีที่อยู่ให้คัดลอก'); return; }
+    const text = [r.name, r.address, r.phone && 'โทร ' + r.phone].filter(Boolean).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('📋 คัดลอกชื่อร้าน + ที่อยู่แล้ว')).catch(() => toast(r.address, 6000));
   };
   $('edRev').onclick = async () => {
     const r = current(); if (!r) return;

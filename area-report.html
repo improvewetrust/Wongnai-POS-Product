@@ -222,7 +222,8 @@
   const TAMBON_OWNER = window.AreaGeo.teamIndex(TEAM);
   const MEMBER = Object.fromEntries(TEAM.map(m => [m.id, m]));
   const NONE = '__none';
-  const salesOf = (r) => { const t = tambonOf(r); return (t && TAMBON_OWNER[t]) || NONE; };
+  // a salesperson set on the shop itself wins over the sub-district owner
+  const salesOf = (r) => { if (r.salesId && MEMBER[r.salesId]) return r.salesId; const t = tambonOf(r); return (t && TAMBON_OWNER[t]) || NONE; };
   const salesLabel = (id) => (id === NONE ? 'ยังไม่มีผู้ดูแล' : MEMBER[id] ? `${MEMBER[id].nick} · ${MEMBER[id].name}` : id);
   // market size (restaurants in the area) entered in ⚙️ ตั้งค่า → จำนวนร้านอาหาร
   const MARKET = settings.market || window.AREA_MARKET || { tambons: {}, zones: {} };

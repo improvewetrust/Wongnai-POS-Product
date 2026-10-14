@@ -197,6 +197,21 @@
     .amp-label::before { display: none; }
     .amp-label span { display: inline-block; background: var(--overlay); border: 1.5px solid; border-radius: 7px; padding: 1px 7px; font-weight: 800; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
     #map.far .amp-label { display: none; }
+    .home-pin { display: flex; flex-direction: column; align-items: center; transform: translateY(-4px); }
+    .home-pin span { width: 30px; height: 30px; border-radius: 50%; background: #1a1a2e; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+    .home-pin b { margin-top: 2px; background: #1a1a2e; color: #fff; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .home-box { border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .home-head { font-weight: 800; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .home-head .hint { font-weight: 500; }
+    .near { display: flex; flex-direction: column; gap: 4px; }
+    .near-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .near-row:last-child { border-bottom: 0; }
+    .near-row span:first-child { flex: 1; min-width: 0; }
+    .near-row .km { font-weight: 800; white-space: nowrap; }
+    .near-row .st { font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+    .near-row button { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 12px; }
+    .tb .km { font-size: 10.5px; color: var(--text-2); }
+    .layer-pop .lp-sep { border-top: 1px solid var(--border); margin: 4px 0; }
     .zdot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
     #map.far .zone-label { display: none; }
     .tag.zone { background: var(--brand-light); color: var(--brand-dark); }
@@ -384,13 +399,13 @@
     .legend .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .legend span { display: flex; align-items: center; gap: 5px; }
     .legend .b { color: #fff; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 5px; }
-    #addBanner {
+    #addBanner, #homeBanner {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 850;
       background: var(--inverse); color: var(--on-inverse); padding: 9px 14px; border-radius: 12px; display: none;
       align-items: center; gap: 10px; box-shadow: var(--shadow); font-weight: 600; white-space: nowrap;
     }
-    #addBanner.show { display: flex; }
-    #addBanner button { background: color-mix(in srgb, var(--on-inverse) 15%, transparent); border: 0; color: var(--on-inverse); padding: 4px 10px; border-radius: 8px; }
+    #addBanner.show, #homeBanner.show { display: flex; }
+    #addBanner button, #homeBanner button { background: color-mix(in srgb, var(--on-inverse) 15%, transparent); border: 0; color: var(--on-inverse); padding: 4px 10px; border-radius: 8px; }
     #listToggle { display: none; }
 
     /* ── Pins ── */
@@ -666,9 +681,12 @@
         <button data-layer="gHybrid">🛰️ Google ดาวเทียม + ถนน</button>
         <button data-layer="gSat">🌍 Google ดาวเทียม</button>
         <button data-layer="osm">🧭 OpenStreetMap</button>
+        <div class="lp-sep"></div>
+        <button id="homeToggle" title="แสดงบ้านเซลส์ในโหมดพื้นที่ด้วย (โหมดเซลส์แสดงเสมอ)">🏠 แสดงบ้านเซลส์</button>
       </div>
     </div>
 
+    <div id="homeBanner"><span id="homeBannerTxt">🏠 แตะบนแผนที่ตรงบ้านของเซลส์</span><button id="homeCancel">ยกเลิก</button></div>
     <div id="addBanner"><span>📍 แตะบนแผนที่ตรงตำแหน่งร้าน</span><button id="addHere">ใช้ตำแหน่งฉัน</button><button id="addCancel">ยกเลิก</button></div>
 
     <div class="legend">
@@ -870,6 +888,11 @@
         <div class="side-row" style="margin-top:4px">
           <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
           <button class="btn danger" id="teamReset" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">🔒 ↺ ใช้ค่าทีมจากไฟล์กลาง</button>
+        </div>
+        <div class="hint">🏠 ที่อยู่บ้านเซลส์ <b>เก็บในเครื่องนี้เท่านั้น</b> และไม่รวมในไฟล์ทีม (repo บน GitHub เปิดสาธารณะ) — ส่งให้หัวหน้าทีมแบบส่วนตัวได้ด้วยไฟล์ด้านล่าง</div>
+        <div class="side-row" style="flex-wrap:wrap">
+          <button class="btn" id="homesExport">⬇️ ไฟล์บ้านเซลส์ (ส่งต่อแบบส่วนตัว)</button>
+          <label class="btn" style="cursor:pointer">⬆️ นำเข้าไฟล์บ้านเซลส์<input type="file" id="homesImport" accept=".json,application/json" hidden></label>
         </div>
       </section>
       <section data-spane="market" hidden>
@@ -1184,6 +1207,45 @@
   const salesSel = () => state.zone.slice(6); // 'all' | 'none' | member id
   rebuildTeam();
 
+  /* ── Sales home locations (personal data: this device only, never in the shared team file) ── */
+  const homes = () => state.settings.salesHomes || (state.settings.salesHomes = {});
+  const homeOf = (id) => { const h = homes()[id]; return h && Number.isFinite(h.lat) && Number.isFinite(h.lng) ? h : null; };
+  function setHome(id, data) { homes()[id] = Object.assign({}, homes()[id] || {}, data); save(); renderHomes(); }
+  const homeLayer = L.layerGroup().addTo(map);
+  function renderHomes() {
+    homeLayer.clearLayers();
+    let ids;
+    if (isSalesView()) { const sel = salesSel(); ids = sel === 'all' || sel === 'none' ? team().map(m => m.id) : [sel]; }
+    else ids = state.settings.showHomes ? team().map(m => m.id) : [];
+    ids.forEach(id => {
+      const m = memberById(id), h = homeOf(id);
+      if (!m || !h) return;
+      const mk = L.marker([h.lat, h.lng], {
+        icon: L.divIcon({ className: '', iconSize: [80, 50], iconAnchor: [40, 34], html: `<div class="home-pin"><span>🏠</span><b>${esc(m.nick)}</b></div>` }),
+        zIndexOffset: 3000, title: `บ้าน ${m.nick}`,
+      }).addTo(homeLayer);
+      const div = document.createElement('div'); div.className = 'tb-pop';
+      const b = document.createElement('b'); b.textContent = `🏠 บ้าน ${m.nick} · ${m.name}`;
+      const a = document.createElement('div'); a.textContent = h.address || 'ไม่ได้ใส่ที่อยู่';
+      const btn = document.createElement('button'); btn.className = 'btn'; btn.style.marginTop = '6px'; btn.textContent = `ดูพื้นที่ของ ${m.nick}`;
+      btn.onclick = () => { map.closePopup(); setZone('sales:' + id); };
+      div.append(b, a, btn); mk.bindPopup(div);
+    });
+    $('homeToggle').classList.toggle('on', !!state.settings.showHomes);
+  }
+  function startHomePick(id) {
+    const m = memberById(id); if (!m) return;
+    state.pickHome = id;
+    closeModal('settingsModal');
+    $('homeBannerTxt').textContent = `🏠 แตะบนแผนที่ตรงบ้านของ ${m.nick}`;
+    $('homeBanner').classList.add('show'); $('map').classList.add('adding');
+  }
+  function endHomePick(reopen) {
+    const id = state.pickHome; state.pickHome = null;
+    $('homeBanner').classList.remove('show'); $('map').classList.remove('adding');
+    if (reopen && id) openSettings('team', id);
+  }
+
   const zoneName = (id) => {
     if (id.startsWith('sales:')) {
       const s = id.slice(6), m = memberById(s);
@@ -1242,6 +1304,7 @@
   }
   function renderZones() {
     zoneLayer.clearLayers();
+    renderHomes();
     if (isSalesView()) { renderSalesZones(); return; }
     const single = state.zone && state.zone !== 'focus' ? ZONE_BY_ID[state.zone] : null;
     // sub-districts (ตำบล / แขวง) as soft colour patches; neighbours never share a colour (see area-map-tambons.js)
@@ -1496,13 +1559,17 @@
     const m = memberById(teamSel);
     if (!m) { $('teamEdit').innerHTML = '<div class="hint">ยังไม่มีเซลส์ — กด “เพิ่มเซลส์”</div>'; return; }
     const mine = new Set(m.tambons || []);
+    const home = homeOf(m.id);
+    const kmTo = (t) => (home ? distKm(home, { lat: t.center[0], lng: t.center[1] }) : null);
+    const fmtKm = (d) => (d < 10 ? d.toFixed(1) : Math.round(d)) + ' กม.';
     const groups = ZONES.map(z => {
       const ts = TAMBONS.filter(x => x.zone === z.id);
       const nMine = ts.filter(x => mine.has(x.code)).length;
       const amps = [...new Set(ts.map(x => x.amphoe))];
       const chip = (x) => {
         const who = TAMBON_OWNER[x.code], other = who && who !== m.id ? memberById(who) : null;
-        return `<label class="tb${mine.has(x.code) ? ' mine' : ''}"><input type="checkbox" data-tb="${x.code}"${mine.has(x.code) ? ' checked' : ''}>${esc(x.th)}${other ? `<span class="who">${esc(other.nick)}</span>` : ''}</label>`;
+        const d = kmTo(x);
+        return `<label class="tb${mine.has(x.code) ? ' mine' : ''}"><input type="checkbox" data-tb="${x.code}"${mine.has(x.code) ? ' checked' : ''}>${esc(x.th)}${d !== null ? `<span class="km">${fmtKm(d)}</span>` : ''}${other ? `<span class="who">${esc(other.nick)}</span>` : ''}</label>`;
       };
       const body = amps.length > 1
         ? amps.map(a => `<div class="tz-amp">อ.${esc(a)}</div><div class="tbs">${ts.filter(x => x.amphoe === a).map(chip).join('')}</div>`).join('')
@@ -1514,12 +1581,36 @@
         <div class="field"><label for="tmName">ชื่อ-นามสกุล</label><input id="tmName" value="${esc(m.name)}"></div>
       </div>
       <div class="side-row"><button class="btn" id="tmShow">🗺️ ดูพื้นที่ของ ${esc(m.nick)} บนแผนที่</button><button class="btn danger" id="tmDel">🗑️ ลบ</button></div>
+      ${homeBox(m, home, kmTo, fmtKm)}
       ${groups}`;
     const tmSet = $('teamEdit').querySelector('.tz-head input');
     if (tmSet) $('teamEdit').querySelectorAll('[data-zall]').forEach(cb => {
       const ts = TAMBONS.filter(x => x.zone === cb.dataset.zall), n = ts.filter(x => mine.has(x.code)).length;
       cb.indeterminate = n > 0 && n < ts.length;
     });
+  }
+  function homeBox(m, home, kmTo, fmtKm) {
+    const h = homes()[m.id] || {};
+    const where = home ? (() => { const r = { lat: home.lat, lng: home.lng }; const t = TAMBON_BY_CODE[tambonOf(r)], z = ZONE_BY_ID[zoneOf(r)];
+      return t ? ` · อยู่ใน ต.${t.th} อ.${t.amphoe}` : z ? ` · อยู่ในเขต ${z.th}` : ' · นอกพื้นที่ Focus'; })() : '';
+    const near = home ? TAMBONS.map(t => ({ t, d: kmTo(t) })).sort((a, b) => a.d - b.d).slice(0, 8).map(({ t, d }) => {
+      const who = TAMBON_OWNER[t.code], mine = who === m.id, other = who && !mine ? memberById(who) : null;
+      return `<div class="near-row"><span>${t.zone === 'bang-phlat' ? 'แขวง' : 'ต.'}${esc(t.th)} <span class="st">อ.${esc(t.amphoe)}</span></span><span class="km">${fmtKm(d)}</span>`
+        + `<span class="st">${mine ? '✅ ของ ' + esc(m.nick) : other ? 'ของ ' + esc(other.nick) : 'ว่าง'}</span>`
+        + (mine ? '' : `<button data-near="${t.code}" title="ให้ ${esc(m.nick)} ดูแลตำบลนี้">+ ให้ ${esc(m.nick)}</button>`) + '</div>';
+    }).join('') : '';
+    return `<div class="home-box">
+      <div class="home-head">🏠 ที่อยู่บ้าน ${esc(m.nick)} <span class="hint">ใช้ช่วยแบ่งเขตตามระยะทาง · เก็บในเครื่องนี้เท่านั้น</span></div>
+      <textarea id="tmHomeAddr" class="set-input" rows="2" placeholder="บ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด">${esc(h.address || '')}</textarea>
+      <div class="hint">${home ? `📍 ปักหมุดแล้ว${home.approx ? ' (พิกัดประมาณจากที่อยู่ — ย้ายให้ตรงได้ด้วย “ปักหมุดบนแผนที่”)' : ''}${where}` : 'ยังไม่ได้ปักหมุดบ้าน'}</div>
+      <div class="side-row" style="flex-wrap:wrap">
+        <button class="btn" id="tmHomePick">📍 ปักหมุดบนแผนที่</button>
+        <button class="btn" id="tmHomeHere">📌 ใช้ตำแหน่งปัจจุบัน</button>
+        <button class="btn" id="tmHomeGeo">🔎 หาพิกัดจากที่อยู่</button>
+        ${home || h.address ? '<button class="btn danger" id="tmHomeDel">🔒 ลบที่อยู่บ้าน</button>' : ''}
+      </div>
+      ${near ? `<div><div class="section-t" style="font-size:13px">ตำบลใกล้บ้าน ${esc(m.nick)} ที่สุด</div><div class="near">${near}</div></div>` : ''}
+    </div>`;
   }
   function updateMember(id, fn) { setTeam(team().map(m => (m.id === id ? fn({ ...m, tambons: [...(m.tambons || [])] }) : m))); }
   $('teamList').addEventListener('click', (e) => {
@@ -1537,6 +1628,7 @@
   });
   $('teamEdit').addEventListener('change', (e) => {
     const t = e.target;
+    if (t.id === 'tmHomeAddr') { setHome(teamSel, { address: t.value.trim() }); toast('💾 บันทึกที่อยู่บ้านแล้ว'); return; }
     if (t.id === 'tmNick' || t.id === 'tmName') {
       const v = t.value.trim();
       updateMember(teamSel, m => ({ ...m, [t.id === 'tmNick' ? 'nick' : 'name']: v || (t.id === 'tmNick' ? m.nick : '') }));
@@ -1553,6 +1645,32 @@
     renderTeam(); renderZones(); renderAll();
   });
   $('teamEdit').addEventListener('click', (e) => {
+    const near = e.target.closest('[data-near]');
+    if (near) { assignTambon(near.dataset.near, teamSel); toast(`✅ ให้ ${memberById(teamSel).nick} ดูแลตำบลนี้แล้ว`); return; }
+    if (e.target.closest('#tmHomePick')) { startHomePick(teamSel); return; }
+    if (e.target.closest('#tmHomeHere')) {
+      const id = teamSel;
+      locate((p) => { setHome(id, { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), approx: false }); toast('🏠 ใช้ตำแหน่งปัจจุบันเป็นบ้านแล้ว'); renderTeam(); });
+      return;
+    }
+    if (e.target.closest('#tmHomeGeo')) {
+      const id = teamSel, addr = ($('tmHomeAddr').value || '').trim();
+      if (!addr) { toast('ใส่ที่อยู่บ้านก่อน'); return; }
+      setHome(id, { address: addr });
+      toast('🔎 กำลังหาพิกัด…', 0);
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=th&accept-language=th&q=${encodeURIComponent(addr)}`)
+        .then(r => r.json()).then(j => {
+          if (!j[0]) { toast('ไม่พบพิกัดจากที่อยู่นี้ — ใช้ “ปักหมุดบนแผนที่” แทน', 5000); return; }
+          setHome(id, { lat: +(+j[0].lat).toFixed(6), lng: +(+j[0].lon).toFixed(6), approx: true }); renderTeam();
+          toast('🏠 เจอพิกัดแล้ว (ค่าประมาณ) — ถ้าไม่ตรงกด “ปักหมุดบนแผนที่”', 5000);
+        }).catch(() => toast('⚠️ หาพิกัดไม่สำเร็จ ลองใหม่อีกครั้ง', 4000));
+      return;
+    }
+    if (e.target.closest('#tmHomeDel')) {
+      const id = teamSel;
+      askPassword(`ลบที่อยู่บ้านของ ${memberById(id).nick}`).then(ok => { if (!ok) return; delete homes()[id]; save(); renderHomes(); renderTeam(); toast('🗑️ ลบที่อยู่บ้านแล้ว'); });
+      return;
+    }
     if (e.target.closest('#tmShow')) { closeModal('settingsModal'); setZone('sales:' + teamSel); }
     else if (e.target.closest('#tmDel')) {
       const m = memberById(teamSel);
@@ -1574,6 +1692,24 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-sales-team.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
   };
+  $('homesExport').onclick = () => {
+    const data = { type: 'wpos-area-sales-homes', exported: new Date().toISOString(), homes: homes() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sales-homes-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('⬇️ ดาวน์โหลดแล้ว — ข้อมูลส่วนตัว ส่งต่อเฉพาะหัวหน้าทีม อย่าอัปขึ้น GitHub', 6000);
+  };
+  $('homesImport').addEventListener('change', (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    f.text().then(t => {
+      const d = JSON.parse(t);
+      if (!d || d.type !== 'wpos-area-sales-homes' || typeof d.homes !== 'object') throw new Error('bad file');
+      Object.entries(d.homes).forEach(([id, h]) => { if (h && typeof h === 'object') homes()[id] = { address: String(h.address || ''), lat: Number(h.lat), lng: Number(h.lng), approx: !!h.approx }; });
+      save(); renderHomes(); renderTeam(); toast(`⬆️ นำเข้าบ้านเซลส์ ${Object.keys(d.homes).length} คนแล้ว`);
+    }).catch(() => toast('⚠️ ไฟล์ไม่ถูกต้อง (ต้องเป็นไฟล์บ้านเซลส์จากเครื่องมือนี้)', 5000));
+  });
+  $('homeCancel').onclick = () => endHomePick(true);
+  $('homeToggle').onclick = () => { state.settings.showHomes = !state.settings.showHomes; save(); renderHomes(); toast(state.settings.showHomes ? '🏠 แสดงบ้านเซลส์' : 'ซ่อนบ้านเซลส์'); };
   $('teamReset').onclick = async () => {
     if (!(await askPassword('ทิ้งการแก้ไขทีมในเครื่องนี้ แล้วใช้รายชื่อ/พื้นที่จากไฟล์กลาง'))) return;
     delete state.settings.team; save(); rebuildTeam(); renderTeam(); renderZones(); renderAll();
@@ -1864,7 +2000,15 @@
     setTimeout(() => { $('fName').focus(); $('fName').select(); }, 250);
     toast('📍 เพิ่มหมุดแล้ว — ใส่ชื่อร้าน เบอร์ บ้านเลขที่/ซอย/ถนน แล้วกดบันทึก', 4500);
   }
-  map.on('click', (e) => { if (state.addMode) createAt(e.latlng); });
+  map.on('click', (e) => {
+    if (state.pickHome) {
+      const id = state.pickHome;
+      setHome(id, { lat: +e.latlng.lat.toFixed(6), lng: +e.latlng.lng.toFixed(6), approx: false });
+      toast(`🏠 ปักหมุดบ้าน ${memberById(id).nick} แล้ว`);
+      endHomePick(true); return;
+    }
+    if (state.addMode) createAt(e.latlng);
+  });
 
   /* ───────────────────────── Geolocation ───────────────────────── */
   let meMarker = null, meCircle = null;
@@ -2681,7 +2825,8 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    if (state.addMode) setAddMode(false);
+    if (state.pickHome) endHomePick(true);
+    else if (state.addMode) setAddMode(false);
     else if ($('pwModal').classList.contains('open')) return; // handled by the password box
     else if (document.querySelector('.modal.open')) { const ms = document.querySelectorAll('.modal.open'); closeModal(ms[ms.length - 1].id); }
     else closeEditor();

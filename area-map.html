@@ -327,6 +327,7 @@
     .plat-btn.active { border-color: var(--ok); background: var(--ok-light); }
     .plat-pick { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
     .plat-pick[hidden] { display: none; }
+    .btn[hidden] { display: none !important; }
     .plat-pick button { border: 1.5px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-weight: 700; color: var(--text); }
     .plat-pick button.on { border-color: var(--ok); background: var(--ok-light); color: var(--ok-ink); }
     .lg-plat { display: inline-flex; width: 15px; height: 15px; border-radius: 50%; background: #00a86b; color: #fff; font-size: 10px; font-weight: 800; align-items: center; justify-content: center; }
@@ -889,7 +890,8 @@
         <div class="side-row" style="margin-top:4px">
           <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
           <button class="btn danger" id="teamReset" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">🔒 ↺ ใช้ค่าทีมจากไฟล์กลาง</button>
-          <button class="btn primary" data-gs-update title="Login Google แล้วดึงแท็บ Area Planner + My Team ล่าสุด">🔄 อัปเดตจาก Google Sheet</button>
+          <label class="btn primary" style="cursor:pointer" title="ในชีต: ไฟล์ → ดาวน์โหลด → Microsoft Excel (.xlsx) แล้วเลือกไฟล์นั้น — ได้ทั้ง Area Planner + My Team ในครั้งเดียว">📂 อัปเดตจากไฟล์ชีต (.xlsx / .csv)<input type="file" data-sheet-input accept=".xlsx,.xls,.csv,text/csv" multiple hidden></label>
+          <button class="btn" data-gs-update hidden title="Login Google แล้วดึงแท็บ Area Planner + My Team ล่าสุด">🔄 อัปเดตจาก Google Sheet</button>
           <button class="btn" id="sheetOpen" title="คัดลอกตารางจากแท็บ Area Planner แล้ววางที่นี่">📋 วางจากชีต (Area Planner)</button>
         </div>
         <div class="hint">🏠 ที่อยู่บ้านเซลส์ <b>เก็บในเครื่องนี้เท่านั้น</b> และไม่รวมในไฟล์ทีม (repo บน GitHub เปิดสาธารณะ) — ส่งให้หัวหน้าทีมแบบส่วนตัวได้ด้วยไฟล์ด้านล่าง</div>
@@ -916,11 +918,16 @@
         </div>
         <div class="set-card">
           <b>🔄 Google Sheet — แผนพื้นที่ + ทีม</b>
-          <div class="hint">กด “อัปเดตจาก Google Sheet” → login Google ด้วยบัญชีที่เปิดชีตได้ → ดูตัวอย่าง → นำเข้า · ดึงแท็บ Area Planner (การแบ่งเขต + Opp) และ My Team (ชื่อเล่น + บ้านเซลส์) · ชีตยังเป็นส่วนตัว ไม่ถูกเผยแพร่</div>
-          <div class="side-row" style="flex-wrap:wrap;align-items:center"><button class="btn primary" data-gs-update>🔄 อัปเดตจาก Google Sheet</button><span class="hint" id="gsLast"></span></div>
-          <div class="field"><label for="gsSheet">ลิงก์ Google Sheet</label><input id="gsSheet" class="set-input" placeholder="https://docs.google.com/spreadsheets/d/…"></div>
+          <ol class="steps">
+            <li>เปิดชีต (ลิงก์ด้านล่าง) → <b>ไฟล์ → ดาวน์โหลด → Microsoft Excel (.xlsx)</b></li>
+            <li>กด <b>📂 อัปเดตจากไฟล์ชีต</b> แล้วเลือกไฟล์นั้น</li>
+            <li>ดูตัวอย่าง “การแบ่งเขต” (Area Planner) → นำเข้า → ต่อด้วย “บ้านเซลส์” (My Team, พิกัดคอลัมน์ I) → นำเข้า</li>
+          </ol>
+          <div class="hint">ไม่ต้อง login / ไม่ต้องขอสิทธิ์ IT · ชีตยังเป็นส่วนตัว · ใช้ไฟล์ .csv ทีละแท็บก็ได้ (เลือก 2 ไฟล์พร้อมกันได้) · บ้านเซลส์เก็บในเครื่องนี้เท่านั้น</div>
+          <div class="side-row" style="flex-wrap:wrap;align-items:center"><label class="btn primary" style="cursor:pointer" title="ในชีต: ไฟล์ → ดาวน์โหลด → Microsoft Excel (.xlsx) แล้วเลือกไฟล์นั้น — ได้ทั้ง Area Planner + My Team ในครั้งเดียว">📂 อัปเดตจากไฟล์ชีต (.xlsx / .csv)<input type="file" data-sheet-input accept=".xlsx,.xls,.csv,text/csv" multiple hidden></label><button class="btn" data-gs-update hidden>🔄 อัปเดตจาก Google Sheet</button><span class="hint" id="gsLast"></span></div>
+          <div class="field"><label for="gsSheet">ลิงก์ Google Sheet</label><div class="side-row"><input id="gsSheet" class="set-input" placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1"><a class="btn" id="gsOpenSheet" target="_blank" rel="noopener">เปิดชีต ↗</a></div></div>
           <details id="gsSetup">
-            <summary>🛠️ ตั้งค่าครั้งแรก (IT ทำครั้งเดียว): Google OAuth Client ID</summary>
+            <summary>🛠️ (ไม่บังคับ) ปุ่ม login Google ดึงตรง — ต้องให้ IT สร้าง OAuth Client ID</summary>
             <ol class="steps">
               <li>เปิด <b>console.cloud.google.com</b> → เลือก/สร้างโปรเจกต์ของบริษัท</li>
               <li>APIs &amp; Services → Library → เปิด <b>Google Sheets API</b></li>
@@ -961,6 +968,7 @@
       <button class="icon-btn" data-close aria-label="ปิด">✕</button>
     </div>
     <div class="modal-body">
+      <div class="side-row" style="align-items:center"><label class="btn" style="cursor:pointer">📂 เลือกไฟล์ .xlsx / .csv<input type="file" data-sheet-input accept=".xlsx,.xls,.csv,text/csv" multiple hidden></label><span class="hint">หรือคัดลอกตารางมาวางด้านล่าง</span></div>
       <textarea id="sheetText" class="set-input mono" rows="7" placeholder="วางตารางที่คัดลอกจาก Google Sheet ตรงนี้ (Ctrl+V / ⌘+V)"></textarea>
       <label class="opt"><input type="checkbox" id="sheetClear" checked><span><b>ล้างการแบ่งเดิมทั้งหมดก่อน</b> — ให้ชีตเป็นข้อมูลหลัก (ต้องใส่รหัสผ่าน)</span></label>
       <label class="opt"><input type="checkbox" id="sheetWhole" checked><span><b>เลือกเขตแต่ไม่ได้เลือกตำบล = ดูแลทั้งเขต</b> (เช่น Nuknik → เมืองนนทบุรี)</span></label>
@@ -982,6 +990,7 @@
       <button class="icon-btn" data-close aria-label="ปิด">✕</button>
     </div>
     <div class="modal-body">
+      <div class="side-row" style="align-items:center"><label class="btn" style="cursor:pointer">📂 เลือกไฟล์ .xlsx / .csv<input type="file" data-sheet-input accept=".xlsx,.xls,.csv,text/csv" multiple hidden></label><span class="hint">หรือคัดลอกตารางมาวางด้านล่าง</span></div>
       <textarea id="mtText" class="set-input mono" rows="7" placeholder="วางตารางที่คัดลอกจาก Google Sheet ตรงนี้ (Ctrl+V / ⌘+V)"></textarea>
       <div class="hint">ชื่อเล่นจากคอลัมน์ D · ที่อยู่จากคอลัมน์ H · พิกัดจากคอลัมน์ I ถ้ามี — ถ้าไม่มีพิกัด ใช้กลางตำบล (คอลัมน์ G) เป็นค่าประมาณ หรือหาจากที่อยู่</div>
       <div id="mtPreview"></div>
@@ -1517,9 +1526,12 @@
     $('gsClient').value = state.settings.gsClientId || GOOGLE_CLIENT_ID;
     $('gsOrigin').textContent = location.origin;
     $('gsLast').textContent = state.settings.gsLast ? `อัปเดตล่าสุด ${fmtDateTime(state.settings.gsLast)}` : '';
+    $('gsOpenSheet').href = gsSheetUrl();
+    syncGsButtons();
   }
-  $('gsSheet').addEventListener('change', (e) => { state.settings.gsSheet = e.target.value.trim(); save(); toast('💾 บันทึกลิงก์ชีตแล้ว'); });
-  $('gsClient').addEventListener('change', (e) => { state.settings.gsClientId = e.target.value.trim(); save(); toast('💾 บันทึก Client ID แล้ว — ลองกด “อัปเดตจาก Google Sheet”'); });
+  const syncGsButtons = () => document.querySelectorAll('[data-gs-update]').forEach(b => { b.hidden = !gsClientId(); });
+  $('gsSheet').addEventListener('change', (e) => { state.settings.gsSheet = e.target.value.trim(); save(); $('gsOpenSheet').href = gsSheetUrl(); toast('💾 บันทึกลิงก์ชีตแล้ว'); });
+  $('gsClient').addEventListener('change', (e) => { state.settings.gsClientId = e.target.value.trim(); save(); syncGsButtons(); toast('💾 บันทึก Client ID แล้ว — ลองกด “อัปเดตจาก Google Sheet”'); });
   $('setSfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim().replace(/\/+$/, ''); save(); toast('💾 บันทึก Salesforce URL แล้ว'); });
 
   /* ── Password before clearing anything (shared simple code — keeps accidental clicks out, not real security) ── */
@@ -1841,12 +1853,55 @@
       toast('🔄 กำลังดึงข้อมูลจาก Google Sheet…', 0);
       const [plan, myTeam] = await Promise.all([gsValues(token, "'Area Planner'!A1:Q60"), gsValues(token, "'My Team'!A1:J40").catch(() => [])]);
       hideToast();
-      state.settings.gsLast = Date.now(); save();
-      gsQueue = myTeam.length ? toTsv(myTeam) : null;
-      $('sheetText').value = toTsv(plan); renderSheetPreview(); openModal('sheetModal');
-      toast('ตรวจตัวอย่างการแบ่งเขต แล้วกด “นำเข้า” — ถัดไปจะเป็นชื่อเล่น + บ้านเซลส์', 5000);
+      startSheetImport(plan, myTeam);
     } catch (e) { toast('⚠️ ดึงจาก Google Sheet ไม่สำเร็จ: ' + e.message, 8000); }
   }
+  // Area Planner first (territories), then My Team (nicknames + homes) — each step shows a preview before importing
+  function startSheetImport(plan, myTeam) {
+    state.settings.gsLast = Date.now(); save();
+    if (plan && plan.length) {
+      gsQueue = myTeam && myTeam.length ? toTsv(myTeam) : null;
+      $('sheetText').value = toTsv(plan); renderSheetPreview(); openModal('sheetModal');
+      toast(gsQueue ? 'ตรวจตัวอย่างการแบ่งเขต แล้วกด “นำเข้า” — ถัดไปจะเป็นชื่อเล่น + บ้านเซลส์' : 'ตรวจตัวอย่างการแบ่งเขต แล้วกด “นำเข้า”', 5000);
+    } else if (myTeam && myTeam.length) {
+      gsQueue = null; $('mtText').value = toTsv(myTeam); renderMtPreview(); openModal('mtModal');
+    }
+  }
+
+  /* ── Update from a file downloaded from the sheet (File → Download → .xlsx / .csv): no login, no IT setup ── */
+  const gsSheetUrl = () => state.settings.gsSheet || `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit`;
+  function sheetKind(rows) {
+    const cells = rows.slice(0, 8).flat().map(c => String(c ?? '').replace(/[▼▲]/g, '').trim());
+    if (cells.some(c => /^ni(c)?k ?name$/i.test(c)) && cells.some(c => /^address$/i.test(c))) return 'team';
+    if (cells.some(c => /^AE\b/i.test(c)) && cells.some(c => /เขต/.test(c)) && cells.some(c => /^ตำบล\s*\d/.test(c))) return 'plan';
+    return '';
+  }
+  async function readSheetFiles(files) {
+    const sheets = [];
+    for (const f of files) {
+      if (/\.csv$/i.test(f.name) || f.type === 'text/csv') {
+        const text = (await f.text()).replace(/^\uFEFF/, '');
+        sheets.push({ name: f.name, rows: Papa.parse(text.replace(/\r/g, ''), {}).data });
+      } else {
+        const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+        wb.SheetNames.forEach(n => sheets.push({ name: n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '', raw: false }) }));
+      }
+    }
+    const pick = (re, kind) => sheets.find(s => re.test(s.name) && sheetKind(s.rows) === kind) || sheets.find(s => sheetKind(s.rows) === kind);
+    return { plan: pick(/area ?planner/i, 'plan'), team: pick(/my ?team/i, 'team') };
+  }
+  document.addEventListener('change', async (e) => {
+    const inp = e.target.closest('[data-sheet-input]');
+    if (!inp || !inp.files.length) return;
+    const files = [...inp.files]; inp.value = '';
+    try {
+      const { plan, team: my } = await readSheetFiles(files);
+      if (!plan && !my) return toast('⚠️ ไม่พบแท็บ Area Planner หรือ My Team ในไฟล์นี้ — ดาวน์โหลดจากชีตเป็น .xlsx (ทั้งไฟล์) หรือ .csv ของแท็บนั้น', 8000);
+      closeModal('sheetModal'); closeModal('mtModal');
+      startSheetImport(plan && plan.rows, my && my.rows);
+      if (!plan) toast('ไม่พบแท็บ Area Planner ในไฟล์ — นำเข้าเฉพาะบ้านเซลส์ (My Team)', 5000);
+    } catch (err) { toast('⚠️ อ่านไฟล์ไม่ได้: ' + err.message, 8000); }
+  });
   document.addEventListener('click', (e) => { if (e.target.closest('[data-gs-update]')) gsUpdate(); });
   // after the Area Planner step, continue with My Team (or let the user skip it)
   function gsNext() { if (!gsQueue) return; $('mtText').value = gsQueue; gsQueue = null; renderMtPreview(); openModal('mtModal'); }

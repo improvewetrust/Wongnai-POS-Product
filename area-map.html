@@ -895,6 +895,7 @@
         <div class="side-row" style="flex-wrap:wrap">
           <button class="btn" id="homesExport">⬇️ ไฟล์บ้านเซลส์ (ส่งต่อแบบส่วนตัว)</button>
           <label class="btn" style="cursor:pointer">⬆️ นำเข้าไฟล์บ้านเซลส์<input type="file" id="homesImport" accept=".json,application/json" hidden></label>
+          <button class="btn" id="mtOpen" title="คัดลอกตารางจากแท็บ My Team แล้ววางที่นี่">📋 นำเข้าบ้านเซลส์จาก Google Sheet (My Team)</button>
         </div>
       </section>
       <section data-spane="market" hidden>
@@ -951,6 +952,25 @@
     <div class="modal-foot">
       <button class="btn" data-close>ยกเลิก</button>
       <button class="btn primary" id="sheetApply" disabled>นำเข้า</button>
+    </div>
+  </div>
+</div>
+
+<!-- Paste the "My Team" table: nicknames (D) + home address (H) + coordinates (I) -->
+<div class="modal" id="mtModal">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h3>📋 นำเข้าชื่อเล่น + บ้านเซลส์จาก Google Sheet<p>แท็บ “My Team”: เลือกตั้งแต่หัวตาราง (No … Address) ลงไปถึงแถวสุดท้าย → Ctrl+C → วางด้านล่าง · ข้อมูลเก็บในเครื่องนี้เท่านั้น</p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="mtText" class="set-input mono" rows="7" placeholder="วางตารางที่คัดลอกจาก Google Sheet ตรงนี้ (Ctrl+V / ⌘+V)"></textarea>
+      <div class="hint">ชื่อเล่นจากคอลัมน์ D · ที่อยู่จากคอลัมน์ H · พิกัดจากคอลัมน์ I ถ้ามี — ถ้าไม่มีพิกัด ใช้กลางตำบล (คอลัมน์ G) เป็นค่าประมาณ หรือหาจากที่อยู่</div>
+      <div id="mtPreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>ยกเลิก</button>
+      <button class="btn primary" id="mtApply" disabled>นำเข้า</button>
     </div>
   </div>
 </div>
@@ -1829,6 +1849,77 @@
     if ($('sheetOpp').checked) setMarket(mk => { sheetParsed.plan.forEach(p => { if (p.opp) mk.zones[p.zone.id] = p.opp; }); });
     closeModal('sheetModal'); renderTeam(); renderZones(); renderAll();
     toast(`✅ นำเข้าการแบ่งพื้นที่แล้ว ${sheetParsed.plan.length} แถว${added ? ` · เพิ่มเซลส์ใหม่ ${added} คน` : ''}`, 5000);
+  };
+
+  /* ── Import nicknames + homes from the "My Team" sheet ── */
+  function parseMyTeam(text) {
+    const rows = Papa.parse(text.replace(/\r/g, '').trim(), { delimiter: '\t' }).data.map(r => r.map(c => String(c ?? '').trim()));
+    const hi = rows.findIndex(r => r.some(c => /^nik ?name|^nick ?name/i.test(c)) || r.some(c => /^address$/i.test(c)));
+    let ci = { ae: 1, name: 2, nick: 3, tambon: 6, addr: 7, ll: 8 };
+    if (hi >= 0) {
+      const h = rows[hi], f = (re) => h.findIndex(c => re.test(c));
+      ci = { ae: f(/^AE ?Name/i), name: f(/^Name ?- ?Surname/i), nick: f(/^Ni(c)?k ?name/i), tambon: f(/^Tambon/i), addr: f(/^Address/i), ll: -1 };
+      if (ci.addr >= 0) ci.ll = ci.addr + 1;
+    }
+    const out = [];
+    rows.slice(hi + 1).forEach(r => {
+      const aeS = r[ci.ae] || '', [aeNick, ...aeRest] = aeS.split(/\s+-\s+/);
+      const name = r[ci.name] || aeRest.join(' - ').trim(), nick = r[ci.nick] || (aeNick || '').trim();
+      if (!nick && !name) return;
+      if (/incoming/i.test(aeS)) return;
+      const ll = parseLatLng(r[ci.ll] || '') || r.map(c => parseLatLng(c)).find(Boolean) || null;
+      out.push({ nick, name, tambon: stripTb(r[ci.tambon]), address: r[ci.addr] || '', ll });
+    });
+    return out;
+  }
+  let mtParsed = [];
+  function mtPlace(p) {
+    if (p.ll) return { lat: p.ll[0], lng: p.ll[1], approx: false, how: '📍 พิกัดจากชีต' };
+    const t = p.tambon && TAMBONS.find(x => x.th === p.tambon);
+    if (t) return { lat: t.center[0], lng: t.center[1], approx: true, how: `≈ กลาง ต.${t.th} (ค่าประมาณ)` };
+    return p.address ? { geocode: true, how: '🔎 จะหาพิกัดจากที่อยู่' } : { how: 'ไม่มีพิกัด' };
+  }
+  function renderMtPreview() {
+    mtParsed = $('mtText').value.trim() ? parseMyTeam($('mtText').value) : [];
+    const t = team();
+    $('mtPreview').innerHTML = mtParsed.length ? `<div class="section-t" style="font-size:13px">พบ ${mtParsed.length} คน</div><div class="near">` + mtParsed.map(p => {
+      const m = findMember(t, p);
+      return `<div class="near-row"><span><b>${esc(p.nick || (m && m.nick) || '?')}</b> ${m ? '' : '<span class="tag">ใหม่</span>'}<br><span class="st">${esc(p.address || '—')}</span></span><span class="st">${esc(mtPlace(p).how)}</span></div>`;
+    }).join('') + '</div>' : ($('mtText').value.trim() ? '<div class="hint">ไม่พบข้อมูล — คัดลอกตั้งแต่หัวตารางของแท็บ My Team</div>' : '');
+    $('mtApply').disabled = !mtParsed.length;
+  }
+  $('mtModal').addEventListener('input', (e) => { if (e.target.id === 'mtText') renderMtPreview(); });
+  $('mtOpen').onclick = () => { $('mtText').value = ''; renderMtPreview(); openModal('mtModal'); setTimeout(() => $('mtText').focus(), 50); };
+  $('mtApply').onclick = async () => {
+    let list = team().map(m => ({ ...m })), added = 0;
+    const toGeocode = [];
+    mtParsed.forEach(p => {
+      let m = findMember(list, p);
+      if (!m) {
+        let id = (p.nick || p.name).toLowerCase().replace(/[^a-z0-9ก-๙]+/g, '-').replace(/^-|-$/g, '') || 'sales';
+        while (list.some(x => x.id === id)) id += '-2';
+        m = { id, nick: p.nick || p.name, name: p.name, tambons: [] }; list.push(m); added++;
+      }
+      if (p.nick) m.nick = p.nick;
+      if (p.name && !m.name) m.name = p.name;
+      const pl = mtPlace(p);
+      const h = { address: p.address };
+      if (Number.isFinite(pl.lat)) Object.assign(h, { lat: +pl.lat.toFixed(6), lng: +pl.lng.toFixed(6), approx: pl.approx });
+      homes()[m.id] = Object.assign({}, homes()[m.id] || {}, h);
+      if (pl.geocode) toGeocode.push(m.id);
+    });
+    setTeam(list); save(); renderHomes(); renderTeam(); renderZoneBar();
+    closeModal('mtModal');
+    toast(`✅ นำเข้าชื่อเล่น + บ้านเซลส์ ${mtParsed.length} คน${added ? ` (เพิ่มใหม่ ${added})` : ''}`, 4000);
+    for (const id of toGeocode) { // addresses outside the bundled sub-districts: look them up (1 request/second)
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=th&accept-language=th&q=${encodeURIComponent(homes()[id].address)}`);
+        const j = await r.json();
+        if (j[0]) { setHome(id, { lat: +(+j[0].lat).toFixed(6), lng: +(+j[0].lon).toFixed(6), approx: true }); toast(`🏠 หาพิกัดบ้าน ${memberById(id).nick} ได้แล้ว (ค่าประมาณ)`); }
+      } catch (e) { /* stays without a pin; can be set by hand */ }
+      await sleep(1100);
+    }
+    renderTeam();
   };
 
   $('homesExport').onclick = () => {

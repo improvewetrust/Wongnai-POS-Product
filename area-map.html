@@ -889,6 +889,7 @@
         <div class="side-row" style="margin-top:4px">
           <button class="btn" id="teamDownload" title="ดาวน์โหลด area-sales-team.js เพื่ออัปขึ้น GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน">⬇️ ไฟล์ทีม (แชร์ให้ทุกคน)</button>
           <button class="btn danger" id="teamReset" title="ทิ้งการแก้ไขในเครื่องนี้ แล้วใช้ค่าจากไฟล์กลาง">🔒 ↺ ใช้ค่าทีมจากไฟล์กลาง</button>
+          <button class="btn primary" id="sheetOpen" title="คัดลอกตารางจากแท็บ Area Planner แล้ววางที่นี่">📋 นำเข้าจาก Google Sheet (Area Planner)</button>
         </div>
         <div class="hint">🏠 ที่อยู่บ้านเซลส์ <b>เก็บในเครื่องนี้เท่านั้น</b> และไม่รวมในไฟล์ทีม (repo บน GitHub เปิดสาธารณะ) — ส่งให้หัวหน้าทีมแบบส่วนตัวได้ด้วยไฟล์ด้านล่าง</div>
         <div class="side-row" style="flex-wrap:wrap">
@@ -929,6 +930,27 @@
     </div>
     <div class="modal-foot">
       <button class="btn primary" data-close>เสร็จ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Paste the "Area Planner" table from Google Sheets -->
+<div class="modal" id="sheetModal">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h3>📋 นำเข้าการแบ่งพื้นที่จาก Google Sheet<p>แท็บ “Area Planner”: เลือกตั้งแต่หัวตาราง (No / AE / เลือกเขต / … / ตำบล 10) ลงไปถึงแถวสุดท้าย → Ctrl+C → วางด้านล่าง</p></h3>
+      <button class="icon-btn" data-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="sheetText" class="set-input mono" rows="7" placeholder="วางตารางที่คัดลอกจาก Google Sheet ตรงนี้ (Ctrl+V / ⌘+V)"></textarea>
+      <label class="opt"><input type="checkbox" id="sheetClear" checked><span><b>ล้างการแบ่งเดิมทั้งหมดก่อน</b> — ให้ชีตเป็นข้อมูลหลัก (ต้องใส่รหัสผ่าน)</span></label>
+      <label class="opt"><input type="checkbox" id="sheetWhole" checked><span><b>เลือกเขตแต่ไม่ได้เลือกตำบล = ดูแลทั้งเขต</b> (เช่น Nuknik → เมืองนนทบุรี)</span></label>
+      <label class="opt"><input type="checkbox" id="sheetOpp" checked><span><b>ใช้ “Opp ทั้งเขต” เป็นจำนวนร้านอาหารของเขต</b> (ใช้คำนวณส่วนแบ่งตลาด)</span></label>
+      <div id="sheetPreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>ยกเลิก</button>
+      <button class="btn primary" id="sheetApply" disabled>นำเข้า</button>
     </div>
   </div>
 </div>
@@ -1725,6 +1747,90 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast('⬇️ ดาวน์โหลดแล้ว — อัปไฟล์นี้ทับ area-sales-team.js ใน GitHub ให้ทุกเครื่องใช้ชุดเดียวกัน', 6000);
   };
+  /* ── Import territories from the "Area Planner" sheet (copy → paste, nothing is published) ── */
+  const stripTb = (v) => String(v || '').replace(/^(ตำบล|ต\.|แขวง)\s*/, '').trim();
+  function parseSheetPlan(text) {
+    const rows = Papa.parse(text.replace(/\r/g, '').trim(), { delimiter: '\t' }).data.map(r => r.map(c => String(c ?? '').trim()));
+    const clean = (c) => c.replace(/[▼▲]/g, '').replace(/\s+/g, ' ').trim();
+    let hi = rows.findIndex(r => r.some(c => /^AE\b/i.test(clean(c))) && r.some(c => /เขต/.test(c)));
+    let ae, zc, opp, tcs;
+    if (hi >= 0) {
+      const h = rows[hi].map(clean);
+      ae = h.findIndex(c => /^AE\b/i.test(c));
+      zc = h.findIndex(c => /เขต/.test(c) && !/Opp|ประชากร|AE|ครอบคลุม/i.test(c));
+      opp = h.findIndex(c => /^Opp ทั้งเขต/i.test(c));
+      tcs = h.map((c, i) => (/^ตำบล\s*\d+/.test(c) ? i : -1)).filter(i => i >= 0);
+    } else {
+      // copied without the header: Area Planner layout is No | AE | เขต | Opp | … | ตำบล 1–10 (columns H–Q)
+      const shift = rows.length && /^\d+$/.test(rows[0][0] || '') ? 0 : -1;
+      ae = 1 + shift; zc = 2 + shift; opp = 3 + shift; tcs = Array.from({ length: 10 }, (_, i) => 7 + i + shift);
+    }
+    const plan = [], warn = [];
+    if (ae < 0 || zc < 0) return { plan, warn: ['ไม่พบคอลัมน์ “AE” และ “เลือกเขต” — คัดลอกตั้งแต่หัวตารางของแท็บ Area Planner'] };
+    rows.slice(hi + 1).forEach(r => {
+      const aeS = r[ae] || '', zS = r[zc] || '';
+      if (!aeS || !zS || /incoming|^รวม/i.test(aeS)) return;
+      const z = ZONES.find(x => x.en.toLowerCase() === zS.toLowerCase() || x.th === zS || zS.includes(x.th));
+      if (!z) { warn.push(`ไม่รู้จักเขต “${zS}” (${aeS})`); return; }
+      const [nickRaw, ...rest] = aeS.split(/\s+-\s+/);
+      const names = tcs.map(i => stripTb(r[i])).filter(Boolean);
+      const codes = [];
+      names.forEach(n => {
+        const t = TAMBONS.find(x => x.zone === z.id && x.th === n);
+        if (t) codes.push(t.code); else warn.push(`ไม่พบ ต.${n} ในเขต ${z.th} — ข้ามไป (ยังไม่มีขอบเขตตำบลนี้ในแผนที่)`);
+      });
+      const o = opp >= 0 ? Number(String(r[opp] || '').replace(/[^\d.]/g, '')) : NaN;
+      plan.push({ nick: nickRaw.trim(), name: rest.join(' - ').trim(), zone: z, codes, listed: names.length, opp: Number.isFinite(o) && o > 0 ? o : null });
+    });
+    if (!plan.length && !warn.length) warn.push('ไม่พบแถวที่มีทั้ง AE และเขต');
+    return { plan, warn };
+  }
+  let sheetParsed = null;
+  function findMember(list, p) {
+    const lc = (v) => String(v || '').toLowerCase();
+    return list.find(m => (p.name && lc(m.name) === lc(p.name))) || list.find(m => lc(m.nick) === lc(p.nick) || m.id === lc(p.nick));
+  }
+  function renderSheetPreview() {
+    const txt = $('sheetText').value;
+    sheetParsed = txt.trim() ? parseSheetPlan(txt) : null;
+    if (!sheetParsed) { $('sheetPreview').innerHTML = ''; $('sheetApply').disabled = true; return; }
+    const whole = $('sheetWhole').checked, t = team();
+    const rows = sheetParsed.plan.map(p => {
+      const m = findMember(t, p);
+      const n = p.codes.length || (whole && !p.listed ? TAMBONS.filter(x => x.zone === p.zone.id).length : 0);
+      return `<div class="near-row"><span><b>${esc(m ? m.nick : p.nick)}</b> ${m ? '' : '<span class="tag">ใหม่</span>'} → ${esc(p.zone.th)}</span>`
+        + `<span class="km">${n} ตำบล</span><span class="st">${!p.listed && whole ? 'ทั้งเขต' : p.listed ? `จาก ${p.listed} ที่ระบุ` : 'ไม่ได้เลือกตำบล'}${p.opp ? ' · Opp ' + p.opp.toLocaleString() : ''}</span></div>`;
+    }).join('');
+    $('sheetPreview').innerHTML = (rows ? `<div class="section-t" style="font-size:13px">จะนำเข้า ${sheetParsed.plan.length} แถว</div><div class="near">${rows}</div>` : '')
+      + (sheetParsed.warn.length ? `<div class="hint" style="color:var(--warn-strong)">${sheetParsed.warn.map(esc).join('<br>')}</div>` : '');
+    $('sheetApply').disabled = !sheetParsed.plan.length;
+  }
+  ['input', 'change'].forEach(ev => $('sheetModal').addEventListener(ev, (e) => { if (e.target.id === 'sheetText' || e.target.id === 'sheetWhole') renderSheetPreview(); }));
+  $('sheetOpen').onclick = () => { $('sheetText').value = ''; renderSheetPreview(); openModal('sheetModal'); setTimeout(() => $('sheetText').focus(), 50); };
+  $('sheetApply').onclick = async () => {
+    if (!sheetParsed || !sheetParsed.plan.length) return;
+    if ($('sheetClear').checked && !(await askPassword('ล้างการแบ่งพื้นที่เดิมทั้งหมด แล้วใช้ข้อมูลจาก Google Sheet'))) return;
+    const whole = $('sheetWhole').checked;
+    let list = team().map(m => ({ ...m, tambons: $('sheetClear').checked ? [] : [...(m.tambons || [])] }));
+    let added = 0;
+    sheetParsed.plan.forEach(p => {
+      let m = findMember(list, p);
+      if (!m) {
+        let id = p.nick.toLowerCase().replace(/[^a-z0-9ก-๙]+/g, '-').replace(/^-|-$/g, '') || 'sales';
+        while (list.some(x => x.id === id)) id += '-2';
+        m = { id, nick: p.nick, name: p.name, tambons: [] }; list.push(m); added++;
+      } else if (!m.name && p.name) m.name = p.name;
+      const codes = p.codes.length ? p.codes : (whole && !p.listed ? TAMBONS.filter(x => x.zone === p.zone.id).map(x => x.code) : []);
+      list = list.map(x => (x.id === m.id ? x : { ...x, tambons: x.tambons.filter(c => !codes.includes(c)) }));
+      const me = list.find(x => x.id === m.id);
+      me.tambons = [...new Set(me.tambons.concat(codes))];
+    });
+    setTeam(list);
+    if ($('sheetOpp').checked) setMarket(mk => { sheetParsed.plan.forEach(p => { if (p.opp) mk.zones[p.zone.id] = p.opp; }); });
+    closeModal('sheetModal'); renderTeam(); renderZones(); renderAll();
+    toast(`✅ นำเข้าการแบ่งพื้นที่แล้ว ${sheetParsed.plan.length} แถว${added ? ` · เพิ่มเซลส์ใหม่ ${added} คน` : ''}`, 5000);
+  };
+
   $('homesExport').onclick = () => {
     const data = { type: 'wpos-area-sales-homes', exported: new Date().toISOString(), homes: homes() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

@@ -197,9 +197,10 @@
     .amp-label::before { display: none; }
     .amp-label span { display: inline-block; background: var(--overlay); border: 1.5px solid; border-radius: 7px; padding: 1px 7px; font-weight: 800; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
     #map.far .amp-label { display: none; }
-    .home-pin { display: flex; flex-direction: column; align-items: center; transform: translateY(-4px); }
-    .home-pin span { width: 30px; height: 30px; border-radius: 50%; background: #1a1a2e; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
-    .home-pin b { margin-top: 2px; background: #1a1a2e; color: #fff; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .home-mk { background: none; border: 0; }
+    .home-pin { display: flex; flex-direction: column; align-items: center; }
+    .home-pin svg { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.4)); }
+    .home-pin b { margin-top: 1px; background: #1a1a2e; color: #fff; font-size: 13px; font-weight: 800; padding: 2px 10px; border-radius: 8px; white-space: nowrap; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
     .home-box { border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
     .home-head { font-weight: 800; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
     .home-head .hint { font-weight: 500; }
@@ -682,7 +683,7 @@
         <button data-layer="gSat">🌍 Google ดาวเทียม</button>
         <button data-layer="osm">🧭 OpenStreetMap</button>
         <div class="lp-sep"></div>
-        <button id="homeToggle" title="แสดงบ้านเซลส์ในโหมดพื้นที่ด้วย (โหมดเซลส์แสดงเสมอ)">🏠 แสดงบ้านเซลส์</button>
+        <button id="homeToggle" title="แสดง/ซ่อนบ้านเซลส์ในโหมดพื้นที่ (โหมดเซลส์แสดงเสมอ)">🏠 ซ่อนบ้านเซลส์</button>
       </div>
     </div>
 
@@ -1211,18 +1212,27 @@
   const homes = () => state.settings.salesHomes || (state.settings.salesHomes = {});
   const homeOf = (id) => { const h = homes()[id]; return h && Number.isFinite(h.lat) && Number.isFinite(h.lng) ? h : null; };
   function setHome(id, data) { homes()[id] = Object.assign({}, homes()[id] || {}, data); save(); renderHomes(); }
+  // own pane above the district / sub-district labels (tooltip pane is 650) so names never cover a home
+  map.createPane('homes').style.zIndex = 660;
   const homeLayer = L.layerGroup().addTo(map);
   function renderHomes() {
     homeLayer.clearLayers();
     let ids;
     if (isSalesView()) { const sel = salesSel(); ids = sel === 'all' || sel === 'none' ? team().map(m => m.id) : [sel]; }
-    else ids = state.settings.showHomes ? team().map(m => m.id) : [];
+    else ids = state.settings.showHomes !== false ? team().map(m => m.id) : [];
     ids.forEach(id => {
       const m = memberById(id), h = homeOf(id);
       if (!m || !h) return;
       const mk = L.marker([h.lat, h.lng], {
-        icon: L.divIcon({ className: '', iconSize: [80, 50], iconAnchor: [40, 34], html: `<div class="home-pin"><span>🏠</span><b>${esc(m.nick)}</b></div>` }),
-        zIndexOffset: 3000, title: `บ้าน ${m.nick}`,
+        icon: L.divIcon({
+          className: 'home-mk', iconSize: [120, 86], iconAnchor: [60, 60],
+          html: `<div class="home-pin"><svg width="52" height="60" viewBox="0 0 52 60" aria-hidden="true">
+              <path d="M26 59s22-19.5 22-34A22 22 0 0 0 4 25c0 14.5 22 34 22 34z" fill="#1a1a2e" stroke="#fff" stroke-width="3"/>
+              <path d="M14 26 26 15l12 11v12a2 2 0 0 1-2 2h-6v-8h-8v8h-6a2 2 0 0 1-2-2z" fill="#fff"/>
+              <path d="M11 27 26 13.5 41 27" fill="none" stroke="#f25533" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg><b>🏠 ${esc(m.nick)}</b></div>`,
+        }),
+        zIndexOffset: 3000, title: `บ้าน ${m.nick}`, pane: 'homes',
       }).addTo(homeLayer);
       const div = document.createElement('div'); div.className = 'tb-pop';
       const b = document.createElement('b'); b.textContent = `🏠 บ้าน ${m.nick} · ${m.name}`;
@@ -1231,7 +1241,8 @@
       btn.onclick = () => { map.closePopup(); setZone('sales:' + id); };
       div.append(b, a, btn); mk.bindPopup(div);
     });
-    $('homeToggle').classList.toggle('on', !!state.settings.showHomes);
+    $('homeToggle').classList.toggle('on', state.settings.showHomes !== false);
+    $('homeToggle').textContent = state.settings.showHomes !== false ? '🏠 ซ่อนบ้านเซลส์' : '🏠 แสดงบ้านเซลส์';
   }
   function startHomePick(id) {
     const m = memberById(id); if (!m) return;
@@ -1602,11 +1613,17 @@
     return `<div class="home-box">
       <div class="home-head">🏠 ที่อยู่บ้าน ${esc(m.nick)} <span class="hint">ใช้ช่วยแบ่งเขตตามระยะทาง · เก็บในเครื่องนี้เท่านั้น</span></div>
       <textarea id="tmHomeAddr" class="set-input" rows="2" placeholder="บ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด">${esc(h.address || '')}</textarea>
+      <div class="grid2">
+        <div class="field"><label for="tmHomeLat">Latitude</label><input id="tmHomeLat" inputmode="decimal" placeholder="13.9150" value="${home ? home.lat : ''}"></div>
+        <div class="field"><label for="tmHomeLng">Longitude</label><input id="tmHomeLng" inputmode="decimal" placeholder="100.4050" value="${home ? home.lng : ''}"></div>
+      </div>
+      <div class="hint">วางพิกัดแบบ “13.9150, 100.4050” หรือลิงก์ Google Maps ลงช่องที่อยู่ก็ได้ ระบบอ่านพิกัดให้เอง</div>
       <div class="hint">${home ? `📍 ปักหมุดแล้ว${home.approx ? ' (พิกัดประมาณจากที่อยู่ — ย้ายให้ตรงได้ด้วย “ปักหมุดบนแผนที่”)' : ''}${where}` : 'ยังไม่ได้ปักหมุดบ้าน'}</div>
       <div class="side-row" style="flex-wrap:wrap">
         <button class="btn" id="tmHomePick">📍 ปักหมุดบนแผนที่</button>
         <button class="btn" id="tmHomeHere">📌 ใช้ตำแหน่งปัจจุบัน</button>
         <button class="btn" id="tmHomeGeo">🔎 หาพิกัดจากที่อยู่</button>
+        ${home ? '<button class="btn" id="tmHomeGo">🗺️ ไปที่บ้านบนแผนที่</button>' : ''}
         ${home || h.address ? '<button class="btn danger" id="tmHomeDel">🔒 ลบที่อยู่บ้าน</button>' : ''}
       </div>
       ${near ? `<div><div class="section-t" style="font-size:13px">ตำบลใกล้บ้าน ${esc(m.nick)} ที่สุด</div><div class="near">${near}</div></div>` : ''}
@@ -1628,7 +1645,18 @@
   });
   $('teamEdit').addEventListener('change', (e) => {
     const t = e.target;
-    if (t.id === 'tmHomeAddr') { setHome(teamSel, { address: t.value.trim() }); toast('💾 บันทึกที่อยู่บ้านแล้ว'); return; }
+    if (t.id === 'tmHomeAddr') {
+      const v = t.value.trim(), ll = parseLatLng(v);
+      if (ll) { setHome(teamSel, { lat: ll[0], lng: ll[1], approx: false }); toast('📍 อ่านพิกัดจากข้อความแล้ว — ปักหมุดบ้านเรียบร้อย'); renderTeam(); return; }
+      setHome(teamSel, { address: v }); toast('💾 บันทึกที่อยู่บ้านแล้ว'); return;
+    }
+    if (t.id === 'tmHomeLat' || t.id === 'tmHomeLng') {
+      const lat = parseNum($('tmHomeLat').value), lng = parseNum($('tmHomeLng').value);
+      if (!$('tmHomeLat').value.trim() || !$('tmHomeLng').value.trim()) return; // wait for both
+      if (!validLatLng(lat, lng)) { toast('⚠️ พิกัดไม่ถูกต้อง เช่น 13.9150 / 100.4050'); return; }
+      setHome(teamSel, { lat: +lat.toFixed(6), lng: +lng.toFixed(6), approx: false }); renderTeam();
+      toast(`📍 ปักหมุดบ้าน ${memberById(teamSel).nick} แล้ว`); return;
+    }
     if (t.id === 'tmNick' || t.id === 'tmName') {
       const v = t.value.trim();
       updateMember(teamSel, m => ({ ...m, [t.id === 'tmNick' ? 'nick' : 'name']: v || (t.id === 'tmNick' ? m.nick : '') }));
@@ -1648,6 +1676,11 @@
     const near = e.target.closest('[data-near]');
     if (near) { assignTambon(near.dataset.near, teamSel); toast(`✅ ให้ ${memberById(teamSel).nick} ดูแลตำบลนี้แล้ว`); return; }
     if (e.target.closest('#tmHomePick')) { startHomePick(teamSel); return; }
+    if (e.target.closest('#tmHomeGo')) {
+      const h = homeOf(teamSel); if (!h) return;
+      closeModal('settingsModal'); renderHomes(); map.setView([h.lat, h.lng], Math.max(map.getZoom(), 15));
+      return;
+    }
     if (e.target.closest('#tmHomeHere')) {
       const id = teamSel;
       locate((p) => { setHome(id, { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), approx: false }); toast('🏠 ใช้ตำแหน่งปัจจุบันเป็นบ้านแล้ว'); renderTeam(); });
@@ -1709,7 +1742,7 @@
     }).catch(() => toast('⚠️ ไฟล์ไม่ถูกต้อง (ต้องเป็นไฟล์บ้านเซลส์จากเครื่องมือนี้)', 5000));
   });
   $('homeCancel').onclick = () => endHomePick(true);
-  $('homeToggle').onclick = () => { state.settings.showHomes = !state.settings.showHomes; save(); renderHomes(); toast(state.settings.showHomes ? '🏠 แสดงบ้านเซลส์' : 'ซ่อนบ้านเซลส์'); };
+  $('homeToggle').onclick = () => { state.settings.showHomes = state.settings.showHomes === false; save(); renderHomes(); toast(state.settings.showHomes ? '🏠 แสดงบ้านเซลส์' : 'ซ่อนบ้านเซลส์ (โหมดพื้นที่)'); };
   $('teamReset').onclick = async () => {
     if (!(await askPassword('ทิ้งการแก้ไขทีมในเครื่องนี้ แล้วใช้รายชื่อ/พื้นที่จากไฟล์กลาง'))) return;
     delete state.settings.team; save(); rebuildTeam(); renderTeam(); renderZones(); renderAll();

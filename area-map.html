@@ -445,6 +445,15 @@
     .status-toggle button small { font-weight: 500; font-size: 11px; color: var(--text-2); }
     .status-toggle button.sold.on { border-color: var(--ok); background: var(--ok-light); color: var(--ok-ink); }
     .status-toggle button.unsold.on { border-color: var(--red); background: var(--red-light); color: var(--red-ink); }
+    .info-card { border: 1.5px solid var(--border); border-radius: 12px; background: var(--surface); padding: 4px 12px; }
+    .info-card .row { display: grid; grid-template-columns: 112px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px; align-items: baseline; }
+    .info-card .row:last-child { border-bottom: 0; }
+    .info-card .k { color: var(--text-2); font-size: 12px; font-weight: 700; }
+    .info-card .v { font-weight: 700; word-break: break-word; }
+    .info-card .v.muted { color: var(--text-2); font-weight: 500; }
+    .info-card .pos-wn { color: var(--ok); }
+    .info-card .pos-other { color: var(--warn-strong); }
+    .info-card .hint { padding: 6px 0; }
     .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .quick a, .quick button {
       display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px;
@@ -729,12 +738,7 @@
           <button data-plat="ipad">🍎 iPad</button>
           <button data-plat="">ไม่ระบุ</button>
         </div>
-        <div class="quick">
-          <a id="qNav" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>นำทาง</a>
-          <a id="qCall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>โทร</a>
-          <a id="qGmap" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Google Maps</a>
-          <a id="qSf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 17.5 7 4.5 4.5 0 0 1 18 18H7z"/></svg>Salesforce</a>
-        </div>
+        <div class="info-card" id="infoCard"></div>
         <div class="addr-card" id="addrCard">
           <div><div class="addr-t">🏠 ที่อยู่ร้าน</div><div class="addr-full" id="addrFull">—</div></div>
           <button class="icon-btn" id="addrCopy" title="คัดลอกที่อยู่">📋</button>
@@ -816,11 +820,6 @@
         <li>กด <b>Export → Details Only → .csv หรือ .xlsx</b> แล้วอัปโหลดที่นี่ ระบบจะให้จับคู่คอลัมน์ก่อนนำเข้า</li>
       </ol>
       <div class="hint">ยังไม่มีไฟล์? <a href="#" data-act="template">ดาวน์โหลดไฟล์ตัวอย่าง</a> ไปลองกรอกดูได้</div>
-      <div class="field">
-        <label for="sfUrl">Salesforce URL ของบริษัท (ไม่บังคับ)</label>
-        <input id="sfUrl" placeholder="https://yourcompany.lightning.force.com">
-        <div class="hint">ใส่ไว้เพื่อให้ปุ่ม “Salesforce” ในหน้าร้านเปิด Record นั้นใน Salesforce ได้ (ต้อง map คอลัมน์ Salesforce ID ด้วย)</div>
-      </div>
     </div>
   </div>
 </div>
@@ -943,15 +942,6 @@
             <input id="gsClient" class="set-input mono" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off">
           </details>
         </div>
-        <div class="set-card">
-          <b>🔗 Salesforce URL ของบริษัท</b>
-          <div class="hint">ใช้กับปุ่ม “Salesforce” ในหน้ารายละเอียดร้าน (ต้องมีคอลัมน์ Salesforce ID ตอนอัปโหลด)</div>
-          <input id="setSfUrl" class="set-input" placeholder="https://yourcompany.lightning.force.com">
-        </div>
-        <div class="set-card">
-          <b>🧰 เครื่องมือข้อมูล</b>
-          <div class="side-row" style="flex-wrap:wrap"><button class="btn" data-act="revall">🏠 เติมที่อยู่จากพิกัด</button><button class="btn" data-act="osm">🍜 ดึงร้านจาก OpenStreetMap</button><button class="btn" data-act="template">📄 ไฟล์ตัวอย่าง</button><button class="btn" data-act="sample">🧪 ข้อมูลตัวอย่าง</button></div>
-        </div>
         <div class="set-card danger-zone">
           <b>🔒 ล้างข้อมูล (ต้องใส่รหัสผ่าน)</b>
           <div class="hint">การล้างข้อมูลย้อนกลับไม่ได้ — แนะนำ Export CSV เก็บไว้ก่อน · ข้อมูลใน Salesforce ไม่ถูกลบ</div>
@@ -1052,6 +1042,9 @@
     ['sales',   'เซลส์ผู้ดูแล (ชื่อเล่น / ชื่อ)', 'ไม่มีก็ได้ — ไม่ใส่จะใช้ตามพื้นที่'],
     ['type',    'ประเภทร้าน',           ''],
     ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอนอัปโหลดซ้ำ'],
+    ['contact', 'ชื่อผู้ติดต่อ / เจ้าของร้าน', 'เช่น Contact Name'],
+    ['line',    'LINE ID',            ''],
+    ['curPos',  'POS ที่ร้านใช้อยู่ (ระบบอื่น)', 'ร้านที่ยังไม่ใช้ Wongnai POS ใช้ระบบอะไรอยู่ — เช่น Current POS / Competitor'],
     ['note',    'Note / Remark (บันทึกการขาย)', 'เช่น Comments / Description — แสดงเป็นบันทึกในหมุด'],
   ];
   const GUESS = {
@@ -1063,6 +1056,9 @@
     address: [/^address$/i, /ที่อยู่/, /(billing|shipping)?.?street/i, /address/i],
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
+    contact: [/contact ?(name|person)?$/i, /ผู้ติดต่อ/, /ชื่อเจ้าของ/, /เจ้าของร้าน/, /^shop ?owner ?name$/i],
+    line:    [/^line( ?id)?$/i, /ไลน์/],
+    curPos:  [/current ?pos/i, /existing ?pos/i, /competitor/i, /คู่แข่ง/, /pos ?(เดิม|ปัจจุบัน|ที่ใช้)/i, /ระบบ ?(เดิม|ปัจจุบัน|ที่ใช้)/, /^pos ?(brand|system|provider)$/i],
     note:    [/^notes?$/i, /remark/i, /หมายเหตุ/, /บันทึก/, /^comments?$/i, /^description$/i, /note/i, /comment/i, /รายละเอียด/],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
     sales:   [/^area ?sales/i, /^sales( ?(name|person|rep|nick))?$/i, /เซลส์/],
@@ -1113,6 +1109,25 @@
   const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
   const notesOf = (r) => (r.notes && r.notes.length ? r.notes : r.note ? [{ t: null, text: r.note }] : []);
   const noteText = (r) => notesOf(r).map(n => (n.t ? fmtDate(n.t) + ' · ' : '') + n.text).join(' | ');
+  // what a salesperson needs before calling / walking in: who to talk to, how to reach them, what POS the shop runs today
+  function renderInfo(r) {
+    const plat = { android: '🤖 Android', ipad: '🍎 iPad' }[r.platform];
+    const pos = r.status === 'sold'
+      ? `<span class="v pos-wn">✅ Wongnai POS${plat ? ' · ' + plat : ''}</span>`
+      : r.curPos ? `<span class="v pos-other">${esc(r.curPos)}</span>` : '<span class="v muted">ยังไม่ทราบ / ยังไม่ใช้ POS</span>';
+    const rows = [
+      ['💻 POS ที่ใช้อยู่', pos],
+      ['👤 ผู้ติดต่อ', r.contact && `<span class="v">${esc(r.contact)}</span>`],
+      ['📞 เบอร์โทร', r.phone && `<span class="v">${esc(r.phone)}</span>`],
+      ['💬 LINE', r.line && `<span class="v">${esc(r.line)}</span>`],
+      ['🍽️ ประเภทร้าน', r.type && `<span class="v">${esc(r.type)}</span>`],
+      ['🧑‍💼 Account Owner', r.owner && `<span class="v">${esc(r.owner)}</span>`],
+      ['🏷️ สถานะใน SF', r.rawStatus && `<span class="v">${esc(r.rawStatus)}</span>`],
+    ].filter(x => x[1]);
+    const missing = !r.contact && !r.phone;
+    $('infoCard').innerHTML = rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span>${v}</div>`).join('')
+      + (missing ? '<div class="hint">ยังไม่มีข้อมูลผู้ติดต่อ — เพิ่มคอลัมน์ Contact Name / Phone ใน Report ของ SF แล้วอัปโหลดใหม่</div>' : '');
+  }
   function renderNotes(r) {
     const ns = notesOf(r);
     $('fNotes').innerHTML = ns.length ? ns.map(n => `<div class="n">${n.t ? `<small>${fmtDate(n.t)}</small>` : ''}${esc(n.text)}</div>`).join('')
@@ -1535,7 +1550,6 @@
   document.querySelector('.set-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-stab]'); if (b) openSettings(b.dataset.stab); });
   function renderSetData() {
     $('setDataInfo').innerHTML = `<div>มีร้านในแผนที่ <b>${state.records.length.toLocaleString()}</b> ร้าน</div>` + $('dataInfo').innerHTML.replace(/<div class="row">/g, '<div>');
-    $('setSfUrl').value = state.settings.sfUrl || '';
     $('gsSheet').value = state.settings.gsSheet || `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit`;
     $('gsClient').value = state.settings.gsClientId || GOOGLE_CLIENT_ID;
     $('gsOrigin').textContent = location.origin;
@@ -1546,7 +1560,6 @@
   const syncGsButtons = () => document.querySelectorAll('[data-gs-update]').forEach(b => { b.hidden = !gsClientId(); });
   $('gsSheet').addEventListener('change', (e) => { state.settings.gsSheet = e.target.value.trim(); save(); $('gsOpenSheet').href = gsSheetUrl(); toast('💾 บันทึกลิงก์ชีตแล้ว'); });
   $('gsClient').addEventListener('change', (e) => { state.settings.gsClientId = e.target.value.trim(); save(); syncGsButtons(); toast('💾 บันทึก Client ID แล้ว — ลองกด “อัปเดตจาก Google Sheet”'); });
-  $('setSfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim().replace(/\/+$/, ''); save(); toast('💾 บันทึก Salesforce URL แล้ว'); });
 
   /* ── Password before clearing anything (shared simple code — keeps accidental clicks out, not real security) ── */
   const CLEAR_PASSWORD = '1234';
@@ -2119,7 +2132,7 @@
       if (state.age === 'fresh' ? i !== 0 : i < AGE_INDEX[state.age]) return false;
     }
     if (state.q) {
-      const hay = [r.name, r.address, r.phone, r.sfId, r.type, noteText(r)].join(' ').toLowerCase();
+      const hay = [r.name, r.address, r.phone, r.sfId, r.type, r.contact, r.line, r.curPos, noteText(r)].join(' ').toLowerCase();
       if (!hay.includes(state.q.toLowerCase())) return false;
     }
     return true;
@@ -2270,7 +2283,7 @@
     const zid = zoneOf(r);
     const tb = TAMBON_BY_CODE[tambonOf(r)], sm = memberById(salesOf(r));
     $('edMeta').textContent = [zid ? '📍 ' + ZONE_BY_ID[zid].th + (tb ? ` · ${zid === 'bang-phlat' ? 'แขวง' : 'ต.'}${tb.th}` : '') : '📍 นอกพื้นที่ Focus',
-      zid && (sm ? `👤 ดูแลโดย ${sm.nick}` : '👤 ยังไม่มีผู้ดูแลพื้นที่'), r.sfId && 'ID ' + r.sfId, 'ที่มา: ' + src, r.rawStatus && `สถานะใน SF: ${r.rawStatus}`].filter(Boolean).join(' · ');
+      zid && (sm ? `👤 ดูแลโดย ${sm.nick}` : '👤 ยังไม่มีผู้ดูแลพื้นที่'), 'ที่มา: ' + src].filter(Boolean).join(' · ');
     document.querySelectorAll('.status-toggle button').forEach(b => b.classList.toggle('on', b.dataset.status === r.status));
     $('platPick').hidden = r.status !== 'sold';
     $('platPick').querySelectorAll('[data-plat]').forEach(b => b.classList.toggle('on', b.dataset.plat === (r.platform || '')));
@@ -2290,12 +2303,7 @@
     $('fLat').value = hasCoord(r) ? r.lat : ''; $('fLng').value = hasCoord(r) ? r.lng : '';
 
     const geo = hasCoord(r);
-    setLink('qNav', geo && `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&travelmode=driving`);
-    setLink('qGmap', geo ? `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`
-      : (r.address || r.name) && `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([r.name, r.address].filter(Boolean).join(' '))}`);
-    setLink('qCall', r.phone && 'tel:' + r.phone.replace(/[^\d+]/g, ''));
-    const inst = (state.settings.sfUrl || '').trim().replace(/\/+$/, '');
-    setLink('qSf', r.sfId && inst && `${inst}/${encodeURIComponent(r.sfId)}`);
+    renderInfo(r);
 
     const v = r.visits || [];
     const age = ageTier(r);
@@ -2314,10 +2322,6 @@
     if (r.manual && (r.manual.status || r.manual.pos)) hints.push('✏️ ร้านนี้ถูกแก้ด้วยมือ (' + [r.manual.status && 'สถานะ', r.manual.pos && 'ตำแหน่ง'].filter(Boolean).join(', ') + ') — ตอน Sync ครั้งถัดไปจะไม่ถูกทับถ้าติ๊ก “เก็บค่าที่แก้ด้วยมือไว้”');
     hints.push('💡 Export CSV จากเมนู ⋮ เพื่อส่งการแก้ไขกลับเข้า Salesforce (Data Loader / Data Import Wizard)');
     $('edHint').innerHTML = hints.map(esc).join('<br>');
-  }
-  function setLink(id, href) {
-    const a = $(id);
-    if (href) { a.href = href; a.classList.remove('disabled'); } else { a.removeAttribute('href'); a.classList.add('disabled'); }
   }
   function closeEditor() {
     const prev = state.selectedId;
@@ -2518,7 +2522,7 @@
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'sales', 'owner', 'visit', 'updated', 'note', 'platform', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'line', 'sales', 'curPos', 'contact', 'owner', 'visit', 'updated', 'note', 'platform', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
         const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)) && !(f === 'visit' && /(last|ล่าสุด|modified|\bby\b)/i.test(h)));
@@ -2596,6 +2600,7 @@
       platform: sold ? (detectPlatform(get('platform')) || detectPlatform(raw)) : '',
       sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
       address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'), noteText: get('note'),
+      contact: get('contact'), line: get('line'), curPos: get('curPos'),
       status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
       // undefined = no date column mapped; null = column mapped but blank/unreadable
       fileDate: m.updated ? parseDate(row[m.updated], dateOrderFor(m.updated)) : undefined,
@@ -2673,6 +2678,7 @@
         Object.assign(ex, {
           sfId: inc.sfId || ex.sfId, name: inc.name, address: inc.address || ex.address, phone: inc.phone || ex.phone,
           owner: inc.owner || ex.owner, type: inc.type || ex.type, rawStatus: inc.rawStatus,
+          contact: inc.contact || ex.contact || '', line: inc.line || ex.line || '', curPos: inc.curPos || ex.curPos || '',
           status: man.status ? ex.status : inc.status,
           salesId: man.sales ? ex.salesId : (inc.salesId || ex.salesId || ''),
           platform: (man.status ? ex.status : inc.status) !== 'sold' ? ''
@@ -2957,7 +2963,7 @@
       Status_TH: r.status === 'sold' ? 'ใช้ Wongnai POS' : 'ไม่ใช้',
       POS_Platform: r.status === 'sold' ? ({ android: 'Android', ipad: 'iPad' }[r.platform] || '') : '', Original_SF_Status: r.rawStatus || '',
       Latitude: hasCoord(r) ? r.lat : '', Longitude: hasCoord(r) ? r.lng : '',
-      Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: noteText(r),
+      Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Contact: r.contact || '', 'LINE ID': r.line || '', 'Current POS': r.curPos || '', Note: noteText(r),
       Status_Changed_Manually: r.manual && r.manual.status ? 'Y' : '', Pin_Moved_Manually: r.manual && r.manual.pos ? 'Y' : '',
       Approx_Location: r.geoApprox ? 'Y' : '',
       Last_Update: r.lastUpdate ? new Date(r.lastUpdate).toISOString().slice(0, 10) : '',
@@ -2977,9 +2983,9 @@
   }
   function downloadTemplate() {
     download('area-map-template.csv', Papa.unparse([
-      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'POS Platform': 'Android (Wongnai POS Flex)', 'Last Activity Date': '28/09/2026', Remark: 'ใช้ Flex มา 6 เดือน สนใจเพิ่มเครื่องที่ 2' },
-      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '15/05/2026', Remark: 'เจ้าของสนใจ แต่ติดเรื่องราคา · นัดเดโมวันศุกร์' },
-      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '02/08/2025', Remark: '' },
+      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'POS Platform': 'Android (Wongnai POS Flex)', 'Contact Name': 'คุณแดง', 'LINE ID': '@padaeng', 'Current POS': '', 'Last Activity Date': '28/09/2026', Remark: 'ใช้ Flex มา 6 เดือน สนใจเพิ่มเครื่องที่ 2' },
+      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Contact Name': 'คุณนิด', 'LINE ID': '', 'Current POS': 'Loyverse', 'Last Activity Date': '15/05/2026', Remark: 'เจ้าของสนใจ แต่ติดเรื่องราคา · นัดเดโมวันศุกร์' },
+      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Contact Name': '', 'LINE ID': '', 'Current POS': 'เครื่องคิดเงินธรรมดา', 'Last Activity Date': '02/08/2025', Remark: '' },
     ]));
   }
   function loadSample() {
@@ -3092,10 +3098,9 @@
   });
   window.addEventListener('hashchange', () => { const z = zoneFromHash(); if (z !== null && z !== state.zone) setZone(z); });
   $('btnMenu').onclick = () => $('menu').classList.toggle('open');
-  function openUpload() { $('sfUrl').value = state.settings.sfUrl || ''; openModal('uploadModal'); }
+  function openUpload() { openModal('uploadModal'); }
   $('btnUpload').onclick = openUpload;
   $('btnSettings').onclick = () => openSettings();
-  $('sfUrl').addEventListener('change', (e) => { state.settings.sfUrl = e.target.value.trim(); save(); });
   $('staleBtn').onclick = () => { state.age = state.age === 'm1' ? '' : 'm1'; renderAll(); };
   $('ageSel').addEventListener('change', (e) => { state.age = e.target.value; renderAll(); });
   $('btnAdd').onclick = () => setAddMode(!state.addMode);

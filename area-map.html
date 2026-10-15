@@ -460,6 +460,11 @@
     }
     .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--brand); }
     .field textarea { resize: vertical; min-height: 70px; }
+    .note-log { border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); padding: 4px 10px; max-height: 190px; overflow: auto; font-size: 13px; }
+    .note-log .n { padding: 6px 0; border-bottom: 1px dashed var(--border); white-space: pre-wrap; word-break: break-word; }
+    .note-log .n:last-child { border-bottom: 0; }
+    .note-log .n small { display: block; color: var(--text-2); font-size: 11px; font-weight: 700; }
+    .note-log .empty { padding: 8px 0; color: var(--text-2); font-size: 12px; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .visit-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
     .addr-card { display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
@@ -773,7 +778,7 @@
         </fieldset>
         <div class="field"><label for="fOwner">Account Owner (Salesforce)</label><input id="fOwner" list="ownerList"></div>
         <datalist id="ownerList"></datalist>
-        <div class="field"><label for="fNote">บันทึกการขาย / Objection ที่เจอ</label><textarea id="fNote" placeholder="เช่น เจ้าของสนใจ FSR Premium · ติดเรื่องราคา · นัดเดโมวันศุกร์"></textarea></div>
+        <div class="field"><label>📝 บันทึกการขาย (Note / Remark จาก Salesforce)</label><div id="fNotes" class="note-log"></div></div>
         <div class="grid2">
           <div class="field"><label for="fLat">Latitude</label><input id="fLat" inputmode="decimal"></div>
           <div class="field"><label for="fLng">Longitude</label><input id="fLng" inputmode="decimal"></div>
@@ -1047,6 +1052,7 @@
     ['sales',   'เซลส์ผู้ดูแล (ชื่อเล่น / ชื่อ)', 'ไม่มีก็ได้ — ไม่ใส่จะใช้ตามพื้นที่'],
     ['type',    'ประเภทร้าน',           ''],
     ['sfId',    'Salesforce ID',     'ใช้จับคู่ร้านเดิมตอนอัปโหลดซ้ำ'],
+    ['note',    'Note / Remark (บันทึกการขาย)', 'เช่น Comments / Description — แสดงเป็นบันทึกในหมุด'],
   ];
   const GUESS = {
     sfId:    [/^(account ?)?id$/i, /^(sf|salesforce|record|account)[ _]?id$/i, /(^|\.)id$/i],
@@ -1057,6 +1063,7 @@
     address: [/^address$/i, /ที่อยู่/, /(billing|shipping)?.?street/i, /address/i],
     phone:   [/phone/i, /mobile/i, /เบอร์/, /^tel/i],
     owner:   [/owner ?name/i, /^owner/i, /ผู้ดูแล/, /(sales|rep|เซลส์)/i, /owner/i],
+    note:    [/^notes?$/i, /remark/i, /หมายเหตุ/, /บันทึก/, /^comments?$/i, /^description$/i, /note/i, /comment/i, /รายละเอียด/],
     type:    [/ประเภท/, /^type$/i, /(category|segment|cuisine)/i],
     sales:   [/^area ?sales/i, /^sales( ?(name|person|rep|nick))?$/i, /เซลส์/],
     platform:[/platform/i, /แพลตฟอร์ม/, /(pos ?)?device/i, /อุปกรณ์/, /hardware/i, /ระบบ ?pos/i, /^package/i, /แพ็กเกจ|แพคเกจ/],
@@ -1104,6 +1111,13 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const hasCoord = (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng);
+  const notesOf = (r) => (r.notes && r.notes.length ? r.notes : r.note ? [{ t: null, text: r.note }] : []);
+  const noteText = (r) => notesOf(r).map(n => (n.t ? fmtDate(n.t) + ' · ' : '') + n.text).join(' | ');
+  function renderNotes(r) {
+    const ns = notesOf(r);
+    $('fNotes').innerHTML = ns.length ? ns.map(n => `<div class="n">${n.t ? `<small>${fmtDate(n.t)}</small>` : ''}${esc(n.text)}</div>`).join('')
+      : '<div class="empty">ยังไม่มีบันทึก — ดึงจากคอลัมน์ Note / Remark ตอนอัปโหลดข้อมูล SF</div>';
+  }
   const fmtDate = (t) => new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 
   /* ───────────────────────── Staleness ───────────────────────── */
@@ -2105,7 +2119,7 @@
       if (state.age === 'fresh' ? i !== 0 : i < AGE_INDEX[state.age]) return false;
     }
     if (state.q) {
-      const hay = [r.name, r.address, r.phone, r.sfId, r.type, r.note].join(' ').toLowerCase();
+      const hay = [r.name, r.address, r.phone, r.sfId, r.type, noteText(r)].join(' ').toLowerCase();
       if (!hay.includes(state.q.toLowerCase())) return false;
     }
     return true;
@@ -2261,7 +2275,7 @@
     $('platPick').hidden = r.status !== 'sold';
     $('platPick').querySelectorAll('[data-plat]').forEach(b => b.classList.toggle('on', b.dataset.plat === (r.platform || '')));
     $('fName').value = r.name || ''; $('fPhone').value = r.phone || ''; $('fType').value = r.type || '';
-    $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; $('fNote').value = r.note || '';
+    $('fAddr').value = r.address || ''; $('fOwner').value = r.owner || ''; renderNotes(r);
     const ap = r.addr || {}, auto = areaParts(r);
     ADDR_KEYS.forEach(k => { const i = $('fA_' + k); i.value = ap[k] || ''; i.placeholder = auto[k] || i.getAttribute('placeholder') || ''; });
     $('addrFull').textContent = r.address || 'ยังไม่มีที่อยู่ — กรอกด้านล่าง หรือกด “เติม ต./อ./จ. จากหมุด”';
@@ -2332,7 +2346,7 @@
     if ((latStr || lngStr) && !validLatLng(lat, lng)) { toast('⚠️ Latitude / Longitude ไม่ถูกต้อง'); return; }
     r.name = $('fName').value.trim() || '(ไม่มีชื่อ)';
     r.phone = $('fPhone').value.trim(); r.type = $('fType').value.trim();
-    r.address = $('fAddr').value.trim(); r.owner = $('fOwner').value.trim(); r.note = $('fNote').value.trim();
+    r.address = $('fAddr').value.trim(); r.owner = $('fOwner').value.trim();
     const ap = {};
     ADDR_KEYS.forEach(k => { const v = $('fA_' + k).value.trim(); if (v) ap[k] = v; });
     if (Object.keys(ap).length) r.addr = ap; else delete r.addr;
@@ -2504,7 +2518,7 @@
   let pending = null;
   function guessColumns(headers) {
     const used = new Set(), out = {};
-    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'sales', 'owner', 'visit', 'updated', 'platform', 'status', 'type', 'address'];
+    const order = ['lat', 'lng', 'sfId', 'name', 'gmap', 'phone', 'sales', 'owner', 'visit', 'updated', 'note', 'platform', 'status', 'type', 'address'];
     for (const f of order) {
       for (const re of GUESS[f]) {
         const h = headers.find(h => !used.has(h) && re.test(h) && !(f === 'name' && /id$/i.test(h)) && !(f === 'gmap' && /(lat|lng|lon)/i.test(h)) && !(f === 'updated' && /(\bby\b|โดย|ผู้)/i.test(h)) && !(f === 'visit' && /(last|ล่าสุด|modified|\bby\b)/i.test(h)));
@@ -2581,7 +2595,7 @@
       salesId: sm ? sm.id : '',
       platform: sold ? (detectPlatform(get('platform')) || detectPlatform(raw)) : '',
       sfId: get('sfId'), name: get('name') || '(ไม่มีชื่อ)', lat, lng,
-      address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'),
+      address: get('address'), phone: get('phone'), owner: get('owner'), type: get('type'), noteText: get('note'),
       status: m.status && soldSet.has(raw) ? 'sold' : 'unsold', rawStatus: raw, source,
       // undefined = no date column mapped; null = column mapped but blank/unreadable
       fileDate: m.updated ? parseDate(row[m.updated], dateOrderFor(m.updated)) : undefined,
@@ -2639,9 +2653,18 @@
       r.visits.push(t); r.visits.sort((a, b) => a - b); visitsAdded++;
       r.lastUpdate = Math.max(r.lastUpdate || 0, t);
     };
+    // Note / Remark from the file → the shop's log (activity reports repeat the shop once per visit, each with its own note)
+    const addNote = (r, inc) => {
+      const text = String(inc.noteText || '').trim();
+      if (!r || !text) return;
+      r.notes = r.notes || [];
+      if (r.notes.some(n => n.text === text)) return;
+      r.notes.push({ t: inc.visitDate || inc.fileDate || Date.now(), text });
+      r.notes.sort((a, b) => b.t - a.t);
+    };
     for (const inc of incoming) {
       const k = keyOf(inc);
-      if (seen.has(k)) { addVisit(idx.get(k), inc.visitDate); continue; } // activity reports repeat the shop once per visit
+      if (seen.has(k)) { addVisit(idx.get(k), inc.visitDate); addNote(idx.get(k), inc); continue; } // activity reports repeat the shop once per visit
       seen.add(k);
       const ex = idx.get(k);
       if (ex) {
@@ -2661,14 +2684,14 @@
           // newest of: date in the file, or the last check-in/edit made in the app
           lastUpdate: Math.max(inc.fileDate || 0, ex.lastUpdate || 0) || (inc.fileDate === undefined ? ex.lastUpdate : null),
         });
-        delete ex.fileDate; delete ex.visitDate;
-        addVisit(ex, inc.visitDate);
+        delete ex.fileDate; delete ex.visitDate; delete ex.noteText;
+        addVisit(ex, inc.visitDate); addNote(ex, inc);
         touch(ex); updated++;
       } else {
         const r = { id: uid(), note: '', visits: [], manual: {}, ...inc,
           lastUpdate: inc.fileDate !== undefined ? inc.fileDate : (m.visit ? null : Date.now()) };
-        delete r.fileDate; delete r.visitDate;
-        addVisit(r, inc.visitDate);
+        delete r.fileDate; delete r.visitDate; delete r.noteText;
+        addVisit(r, inc.visitDate); addNote(r, inc);
         touch(r); state.records.push(r); idx.set(k, r); added++;
       }
     }
@@ -2934,7 +2957,7 @@
       Status_TH: r.status === 'sold' ? 'ใช้ Wongnai POS' : 'ไม่ใช้',
       POS_Platform: r.status === 'sold' ? ({ android: 'Android', ipad: 'iPad' }[r.platform] || '') : '', Original_SF_Status: r.rawStatus || '',
       Latitude: hasCoord(r) ? r.lat : '', Longitude: hasCoord(r) ? r.lng : '',
-      Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: r.note || '',
+      Address: r.address || '', Phone: r.phone || '', Owner: r.owner || '', Type: r.type || '', Note: noteText(r),
       Status_Changed_Manually: r.manual && r.manual.status ? 'Y' : '', Pin_Moved_Manually: r.manual && r.manual.pos ? 'Y' : '',
       Approx_Location: r.geoApprox ? 'Y' : '',
       Last_Update: r.lastUpdate ? new Date(r.lastUpdate).toISOString().slice(0, 10) : '',
@@ -2954,9 +2977,9 @@
   }
   function downloadTemplate() {
     download('area-map-template.csv', Papa.unparse([
-      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'POS Platform': 'Android (Wongnai POS Flex)', 'Last Activity Date': '28/09/2026' },
-      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '15/05/2026' },
-      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '02/08/2025' },
+      { 'Account ID': '001XXXXXXXXXXXXXXX', 'Account Name': 'ร้านก๋วยเตี๋ยวเรือป้าแดง', Latitude: 13.7466, Longitude: 100.5393, 'Google Maps Link': '', Address: 'ถ.พระราม 1 แขวงปทุมวัน กรุงเทพฯ', Phone: '0812345678', 'Account Owner': 'สมชาย ใจดี', Type: 'QSR', 'Wongnai POS Status': 'ขายแล้ว', 'POS Platform': 'Android (Wongnai POS Flex)', 'Last Activity Date': '28/09/2026', Remark: 'ใช้ Flex มา 6 เดือน สนใจเพิ่มเครื่องที่ 2' },
+      { 'Account ID': '', 'Account Name': 'Cafe Ari Corner', Latitude: '', Longitude: '', 'Google Maps Link': 'https://www.google.com/maps/@13.7798,100.5446,17z', Address: 'ซ.อารีย์ 1 พญาไท กรุงเทพฯ', Phone: '0898765432', 'Account Owner': 'สมชาย ใจดี', Type: 'Cafe', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '15/05/2026', Remark: 'เจ้าของสนใจ แต่ติดเรื่องราคา · นัดเดโมวันศุกร์' },
+      { 'Account ID': '', 'Account Name': 'หมูกระทะทองหล่อ', Latitude: '', Longitude: '', 'Google Maps Link': '', Address: 'ซ.ทองหล่อ 13 วัฒนา กรุงเทพฯ', Phone: '', 'Account Owner': 'มานี มีนา', Type: 'Buffet', 'Wongnai POS Status': 'ยังไม่ขาย', 'POS Platform': '', 'Last Activity Date': '02/08/2025', Remark: '' },
     ]));
   }
   function loadSample() {
